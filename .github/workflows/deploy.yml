@@ -1,10 +1,10 @@
 # Publica la app en GitHub Pages en cada empujón a master.
 #
-# Para que funcione hay que hacer una cosa a mano, una sola vez:
-#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+# El paso `configure-pages` activa Pages por sí mismo (`enablement: true`), así
+# que no hace falta tocar los ajustes del repositorio.
 #
-# Después de eso, la app queda en https://nachopeza.github.io/FitMe/ y se puede
-# instalar en el móvil desde el navegador (Compartir → Añadir a pantalla de inicio).
+# La app queda en https://nachopeza.github.io/FitMe/ y se puede instalar en el
+# móvil desde el navegador (Compartir → Añadir a pantalla de inicio).
 name: Publicar en GitHub Pages
 
 on:
@@ -46,7 +46,11 @@ jobs:
       - name: Construir
         run: npm run build
 
+      # `enablement` activa GitHub Pages desde el propio flujo de trabajo, así
+      # que no hay que tocar nada en los ajustes del repositorio.
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:

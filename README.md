@@ -204,11 +204,10 @@ La app se publica en **GitHub Pages** en cada empujón a `master`, mediante
 `.github/workflows/deploy.yml`. Los tests y la comprobación de tipos bloquean el
 despliegue: si el dominio se rompe, no se publica.
 
-Hace falta activarlo una sola vez, a mano:
+El propio flujo de trabajo activa Pages (`configure-pages` con
+`enablement: true`), así que no hay que tocar los ajustes del repositorio.
 
-> **Settings → Pages → Build and deployment → Source: «GitHub Actions»**
-
-A partir de ahí queda en **https://nachopeza.github.io/FitMe/**, y desde el
+Queda en **https://nachopeza.github.io/FitMe/**, y desde el
 navegador del móvil se instala como aplicación: *Compartir → Añadir a pantalla de
 inicio* en iOS, o *Instalar aplicación* en Chrome. Instalada funciona sin
 conexión, a pantalla completa y con su propio icono.
