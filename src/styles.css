@@ -191,10 +191,11 @@ input, select, textarea { font: inherit; color: inherit; }
   color: var(--accent-ink);
   background: var(--accent);
   border: 1px solid var(--accent-edge);
+  /* Sombra discreta: lo justo para separar el botón del cristal, sin halo. */
   box-shadow:
-    0 6px 16px -6px color-mix(in srgb, var(--accent) 45%, transparent),
-    0 2px 6px rgba(0, 0, 0, 0.35),
-    0 1px 0 0 rgba(255, 255, 255, 0.3) inset;
+    0 4px 10px -5px color-mix(in srgb, var(--accent) 22%, transparent),
+    0 1px 3px rgba(0, 0, 0, 0.18),
+    0 1px 0 0 rgba(255, 255, 255, 0.18) inset;
   transition: transform 0.14s ease;
 }
 .nav-add:active { transform: scale(0.92); }
