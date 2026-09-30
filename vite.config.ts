@@ -26,7 +26,11 @@ export default defineConfig({
         background_color: '#0d1117',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/',
+        // Relativos, para que la app se pueda instalar igual servida desde la
+        // raíz de un dominio que desde una subcarpeta (GitHub Pages).
+        start_url: './',
+        scope: './',
+        lang: 'es',
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

@@ -1,0 +1,63 @@
+# Publica la app en GitHub Pages en cada empujón a master.
+#
+# Para que funcione hay que hacer una cosa a mano, una sola vez:
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
+#
+# Después de eso, la app queda en https://nachopeza.github.io/FitMe/ y se puede
+# instalar en el móvil desde el navegador (Compartir → Añadir a pantalla de inicio).
+name: Publicar en GitHub Pages
+
+on:
+  push:
+    branches: [master]
+  # Permite lanzarlo a mano desde la pestaña Actions.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Si se empujan dos commits seguidos, se cancela el despliegue anterior.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Los tests bloquean el despliegue: si el dominio se rompe, no se publica.
+      - name: Tests
+        run: npm test
+
+      - name: Comprobar tipos
+        run: npx tsc --noEmit -p tsconfig.app.json
+
+      - name: Construir
+        run: npm run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
