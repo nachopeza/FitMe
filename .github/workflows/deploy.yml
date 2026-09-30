@@ -1,10 +1,15 @@
 # Publica la app en GitHub Pages en cada empujón a master.
 #
-# El paso `configure-pages` activa Pages por sí mismo (`enablement: true`), así
-# que no hace falta tocar los ajustes del repositorio.
+# HAY QUE ACTIVAR PAGES UNA VEZ, A MANO:
+#   Settings → Pages → Build and deployment → Source: "GitHub Actions"
 #
-# La app queda en https://nachopeza.github.io/FitMe/ y se puede instalar en el
-# móvil desde el navegador (Compartir → Añadir a pantalla de inicio).
+# No se puede automatizar: crear el sitio de Pages requiere permiso de
+# administración del repositorio, y el GITHUB_TOKEN de los flujos de trabajo no
+# lo tiene. Intentarlo con `configure-pages` y `enablement: true` devuelve
+# "Resource not accessible by integration".
+#
+# Una vez activado, la app queda en https://nachopeza.github.io/FitMe/ y se
+# instala desde el navegador del móvil (Compartir → Añadir a pantalla de inicio).
 name: Publicar en GitHub Pages
 
 on:
@@ -46,11 +51,9 @@ jobs:
       - name: Construir
         run: npm run build
 
-      # `enablement` activa GitHub Pages desde el propio flujo de trabajo, así
-      # que no hay que tocar nada en los ajustes del repositorio.
+      # Falla si Pages no está activado en los ajustes del repositorio; el
+      # encabezado de este archivo explica cómo activarlo.
       - uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
