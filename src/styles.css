@@ -29,12 +29,19 @@
   --warn: #d29922;
   --bad: #f85149;
 
+  /* Cristal de la barra inferior. */
+  --glass-bg: rgba(20, 25, 32, 0.82);
+  --glass-line: rgba(255, 255, 255, 0.09);
+  --glass-sheen: rgba(255, 255, 255, 0.07);
+  --accent-ink: #06121f;
+  --accent-edge: rgba(255, 255, 255, 0.22);
+
   --r-sm: 8px;
   --r: 14px;
   --r-lg: 20px;
 
   --pad: 16px;
-  --nav-h: 64px;
+  --nav-h: 60px;
 
   --ff: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --fm: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
@@ -53,6 +60,11 @@
   --text-faint: #8c959f;
   --accent: #0969da;
   --accent-dim: #cfe4fb;
+  --glass-bg: rgba(250, 251, 252, 0.84);
+  --glass-line: rgba(0, 0, 0, 0.1);
+  --glass-sheen: rgba(255, 255, 255, 0.7);
+  --accent-ink: #ffffff;
+  --accent-edge: rgba(255, 255, 255, 0.35);
   --ok: #1a7f37;
   --warn: #9a6700;
   --bad: #cf222e;
@@ -100,7 +112,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .screen {
   flex: 1;
   padding: calc(env(safe-area-inset-top, 0px) + 12px) var(--pad)
-    calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 28px);
+    calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 36px);
 }
 
 .screen-header {
@@ -113,58 +125,79 @@ input, select, textarea { font: inherit; color: inherit; }
 
 .screen-sub { color: var(--text-dim); font-size: 0.85rem; }
 
-/* Navegación inferior: cinco destinos, alcanzables con el pulgar. */
+/* ─────────────────── Barra inferior: cristal, iconos de línea ───────────────────
+   Barra flotante translúcida con desenfoque del fondo, al estilo de las de iOS
+   actuales: no toca los bordes de la pantalla, el contenido se ve pasar por
+   detrás y los iconos son de trazo. `saturate` es lo que evita que el desenfoque
+   deje el cristal gris y apagado. */
 .nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px));
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: color-mix(in srgb, var(--bg-elev) 92%, transparent);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--line);
+  left: 12px;
+  right: 12px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  height: var(--nav-h);
+  max-width: 536px;
+  margin: 0 auto;
+  z-index: 40;
+
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
-  z-index: 40;
-  max-width: 560px;
-  margin: 0 auto;
+
+  border-radius: 24px;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(30px) saturate(170%);
+  backdrop-filter: blur(30px) saturate(170%);
+  border: 1px solid var(--glass-line);
+  box-shadow:
+    0 10px 30px -6px rgba(0, 0, 0, 0.5),
+    0 1px 0 0 var(--glass-sheen) inset;
+}
+
+/* Sin soporte de desenfoque, el cristal se vuelve opaco: si no, el texto de
+   detrás se leería a través de la barra. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .nav { background: var(--bg-elev); }
 }
 
 .nav-btn {
   background: none;
   border: 0;
-  padding: 6px 0 4px;
+  padding: 7px 0 5px;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 3px;
-  color: var(--text-faint);
-  font-size: 0.65rem;
+  color: var(--text-dim);
+  font-size: 0.63rem;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
+  transition: color 0.18s ease;
 }
+.nav-btn .ico { display: grid; place-items: center; height: 24px; }
 .nav-btn[aria-current='page'] { color: var(--accent); }
-.nav-btn .ico { font-size: 1.2rem; line-height: 1; }
+.nav-btn:active .ico { transform: scale(0.9); }
+.nav-btn .ico { transition: transform 0.15s ease; }
 
-/* Botón central + */
+/* Botón central: el mismo cristal, pero teñido de acento y sobresaliendo. */
 .nav-add {
-  background: var(--accent);
-  color: #06121f;
-  border: 0;
-  width: 52px;
-  height: 52px;
+  justify-self: center;
+  width: 50px;
+  height: 50px;
+  margin-top: -20px;
   border-radius: 50%;
-  font-size: 1.7rem;
-  font-weight: 400;
   display: grid;
   place-items: center;
-  justify-self: center;
-  margin-top: -18px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 1px solid var(--accent-edge);
+  box-shadow:
+    0 6px 16px -6px color-mix(in srgb, var(--accent) 45%, transparent),
+    0 2px 6px rgba(0, 0, 0, 0.35),
+    0 1px 0 0 rgba(255, 255, 255, 0.3) inset;
+  transition: transform 0.14s ease;
 }
-.nav-add:active { transform: scale(0.94); }
+.nav-add:active { transform: scale(0.92); }
 
 /* ───────────────────────────── Tarjetas ───────────────────────────── */
 

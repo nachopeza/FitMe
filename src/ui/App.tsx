@@ -13,6 +13,7 @@ import { MacrosScreen } from './screens/Macros';
 import { Onboarding } from './screens/Onboarding';
 import { ProfileScreen, applyTheme } from './screens/ProfileScreen';
 import { TodayScreen } from './screens/Today';
+import { Icon, type IconName } from './icons';
 import { useUI, type Tab } from './shell';
 
 /**
@@ -43,12 +44,12 @@ function Loading({ children }: { children: ReactNode }) {
   );
 }
 
-const NAV: { tab: Tab; label: string; icon: string }[] = [
-  { tab: 'today', label: 'HOY', icon: '📋' },
-  { tab: 'macros', label: 'MACROS', icon: '📊' },
-  { tab: 'add', label: '', icon: '+' },
-  { tab: 'progress', label: 'PROGRESO', icon: '📈' },
-  { tab: 'profile', label: 'PERFIL', icon: '👤' },
+const NAV: { tab: Tab; label: string; icon: IconName }[] = [
+  { tab: 'today', label: 'Hoy', icon: 'today' },
+  { tab: 'macros', label: 'Macros', icon: 'macros' },
+  { tab: 'add', label: '', icon: 'plus' },
+  { tab: 'progress', label: 'Progreso', icon: 'progress' },
+  { tab: 'profile', label: 'Perfil', icon: 'profile' },
 ];
 
 export function App() {
@@ -91,7 +92,7 @@ export function App() {
           {NAV.map((item) =>
             item.tab === 'add' ? (
               <button key="add" className="nav-add" aria-label="Añadir comida" onClick={() => ui.open({ k: 'addMenu' })}>
-                +
+                <Icon name="plus" size={26} />
               </button>
             ) : (
               <button
@@ -100,7 +101,9 @@ export function App() {
                 aria-current={ui.tab === item.tab ? 'page' : undefined}
                 onClick={() => ui.setTab(item.tab)}
               >
-                <span className="ico" aria-hidden="true">{item.icon}</span>
+                <span className="ico">
+                  <Icon name={item.icon} size={23} active={ui.tab === item.tab} />
+                </span>
                 {item.label}
               </button>
             ),
@@ -114,7 +117,8 @@ export function App() {
         <div
           role="status"
           style={{
-            position: 'fixed', left: 16, right: 16, bottom: 'calc(var(--nav-h) + 20px)',
+            position: 'fixed', left: 16, right: 16,
+            bottom: 'calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 26px)',
             maxWidth: 520, margin: '0 auto', background: 'var(--bg-elev-2)',
             border: '1px solid var(--line-strong)', borderRadius: 'var(--r-sm)',
             padding: '11px 14px', fontSize: '0.85rem', zIndex: 60, textAlign: 'center',

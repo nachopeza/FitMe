@@ -2,10 +2,20 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+/**
+ * `VITE_DISABLE_PWA=1` deja fuera el service worker. Se usa para la copia que se
+ * publica como página compartida: ahí el service worker no tiene nada que
+ * precargar y solo ensuciaría la consola con un 404.
+ */
+const pwa = process.env.VITE_DISABLE_PWA !== '1';
+
 export default defineConfig({
+  // Rutas relativas: así el build funciona igual servido desde la raíz del
+  // dominio que desde una subcarpeta (página compartida, GitHub Pages…).
+  base: './',
   plugins: [
     react(),
-    VitePWA({
+    pwa && VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
@@ -41,7 +51,7 @@ export default defineConfig({
         ],
       },
     }),
-  ],
+  ].filter(Boolean),
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts'],
