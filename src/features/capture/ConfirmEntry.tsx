@@ -6,6 +6,7 @@ import { EstimateNotice, MACRO_META, MacroPills, Sheet, g } from '../../ui/compo
 import { useUI } from '../../ui/shell';
 import { slotForTime, useApp } from '../store';
 import { CONFIDENCE_LABEL, itemsNutrients, makeItem, reviseItem } from '../logging';
+import { Icon } from '../../ui/icons';
 
 /**
  * Pantalla de confirmación común a todas las vías de registro.
@@ -129,8 +130,8 @@ export function ConfirmEntry({
       subtitle={subtitle}
       onClose={onClose}
       footer={
-        <div className="btn-row">
-          <button className="btn ghost" onClick={onClose}>Cancelar</button>
+        <div className="btns">
+          <button className="btn quiet" onClick={onClose}>Cancelar</button>
           <button className="btn primary" disabled={!items.length || saving} onClick={() => void save()}>
             {saving ? <span className="spinner" /> : 'Confirmar'}
           </button>
@@ -140,14 +141,14 @@ export function ConfirmEntry({
       {notice}
 
       {sourceNote && (
-        <div className="card tight" style={{ marginTop: notice ? 12 : 0 }}>
+        <div className="card" style={{ marginTop: notice ? 12 : 0 }}>
           <div className="card-title"><span>Lo que has dicho</span></div>
           <p className="note" style={{ marginBottom: 0, fontStyle: 'italic' }}>«{sourceNote}»</p>
         </div>
       )}
 
       {/* ── Items reconocidos, editables uno a uno ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Alimentos · {items.length}</span></div>
         {items.length === 0 && <p className="note" style={{ marginBottom: 0 }}>Añade al menos un alimento para poder guardar.</p>}
         {items.map((item) => {
@@ -156,16 +157,16 @@ export function ConfirmEntry({
             <div key={item.id} style={{ borderBottom: '1px solid var(--line)', padding: '10px 0' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="row-title">{item.foodName}</div>
-                  <div className="row-sub">
+                  <div className="row-name">{item.foodName}</div>
+                  <div className="row-meta">
                     {item.confidence !== 'exact' && (
-                      <span className="tag warn" style={{ marginRight: 6 }}>≈ {CONFIDENCE_LABEL[item.confidence]}</span>
+                      <span className="tag" style={{ marginRight: 6 }}>≈ {CONFIDENCE_LABEL[item.confidence]}</span>
                     )}
                     {g(item.nutrients.kcal)} kcal · {g(item.nutrients.protein)} g prot
                   </div>
                 </div>
                 <button className="icon-btn" aria-label={`Quitar ${item.foodName}`}
-                  onClick={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}>🗑️</button>
+                  onClick={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}><Icon name="trash" size={17} /></button>
               </div>
 
               <div className="input-row" style={{ marginTop: 8 }}>
@@ -204,14 +205,14 @@ export function ConfirmEntry({
                   aria-pressed={item.confidence === 'rough'}
                   onClick={() => setUnknown(item.id)}
                 >
-                  🤷 No sé
+                  No sé
                 </button>
               </div>
 
               {/* Conversión crudo/cocinado cuando el alimento tiene pareja. */}
               {food?.counterpartId && (
                 <button
-                  className="link-btn"
+                  className="link"
                   style={{ marginTop: 8 }}
                   onClick={() => {
                     const other = app.foodsById.get(food.counterpartId!);
@@ -239,7 +240,7 @@ export function ConfirmEntry({
 
       {/* ── Lo que no se ha reconocido ── */}
       {unmatched.length > 0 && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>No lo he reconocido</span></div>
           <p className="note">
             Esto no lo tengo en la base de alimentos, así que no lo he inventado. Búscalo abajo y añádelo:
@@ -253,17 +254,17 @@ export function ConfirmEntry({
       )}
 
       {/* ── Añadir más ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Añadir alimento</span></div>
         <input className="input" value={query} onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar: arroz, pollo, huevos…" aria-label="Buscar alimento" />
         {results.length > 0 && (
-          <div className="list" style={{ marginTop: 8 }}>
+          <div className="rows" style={{ marginTop: 8 }}>
             {results.map((f) => (
               <button className="row" key={f.id} onClick={() => addFood(f)}>
-                <div className="row-main">
-                  <div className="row-title">{f.name}</div>
-                  <div className="row-sub">
+                <div className="row-body">
+                  <div className="row-name">{f.name}</div>
+                  <div className="row-meta">
                     {g(f.per100g.kcal)} kcal · {g(f.per100g.protein)} g prot por 100 {f.unit}
                   </div>
                 </div>
@@ -280,7 +281,7 @@ export function ConfirmEntry({
       </div>
 
       {/* ── Totales ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Total de la comida</span></div>
         <MacroPills n={totals} />
         <div className="note">
@@ -298,7 +299,7 @@ export function ConfirmEntry({
       </div>
 
       {/* ── Cuándo y cómo se guarda ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Detalles</span></div>
         <div className="field">
           <label>Comida</label>
@@ -320,16 +321,15 @@ export function ConfirmEntry({
             placeholder="Arroz de siempre" />
           <div className="hint">Ponerle nombre te permite repetirla después de un toque.</div>
         </div>
-        <button className="chip" aria-pressed={saveAsMeal} onClick={() => setSaveAsMeal((v) => !v)}>
-          ⭐ Guardar como comida habitual
+        <button className="chip" aria-pressed={saveAsMeal} onClick={() => setSaveAsMeal((v) => !v)}>Guardar como comida habitual
         </button>
       </div>
 
-      <div className="grid-3" style={{ marginBottom: 8 }}>
+      <div className="figures" style={{ marginBottom: 8 }}>
         {(['protein', 'carbs', 'fat'] as const).map((k) => (
-          <div className="stat" key={k}>
-            <div className="stat-label">{MACRO_META[k].icon} {MACRO_META[k].short}</div>
-            <div className="stat-value">{g(totals[k])} g</div>
+          <div className="figure" key={k}>
+            <div className="figure-label">{MACRO_META[k].short}</div>
+            <div className="figure-value">{g(totals[k])} g</div>
           </div>
         ))}
       </div>

@@ -3,7 +3,8 @@ import { useApp } from '../../features/store';
 import { exportAll, importAll, type ExportBundle } from '../../data/db';
 import { estimateMaintenance, profileAge } from '../../domain/nutrition';
 import { GOAL_LABEL, MACRO_KEYS, MEAL_SLOTS, MEAL_SLOT_LABEL, type ActivityLevel, type Goal, type Hunger, type Sex } from '../../domain/types';
-import { Card, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from '../components';
+import { Section, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from '../components';
+import { MacroAnalysis } from '../../features/sheets/MacroAnalysis';
 import { useUI } from '../shell';
 
 const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
@@ -27,7 +28,7 @@ export function ProfileScreen() {
   const p = app.profile;
   const [busy, setBusy] = useState(false);
 
-  if (!p) return <div className="screen"><Card><p className="note">Cargando perfil…</p></Card></div>;
+  if (!p) return <div className="screen"><p className="note">Cargando perfil…</p></div>;
 
   const patch = async (change: Partial<typeof p>) => {
     await app.actions.saveProfile({ ...p, ...change });
@@ -42,10 +43,10 @@ export function ProfileScreen() {
   return (
     <div className="screen">
       <header className="screen-header">
-        <h1>👤 Perfil</h1>
+        <h1>Perfil</h1>
       </header>
 
-      <Card title="Tus datos">
+      <Section title="Tus datos">
         <Field label="Peso de referencia" hint="Se usa solo si aún no hay pesadas suficientes. Con datos, manda la media móvil.">
           <NumberInput value={p.startWeightKg} step={0.1} suffix="kg"
             onChange={(v) => void patch({ startWeightKg: v })} />
@@ -61,9 +62,9 @@ export function ProfileScreen() {
           <Segmented<Sex> value={p.sex} onChange={(v) => void patch({ sex: v })}
             options={[{ value: 'male', label: 'Hombre' }, { value: 'female', label: 'Mujer' }]} />
         </Field>
-      </Card>
+      </Section>
 
-      <Card title="Actividad y entrenamiento">
+      <Section title="Actividad y entrenamiento">
         <Field label="Actividad diaria (sin contar el entrenamiento)">
           <select className="input" value={p.activityLevel} onChange={(e) => void patch({ activityLevel: e.target.value as ActivityLevel })}>
             {Object.entries(ACTIVITY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -87,9 +88,9 @@ export function ProfileScreen() {
           <Segmented value={p.trainingLocation} onChange={(v) => void patch({ trainingLocation: v })}
             options={[{ value: 'home' as const, label: 'Casa' }, { value: 'gym' as const, label: 'Gimnasio' }, { value: 'both' as const, label: 'Ambos' }]} />
         </Field>
-      </Card>
+      </Section>
 
-      <Card title="Objetivo">
+      <Section title="Objetivo">
         <Field label="Qué buscas">
           <select className="input" value={p.goal} onChange={(e) => void patch({ goal: e.target.value as Goal })}>
             {Object.entries(GOAL_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -100,23 +101,23 @@ export function ProfileScreen() {
             {Object.entries(APPETITE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </Field>
-        <div className="note-strong">
+        <div className="panel">
           <b style={{ fontSize: '0.78rem' }}>Mantenimiento estimado: {g(maintenance.maintenance)} kcal/día</b>
           <div style={{ marginTop: 6 }}>
             <WhyButton reasons={maintenance.notes} label="Ver el desglose" />
           </div>
         </div>
-      </Card>
+      </Section>
 
-      <Card title="Objetivos nutricionales" right={<button className="link-btn" onClick={() => ui.open({ k: 'targets' })}>Editar a mano</button>}>
-        <div className="list">
+      <Section title="Objetivos nutricionales" action={<button className="link" onClick={() => ui.open({ k: 'targets' })}>Editar a mano</button>}>
+        <div className="rows">
           {MACRO_KEYS.map((k) => (
             <div className="row" key={k}>
-              <div className="row-main">
-                <div className="row-title" style={{ fontSize: '0.88rem' }}>{MACRO_META[k].icon} {MACRO_META[k].label}</div>
-                <div className="row-sub">Rango {g(app.baseTargets[k].min)}–{g(app.baseTargets[k].max)} {MACRO_META[k].unit}</div>
+              <div className="row-body">
+                <div className="row-name" style={{ fontSize: '0.88rem' }}>{MACRO_META[k].label}</div>
+                <div className="row-meta">Rango {g(app.baseTargets[k].min)}–{g(app.baseTargets[k].max)} {MACRO_META[k].unit}</div>
               </div>
-              <div className="row-side">{g(app.baseTargets[k].target)} {MACRO_META[k].unit}</div>
+              <div className="row-num">{g(app.baseTargets[k].target)} {MACRO_META[k].unit}</div>
             </div>
           ))}
         </div>
@@ -125,9 +126,11 @@ export function ProfileScreen() {
             Incluye un ajuste acumulado de {p.manualKcalOffset > 0 ? '+' : ''}{p.manualKcalOffset} kcal/día a partir de tu evolución real.
           </p>
         )}
-      </Card>
+      </Section>
 
-      <Card title="Horario de comidas">
+      <MacroAnalysis profile={p} />
+
+      <Section title="Horario de comidas">
         {MEAL_SLOTS.filter((s) => s !== 'extra').map((slot) => (
           <Field key={slot} label={MEAL_SLOT_LABEL[slot]}>
             <input className="input" type="time" value={p.mealTimes[slot] ?? ''}
@@ -138,9 +141,9 @@ export function ProfileScreen() {
           Sirve para clasificar automáticamente lo que registras y para no forzarte un desayuno enorme si
           desayunas a las 11:00.
         </p>
-      </Card>
+      </Section>
 
-      <Card title="Restricciones y preferencias">
+      <Section title="Restricciones y preferencias">
         <Field label="Restricciones" hint="Separadas por comas. Por ejemplo: sin lactosa, sin cerdo.">
           <input className="input" value={p.restrictions.join(', ')} placeholder="ninguna"
             onChange={(e) => void patch({ restrictions: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} />
@@ -155,40 +158,40 @@ export function ProfileScreen() {
             {p.dislikes.map((id) => (
               <button key={id} className="chip" aria-pressed
                 onClick={() => void patch({ dislikes: p.dislikes.filter((d) => d !== id) })}>
-                {app.foodsById.get(id)?.name ?? id} ✕
+                {app.foodsById.get(id)?.name ?? id}
               </button>
             ))}
           </div>
         </Field>
-      </Card>
+      </Section>
 
-      <Card title="Herramientas">
-        <div className="btn-row">
-          <button className="btn" onClick={() => ui.open({ k: 'calculator' })}>🧮 Calculadora</button>
-          <button className="btn" onClick={() => ui.open({ k: 'compare' })}>⚖️ Comparador</button>
+      <Section title="Herramientas">
+        <div className="btns">
+          <button className="btn" onClick={() => ui.open({ k: 'calculator' })}>Calculadora</button>
+          <button className="btn" onClick={() => ui.open({ k: 'compare' })}>Comparador</button>
         </div>
-        <div className="btn-row">
-          <button className="btn" onClick={() => ui.open({ k: 'recipe' })}>📖 Recetas</button>
-          <button className="btn" onClick={() => ui.open({ k: 'shopping' })}>🛒 Lista de la compra</button>
+        <div className="btns">
+          <button className="btn" onClick={() => ui.open({ k: 'recipe' })}>Recetas</button>
+          <button className="btn" onClick={() => ui.open({ k: 'shopping' })}>Lista de la compra</button>
         </div>
-        <div className="btn-row one">
-          <button className="btn" onClick={() => ui.open({ k: 'ai' })}>🤖 Análisis de fotos con IA</button>
+        <div className="btns one">
+          <button className="btn" onClick={() => ui.open({ k: 'ai' })}>Análisis de fotos con IA</button>
         </div>
-      </Card>
+      </Section>
 
-      <Card title="Apariencia">
+      <Section title="Apariencia">
         <Segmented value={app.settings.theme} onChange={(v) => { void app.actions.setSettings({ theme: v }); applyTheme(v); }}
           options={[{ value: 'dark' as const, label: 'Oscuro' }, { value: 'light' as const, label: 'Claro' }, { value: 'system' as const, label: 'Sistema' }]} />
-      </Card>
+      </Section>
 
       {/* ── Privacidad ── */}
-      <Card title="Tus datos y privacidad">
+      <Section title="Tus datos y privacidad">
         <p className="note">
           Todo se guarda solo en este dispositivo. No hay cuenta, no hay servidor y nada se usa para
           publicidad. Las únicas conexiones externas son la consulta de códigos de barras y, si la activas tú,
           el análisis de fotos con IA.
         </p>
-        <div className="btn-row">
+        <div className="btns">
           <button className="btn sm" disabled={busy} onClick={async () => {
             setBusy(true);
             try {
@@ -202,9 +205,8 @@ export function ProfileScreen() {
               URL.revokeObjectURL(url);
               ui.notify('Copia exportada. La clave de la IA nunca se incluye.');
             } finally { setBusy(false); }
-          }}>⬇️ Exportar</button>
-          <label className="btn sm" style={{ cursor: 'pointer' }}>
-            ⬆️ Importar
+          }}>Exportar</button>
+          <label className="btn sm" style={{ cursor: 'pointer' }}>Importar
             <input type="file" accept="application/json" className="sr-only" onChange={async (e) => {
               const file = e.target.files?.[0];
               if (!file) return;
@@ -219,18 +221,18 @@ export function ProfileScreen() {
             }} />
           </label>
         </div>
-        <div className="btn-row one">
-          <button className="btn danger sm" onClick={() => ui.open({ k: 'privacy' })}>🗑️ Borrar todos mis datos</button>
+        <div className="btns one">
+          <button className="btn danger sm" onClick={() => ui.open({ k: 'privacy' })}>Borrar todos mis datos</button>
         </div>
-      </Card>
+      </Section>
 
-      <Card title="Aviso">
+      <Section title="Aviso">
         <p className="note" style={{ marginBottom: 0 }}>
           FitMe estima; no mide. Una foto de un plato no permite conocer los gramos exactos, y las calorías de
           un reloj son una aproximación. Esta app no diagnostica nada: si tienes molestias digestivas
           persistentes o algo que te preocupe, consúltalo con un profesional sanitario.
         </p>
-      </Card>
+      </Section>
     </div>
   );
 }

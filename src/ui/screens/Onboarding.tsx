@@ -7,7 +7,8 @@ import {
   type ActivityLevel, type Goal, type Hunger, type Profile, type Sex,
 } from '../../domain/types';
 import { useApp } from '../../features/store';
-import { Card, EstimateNotice, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from '../components';
+import { Section, EstimateNotice, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from '../components';
+import { Icon } from '../icons';
 
 /**
  * Onboarding. Recoge los 16 datos que pide el usuario, agrupados en pasos
@@ -94,12 +95,12 @@ export function Onboarding() {
         </div>
       </header>
 
-      <div className="bar" style={{ marginBottom: 16 }}>
-        <span className="bar-fill" style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: 'var(--accent)' }} />
+      <div className="track" style={{ marginBottom: 16 }}>
+        <span className="track-fill" style={{ width: `${((step + 1) / STEPS.length) * 100}%`, background: 'var(--accent)' }} />
       </div>
 
       {step === 0 && (
-        <Card title="Tus datos básicos">
+        <Section title="Tus datos básicos">
           <Field label="Peso actual" hint="Aproximado está bien. Lo iremos afinando con tus pesadas.">
             <NumberInput value={p.startWeightKg} step={0.1} suffix="kg" onChange={(v) => set('startWeightKg', v)} />
           </Field>
@@ -114,21 +115,21 @@ export function Onboarding() {
             <Segmented<Sex> value={p.sex} onChange={(v) => set('sex', v)}
               options={[{ value: 'male', label: 'Hombre' }, { value: 'female', label: 'Mujer' }]} />
           </Field>
-        </Card>
+        </Section>
       )}
 
       {step === 1 && (
-        <Card title="Tu actividad diaria">
+        <Section title="Tu actividad diaria">
           <Field label="Sin contar el entrenamiento, tu día es…">
-            <div className="list">
+            <div className="rows">
               {ACTIVITY.map((a) => (
                 <button className="row" key={a.value} onClick={() => set('activityLevel', a.value)}
                   style={{ borderLeft: p.activityLevel === a.value ? '3px solid var(--accent)' : '3px solid transparent', paddingLeft: 8 }}>
-                  <div className="row-main">
-                    <div className="row-title">{a.label}</div>
-                    <div className="row-sub">{a.sub}</div>
+                  <div className="row-body">
+                    <div className="row-name">{a.label}</div>
+                    <div className="row-meta">{a.sub}</div>
                   </div>
-                  {p.activityLevel === a.value && <span aria-hidden="true">✓</span>}
+                  {p.activityLevel === a.value && <Icon name="check" size={16} />}
                 </button>
               ))}
             </div>
@@ -136,11 +137,11 @@ export function Onboarding() {
           <Field label="Pasos aproximados al día" hint="Si no lo sabes, 8.000 es una cifra típica. Se puede cambiar después.">
             <NumberInput value={p.typicalSteps} step={500} suffix="pasos" onChange={(v) => set('typicalSteps', v)} />
           </Field>
-        </Card>
+        </Section>
       )}
 
       {step === 2 && (
-        <Card title="Tu entrenamiento">
+        <Section title="Tu entrenamiento">
           <Field label="Días de entrenamiento por semana">
             <NumberInput value={p.trainingDaysPerWeek} min={0} max={7} suffix="días"
               onChange={(v) => set('trainingDaysPerWeek', v)} />
@@ -157,42 +158,42 @@ export function Onboarding() {
             hint="Si entrenas tarde, la app prioriza cenas rápidas y poco voluminosas en lugar de platos grandes.">
             <input className="input" type="time" value={p.trainingTime} onChange={(e) => set('trainingTime', e.target.value)} />
           </Field>
-        </Card>
+        </Section>
       )}
 
       {step === 3 && (
-        <Card title="Tu objetivo">
+        <Section title="Tu objetivo">
           <Field label="Qué buscas ahora mismo">
-            <div className="list">
+            <div className="rows">
               {(Object.keys(GOAL_LABEL) as Goal[]).map((goal) => (
                 <button className="row" key={goal} onClick={() => set('goal', goal)}
                   style={{ borderLeft: p.goal === goal ? '3px solid var(--accent)' : '3px solid transparent', paddingLeft: 8 }}>
-                  <div className="row-main">
-                    <div className="row-title">{GOAL_LABEL[goal]}</div>
-                    <div className="row-sub">{GOAL_HINT[goal]}</div>
+                  <div className="row-body">
+                    <div className="row-name">{GOAL_LABEL[goal]}</div>
+                    <div className="row-meta">{GOAL_HINT[goal]}</div>
                   </div>
-                  {p.goal === goal && <span aria-hidden="true">✓</span>}
+                  {p.goal === goal && <Icon name="check" size={16} />}
                 </button>
               ))}
             </div>
           </Field>
           <Field label="Tu apetito habitual"
             hint="Determina si las propuestas van hacia comidas grandes o hacia comidas pequeñas y densas.">
-            <div className="list">
+            <div className="rows">
               {APPETITE.map((a) => (
                 <button className="row" key={a.value} onClick={() => set('appetite', a.value)}
                   style={{ borderLeft: p.appetite === a.value ? '3px solid var(--accent)' : '3px solid transparent', paddingLeft: 8 }}>
-                  <div className="row-main"><div className="row-title" style={{ fontSize: '0.88rem' }}>{a.label}</div></div>
-                  {p.appetite === a.value && <span aria-hidden="true">✓</span>}
+                  <div className="row-body"><div className="row-name" style={{ fontSize: '0.88rem' }}>{a.label}</div></div>
+                  {p.appetite === a.value && <Icon name="check" size={16} />}
                 </button>
               ))}
             </div>
           </Field>
-        </Card>
+        </Section>
       )}
 
       {step === 4 && (
-        <Card title="Tus horarios de comida">
+        <Section title="Tus horarios de comida">
           <p className="note" style={{ marginBottom: 12 }}>
             No hay horarios correctos. Si desayunas a las 11:00, la app se adapta a eso y no te va a forzar un
             desayuno enorme.
@@ -203,12 +204,12 @@ export function Onboarding() {
                 onChange={(e) => set('mealTimes', { ...p.mealTimes, [slot]: e.target.value })} />
             </Field>
           ))}
-        </Card>
+        </Section>
       )}
 
       {step === 5 && (
         <>
-          <Card title="Lo que comes habitualmente">
+          <Section title="Lo que comes habitualmente">
             <p className="note" style={{ marginBottom: 10 }}>
               Marca lo que tienes en casa o comes a menudo. Las propuestas de comida saldrán de aquí, así que
               cuanto más fiel sea, más útiles serán.
@@ -238,8 +239,8 @@ export function Onboarding() {
             <div className="note" style={{ marginTop: 10 }}>
               {p.pantryFoodIds.length} alimentos marcados.
             </div>
-          </Card>
-          <Card title="Restricciones y presupuesto">
+          </Section>
+          <Section title="Restricciones y presupuesto">
             <Field label="Restricciones alimentarias" hint="Separadas por comas. Déjalo vacío si no tienes ninguna.">
               <input className="input" value={p.restrictions.join(', ')} placeholder="sin lactosa, sin cerdo…"
                 onChange={(e) => set('restrictions', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} />
@@ -248,21 +249,21 @@ export function Onboarding() {
               <Segmented value={p.budget} onChange={(v) => set('budget', v)}
                 options={[{ value: 'low' as const, label: 'Ajustado' }, { value: 'medium' as const, label: 'Normal' }, { value: 'high' as const, label: 'Holgado' }]} />
             </Field>
-          </Card>
+          </Section>
         </>
       )}
 
       {step === 6 && (
         <>
-          <Card title="Estimación inicial">
-            <div className="list">
+          <Section title="Estimación inicial">
+            <div className="rows">
               {MACRO_KEYS.map((k) => (
                 <div className="row" key={k}>
-                  <div className="row-main">
-                    <div className="row-title">{MACRO_META[k].icon} {MACRO_META[k].label}</div>
-                    <div className="row-sub">Rango {g(estimate[k].min)}–{g(estimate[k].max)} {MACRO_META[k].unit}</div>
+                  <div className="row-body">
+                    <div className="row-name">{MACRO_META[k].label}</div>
+                    <div className="row-meta">Rango {g(estimate[k].min)}–{g(estimate[k].max)} {MACRO_META[k].unit}</div>
                   </div>
-                  <div className="row-side" style={{ fontSize: '1rem', fontWeight: 700 }}>
+                  <div className="row-num" style={{ fontSize: '1rem', fontWeight: 700 }}>
                     {g(estimate[k].target)} <span style={{ fontSize: '0.72rem', color: 'var(--text-faint)' }}>{MACRO_META[k].unit}</span>
                   </div>
                 </div>
@@ -275,18 +276,18 @@ export function Onboarding() {
                 golpe.
               </EstimateNotice>
             </div>
-          </Card>
-          <Card title="De dónde sale">
-            <div className="grid-2">
-              <div className="stat">
-                <div className="stat-label">Mantenimiento</div>
-                <div className="stat-value">{g(maintenance.maintenance)}</div>
-                <div className="stat-sub">kcal/día estimadas</div>
+          </Section>
+          <Section title="De dónde sale">
+            <div className="figures two">
+              <div className="figure">
+                <div className="figure-label">Mantenimiento</div>
+                <div className="figure-value">{g(maintenance.maintenance)}</div>
+                <div className="figure-sub">kcal/día estimadas</div>
               </div>
-              <div className="stat">
-                <div className="stat-label">Objetivo</div>
-                <div className="stat-value">{g(estimate.kcal.target)}</div>
-                <div className="stat-sub">
+              <div className="figure">
+                <div className="figure-label">Objetivo</div>
+                <div className="figure-value">{g(estimate.kcal.target)}</div>
+                <div className="figure-sub">
                   {estimate.kcal.target > maintenance.maintenance ? '+' : ''}
                   {g(estimate.kcal.target - maintenance.maintenance)} kcal
                 </div>
@@ -295,12 +296,12 @@ export function Onboarding() {
             <div style={{ marginTop: 10 }}>
               <WhyButton reasons={estimate.rationale} label="Ver el cálculo completo" />
             </div>
-          </Card>
+          </Section>
         </>
       )}
 
-      <div className="btn-row" style={{ marginTop: 6 }}>
-        <button className="btn ghost" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
+      <div className="btns" style={{ marginTop: 6 }}>
+        <button className="btn quiet" disabled={step === 0} onClick={() => setStep((s) => Math.max(0, s - 1))}>
           Atrás
         </button>
         {step < STEPS.length - 1 ? (

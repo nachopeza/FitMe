@@ -1,8 +1,10 @@
 import Dexie, { type EntityTable } from 'dexie';
+import { EXERCISES } from './exercises';
 import { SEED_FOODS, SEED_VERSION } from './foods';
 import { computeTargets } from '../domain/nutrition';
 import type {
-  AppSettings, DayLog, Food, IsoDate, MealEntry, Profile, Recipe, SavedMeal, WeightEntry,
+  AppSettings, DayLog, Exercise, Food, IsoDate, MealEntry, Profile, Recipe, Routine, SavedMeal,
+  WeightEntry, Workout,
 } from '../domain/types';
 
 /**
@@ -28,6 +30,9 @@ export class FitMeDB extends Dexie {
   profile!: EntityTable<Profile, 'id'>;
   settings!: EntityTable<AppSettings, 'id'>;
   meta!: EntityTable<MetaRow, 'key'>;
+  workouts!: EntityTable<Workout, 'id'>;
+  routines!: EntityTable<Routine, 'id'>;
+  exercises!: EntityTable<Exercise, 'id'>;
 
   constructor() {
     super('fitme');
@@ -41,6 +46,14 @@ export class FitMeDB extends Dexie {
       profile: 'id',
       settings: 'id',
       meta: 'key',
+    });
+
+    // Versión 2: el registro de entrenamiento con series, rutinas y biblioteca
+    // de ejercicios. Dexie conserva las tablas de la versión 1 tal cual.
+    this.version(2).stores({
+      workouts: 'id, date, startedAt, finishedAt',
+      routines: 'id, name, useCount',
+      exercises: 'id, name, muscle, equipment, custom',
     });
   }
 }
@@ -57,11 +70,49 @@ export async function seedIfNeeded(): Promise<void> {
   const row = await db.meta.get('seedVersion');
   const current = typeof row?.value === 'number' ? row.value : 0;
   if (current >= SEED_VERSION) return;
-  await db.transaction('rw', db.foods, db.meta, async () => {
+  await db.transaction('rw', db.foods, db.exercises, db.meta, async () => {
     // bulkPut sobrescribe los del seed y deja intactos los personalizados.
     await db.foods.bulkPut(SEED_FOODS);
+    await db.exercises.bulkPut(EXERCISES);
     await db.meta.put({ key: 'seedVersion', value: SEED_VERSION });
   });
+}
+
+// ───────────────────────────── Entrenamiento ─────────────────────────────
+
+export async function allExercises(): Promise<Exercise[]> {
+  return db.exercises.toArray();
+}
+
+export async function upsertExercise(e: Exercise): Promise<void> {
+  await db.exercises.put(e);
+}
+
+export async function upsertWorkout(w: Workout): Promise<void> {
+  await db.workouts.put(w);
+}
+
+export async function deleteWorkout(id: string): Promise<void> {
+  await db.workouts.delete(id);
+}
+
+/** La sesión abierta, si la hay. Solo puede haber una a la vez. */
+export async function activeWorkout(): Promise<Workout | undefined> {
+  const open = await db.workouts.filter((w) => !w.finishedAt).toArray();
+  return open.sort((a, b) => b.startedAt - a.startedAt)[0];
+}
+
+export async function upsertRoutine(r: Routine): Promise<void> {
+  await db.routines.put(r);
+}
+
+export async function deleteRoutine(id: string): Promise<void> {
+  await db.routines.delete(id);
+}
+
+export async function markRoutineUsed(id: string): Promise<void> {
+  const r = await db.routines.get(id);
+  if (r) await db.routines.put({ ...r, useCount: r.useCount + 1, lastUsedAt: Date.now() });
 }
 
 // ───────────────────────────── Perfil ─────────────────────────────
@@ -120,7 +171,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   aiProvider: 'none',
   aiModel: 'claude-sonnet-5-5',
   showSecondaryNutrients: false,
-  theme: 'dark',
+  // Claro por defecto: es lo que se pidió. Quien prefiera oscuro lo cambia en
+  // el perfil, y 'system' sigue el ajuste del teléfono.
+  theme: 'light',
 };
 
 export async function getSettings(): Promise<AppSettings> {
@@ -231,6 +284,10 @@ export interface ExportBundle {
   savedMeals: SavedMeal[];
   /** Solo los alimentos creados por el usuario: el seed se regenera solo. */
   customFoods: Food[];
+  workouts?: Workout[];
+  routines?: Routine[];
+  /** Solo los ejercicios creados por el usuario. */
+  customExercises?: Exercise[];
 }
 
 /**
@@ -240,16 +297,20 @@ export interface ExportBundle {
  * sentido que viaje dentro de una copia de seguridad.
  */
 export async function exportAll(): Promise<ExportBundle> {
-  const [profile, settings, entries, days, weights, recipes, savedMeals, foods] = await Promise.all([
-    getProfile(),
-    getSettings(),
-    db.entries.toArray(),
-    db.days.toArray(),
-    allWeights(),
-    db.recipes.toArray(),
-    db.savedMeals.toArray(),
-    db.foods.toArray(),
-  ]);
+  const [profile, settings, entries, days, weights, recipes, savedMeals, foods, workouts, routines, exercises] =
+    await Promise.all([
+      getProfile(),
+      getSettings(),
+      db.entries.toArray(),
+      db.days.toArray(),
+      allWeights(),
+      db.recipes.toArray(),
+      db.savedMeals.toArray(),
+      db.foods.toArray(),
+      db.workouts.toArray(),
+      db.routines.toArray(),
+      db.exercises.toArray(),
+    ]);
   const { aiApiKey: _omitted, ...safeSettings } = settings;
   return {
     app: 'fitme',
@@ -263,6 +324,9 @@ export async function exportAll(): Promise<ExportBundle> {
     recipes,
     savedMeals,
     customFoods: foods.filter((f) => f.custom),
+    workouts,
+    routines,
+    customExercises: exercises.filter((e) => e.custom),
   };
 }
 
@@ -270,7 +334,8 @@ export async function importAll(bundle: ExportBundle, mode: 'merge' | 'replace')
   if (bundle.app !== 'fitme') throw new Error('Este archivo no es una copia de seguridad de FitMe.');
   await db.transaction(
     'rw',
-    [db.profile, db.entries, db.days, db.weights, db.recipes, db.savedMeals, db.foods, db.settings],
+    [db.profile, db.entries, db.days, db.weights, db.recipes, db.savedMeals, db.foods, db.settings,
+      db.workouts, db.routines, db.exercises],
     async () => {
       if (mode === 'replace') {
         await Promise.all([
@@ -280,6 +345,8 @@ export async function importAll(bundle: ExportBundle, mode: 'merge' | 'replace')
           db.recipes.clear(),
           db.savedMeals.clear(),
           db.foods.filter((f) => !!f.custom).delete(),
+          db.workouts.clear(),
+          db.routines.clear(),
         ]);
       }
       if (bundle.profile) await db.profile.put(bundle.profile);
@@ -289,6 +356,9 @@ export async function importAll(bundle: ExportBundle, mode: 'merge' | 'replace')
       if (bundle.recipes?.length) await db.recipes.bulkPut(bundle.recipes);
       if (bundle.savedMeals?.length) await db.savedMeals.bulkPut(bundle.savedMeals);
       if (bundle.customFoods?.length) await db.foods.bulkPut(bundle.customFoods);
+      if (bundle.workouts?.length) await db.workouts.bulkPut(bundle.workouts);
+      if (bundle.routines?.length) await db.routines.bulkPut(bundle.routines);
+      if (bundle.customExercises?.length) await db.exercises.bulkPut(bundle.customExercises);
     },
   );
 }

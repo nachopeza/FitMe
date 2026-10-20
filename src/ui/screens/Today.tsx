@@ -1,32 +1,43 @@
 import { useMemo } from 'react';
-import { useApp } from '../../features/store';
-import { entryNutrients, shareOfDay } from '../../features/logging';
-import { addDays, formatDayLabel, timeToMinutes, toIsoDate } from '../../domain/dates';
-import { DAY_TYPE_LABEL, MEAL_SLOTS, MEAL_SLOT_LABEL, type Hunger, type Digestion, type MealEntry, type MealSlot } from '../../domain/types';
+import { addDays, formatDayLabel, nowTime, toIsoDate } from '../../domain/dates';
+import { describeSession, sessionKcal } from '../../domain/training';
 import { proteinDistribution } from '../../domain/trends';
-import {
-  TRAINING_INTENSITY_LABEL, describeSession, normalizeSession, sessionKcal,
-} from '../../domain/training';
-import { Card, KcalRing, MACRO_META, MacroBar, MacroPills, WhyButton, g } from '../components';
+import { MEAL_SLOTS, MEAL_SLOT_LABEL, type MealEntry, type MealSlot } from '../../domain/types';
+import { entryNutrients } from '../../features/logging';
+import { quickAddItems, slotFromHour } from '../../features/quickAdd';
+import { useApp } from '../../features/store';
+import { Figure, MacroBar, Section, g } from '../components';
+import { Icon } from '../icons';
 import { useUI } from '../shell';
 
-const HUNGER_LABEL: Record<Hunger, string> = {
-  high: '😋 Mucha',
-  normal: '🙂 Normal',
-  low: '😐 Poca',
-  veryLow: '🤢 Muy poco apetito',
-};
-
-const DIGESTION_LABEL: Record<Digestion, string> = {
-  good: '🟢 Bien',
-  bloated: '🟡 Hinchado',
-  bad: '🔴 Muy incómodo',
-};
-
+/**
+ * Pantalla de hoy.
+ *
+ * El protagonista es lo que FALTA por comer, dicho en una frase, porque el
+ * problema de su dueño no es pasarse: es quedarse corto. Debajo, lo que come de
+ * verdad a un toque de distancia. Todo lo demás baja de nivel.
+ */
 export function TodayScreen() {
   const app = useApp();
   const ui = useUI();
-  const { entries, targets, consumed, remaining, day, dayType, profile } = app;
+  const { entries, targets, consumed, remaining, day, profile } = app;
+
+  const slot: MealSlot = slotFromHour(nowTime());
+
+  const quick = useMemo(
+    () =>
+      quickAddItems({
+        savedMeals: app.savedMeals,
+        macrosOf: (meal) =>
+          meal.items.reduce(
+            (a, i) => ({ kcal: a.kcal + i.nutrients.kcal, protein: a.protein + i.nutrients.protein }),
+            { kcal: 0, protein: 0 },
+          ),
+        slot,
+        limit: 6,
+      }),
+    [app.savedMeals, slot],
+  );
 
   const bySlot = useMemo(() => {
     const map = new Map<MealSlot, MealEntry[]>();
@@ -43,189 +54,157 @@ export function TodayScreen() {
     [entries, targets.protein.target],
   );
 
-  const trained = !!day?.training;
-  const hour = timeToMinutes(new Date().toTimeString().slice(0, 5));
-  const isEvening = hour >= 19 * 60;
+  const kcalLeft = Math.max(0, Math.round(remaining.kcal));
+  const proteinLeft = Math.max(0, Math.round(remaining.protein));
+  const done = kcalLeft <= 60 && proteinLeft <= 5;
+  const fuelPct = Math.min(100, (consumed.kcal / Math.max(1, targets.kcal.target)) * 100);
+
+  const addQuick = async (item: (typeof quick)[number]) => {
+    if (item.kind === 'composition') {
+      ui.open({ k: 'composition', id: item.id });
+      return;
+    }
+    const entryId = await app.actions.logSavedMeal(item.id);
+    if (entryId) {
+      ui.notify(`${item.name} · ${g(item.kcal)} kcal`, () => app.actions.deleteEntry(entryId));
+    }
+  };
 
   return (
     <div className="screen">
-      <header className="screen-header">
-        <div>
-          <h1>{formatDayLabel(app.date)}</h1>
-          <div className="screen-sub">{DAY_TYPE_LABEL[dayType]}</div>
+      <header className="head">
+        <div style={{ minWidth: 0 }}>
+          <div className="head-date">{formatDayLabel(app.date)}</div>
+          <div className="head-note">
+            {day?.training ? describeSession(day.training) : 'Sin entrenamiento registrado'}
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          <button className="icon-btn" aria-label="Día anterior" onClick={() => app.setDate(addDays(app.date, -1))}>‹</button>
-          {!app.isToday && (
-            <button className="btn sm auto ghost" onClick={() => app.setDate(toIsoDate())}>Hoy</button>
-          )}
-          <button
-            className="icon-btn"
-            aria-label="Día siguiente"
-            disabled={app.date >= toIsoDate()}
-            onClick={() => app.setDate(addDays(app.date, 1))}
-          >›</button>
+        <div style={{ display: 'flex', gap: 2, flex: '0 0 auto' }}>
+          <button className="icon-btn" aria-label="Día anterior" onClick={() => app.setDate(addDays(app.date, -1))}>
+            <span style={{ transform: 'rotate(180deg)', display: 'grid' }}><Icon name="chevron" size={18} /></span>
+          </button>
+          {!app.isToday ? (
+            <button className="btn sm auto quiet" onClick={() => app.setDate(toIsoDate())}>Hoy</button>
+          ) : null}
+          <button className="icon-btn" aria-label="Día siguiente" disabled={app.date >= toIsoDate()}
+            onClick={() => app.setDate(addDays(app.date, 1))}>
+            <Icon name="chevron" size={18} />
+          </button>
         </div>
       </header>
 
-      {/* ── Estado energético del día ── */}
-      <Card>
-        <div className="ring-wrap">
-          <KcalRing value={consumed.kcal} range={targets.kcal} />
-          <div className="ring-side">
-            <MacroBar macro="protein" value={consumed.protein} range={targets.protein} showRange={false} />
-            <MacroBar macro="carbs" value={consumed.carbs} range={targets.carbs} showRange={false} />
-            <MacroBar macro="fat" value={consumed.fat} range={targets.fat} showRange={false} />
-            <MacroBar macro="fiber" value={consumed.fiber} range={targets.fiber} showRange={false} />
-          </div>
-        </div>
-        {dayType !== 'rest' || trained ? (
-          <div style={{ marginTop: 10 }}>
-            <WhyButton reasons={targets.rationale.slice(0, 3)} label="¿De dónde salen estos objetivos?" />
-          </div>
-        ) : null}
-      </Card>
+      {/* ── El hueco: lo único grande de la pantalla ── */}
+      <div className="gap">
+        {done ? (
+          <>
+            <div className="gap-label">Hoy ya has comido lo que necesitabas</div>
+            <div className="gap-done">{g(consumed.kcal)} kcal · {g(consumed.protein)} g de proteína</div>
+          </>
+        ) : (
+          <>
+            <div className="gap-label">Te falta por comer</div>
+            <span className="gap-figure">
+              {g(kcalLeft)}<span className="gap-unit">kcal</span>
+            </span>
+            {proteinLeft > 0 && (
+              <div className="gap-second">
+                y <b>{g(proteinLeft)} g</b> de proteína
+              </div>
+            )}
+          </>
+        )}
 
-      {/* ── Contexto del día ── */}
-      <Card title="Contexto de hoy" right={<button className="link-btn" onClick={() => ui.open({ k: 'dayState' })}>Editar</button>}>
-        <div className="grid-2">
-          <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'training' })}>
-            <div className="stat-label">🏋️ Entrenamiento</div>
-            <div className="stat-value stat-text">
-              {day?.training ? describeSession(day.training) : 'Sin registrar'}
-            </div>
-            {day?.training && (
-              <div className="stat-sub">
-                {day.training.minutes} min · {TRAINING_INTENSITY_LABEL[normalizeSession(day.training).intensity].toLowerCase()}
-                {' · ~'}{g(sessionKcal(app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training))} kcal
-              </div>
-            )}
-          </button>
-          <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
-            <div className="stat-label">🚶 Pasos</div>
-            <div className="stat-value">{day?.steps != null ? g(day.steps) : '—'}</div>
-            {day?.steps != null && profile && (
-              <div className="stat-sub">
-                {day.steps >= profile.typicalSteps ? 'Por encima de tu media' : 'Por debajo de tu media'}
-              </div>
-            )}
-          </button>
-          <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
-            <div className="stat-label">😋 Hambre</div>
-            <div className="stat-value stat-text">
-              {day?.hunger ? HUNGER_LABEL[day.hunger] : 'Sin registrar'}
-            </div>
-          </button>
-          <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
-            <div className="stat-label">🙂 Digestión</div>
-            <div className="stat-value stat-text">
-              {day?.digestion ? DIGESTION_LABEL[day.digestion] : 'Sin registrar'}
-            </div>
-          </button>
+        <div className="fuel">
+          <span className="fuel-fill" style={{ width: `${fuelPct}%` }} />
         </div>
-        {day?.deviceKcal != null && (
-          <p className="note" style={{ marginTop: 10, marginBottom: 0 }}>
-            Tu reloj marca {g(day.deviceKcal)} kcal. Las calorías estimadas por dispositivos tienen bastante
-            incertidumbre: las usamos como una señal más, no como una medición exacta, y no se suman
-            automáticamente a tu objetivo.
+        <div className="fuel-foot">
+          <span>{g(consumed.kcal)} de {g(targets.kcal.target)} kcal</span>
+          <span>{Math.round(fuelPct)}%</span>
+        </div>
+      </div>
+
+      {/* ── Añadir de un toque: la razón de ser de esta pantalla ── */}
+      <Section
+        title="Añadir"
+        action={
+          <button className="link" onClick={() => ui.open({ k: 'addMenu' })}>Otra cosa</button>
+        }
+      >
+        <div className="quick">
+          {quick.map((item) => (
+            <button className="quick-tile" key={item.key} onClick={() => void addQuick(item)}>
+              <span style={{ color: 'var(--accent)', display: 'grid' }}>
+                <Icon name={item.icon} size={19} />
+              </span>
+              <span className="quick-name">{item.name}</span>
+              <span className="quick-macros">
+                {item.instant
+                  ? `${g(item.kcal)} kcal · ${g(item.protein)} g prot`
+                  : item.note ?? 'Elegir y añadir'}
+              </span>
+            </button>
+          ))}
+        </div>
+        {app.savedMeals.length === 0 && (
+          <p className="note tight" style={{ marginTop: 12 }}>
+            Según vayas registrando, aquí aparecerá lo que comes de verdad y bastará un toque. Empieza por tu
+            café: se queda guardado tal y como lo tomas.
           </p>
         )}
-      </Card>
+      </Section>
 
-      {/* ── Te queda hoy ── */}
-      <Card title="Te queda hoy">
-        <div className="grid-3">
-          {(['kcal', 'protein', 'carbs'] as const).map((k) => (
-            <div className="stat" key={k}>
-              <div className="stat-label">{MACRO_META[k].icon} {MACRO_META[k].short}</div>
-              <div className="stat-value" style={{ color: remaining[k] < 0 ? 'var(--warn)' : undefined }}>
-                {remaining[k] >= 0 ? '' : '+'}{g(Math.abs(remaining[k]))}
-              </div>
-              <div className="stat-sub">{remaining[k] >= 0 ? 'por tomar' : 'por encima'}</div>
-            </div>
-          ))}
-          {(['fat', 'fiber'] as const).map((k) => (
-            <div className="stat" key={k}>
-              <div className="stat-label">{MACRO_META[k].icon} {MACRO_META[k].short}</div>
-              <div className="stat-value" style={{ color: remaining[k] < 0 ? 'var(--warn)' : undefined }}>
-                {remaining[k] >= 0 ? '' : '+'}{g(Math.abs(remaining[k]))}
-              </div>
-              <div className="stat-sub">{remaining[k] >= 0 ? 'por tomar' : 'por encima'}</div>
-            </div>
-          ))}
-          <button className="stat" style={{ textAlign: 'left', borderColor: 'var(--accent)' }} onClick={() => ui.open({ k: 'suggest', mode: 'normal', title: 'Ajustar el día' })}>
-            <div className="stat-label">⚙️ Ajustar</div>
-            <div className="stat-sub" style={{ marginTop: 4 }}>Cómo cerrar el día dentro de tus rangos</div>
+      {/* ── Qué comer, cuando no sabe qué ponerse ── */}
+      <Section title="Si no sabes qué comer">
+        <div className="btns">
+          <button className="btn primary" onClick={() => ui.open({ k: 'suggest', mode: 'normal' })}>
+            Dime qué comer
+          </button>
+          <button className="btn" onClick={() => ui.open({ k: 'suggest', mode: 'quick', title: 'Cena rápida' })}>
+            Algo rápido
           </button>
         </div>
-      </Card>
+      </Section>
 
-      {/* ── Acciones principales ── */}
-      <div className="btn-row">
-        <button className="btn primary" onClick={() => ui.open({ k: 'suggest', mode: 'normal' })}>
-          🍽️ ¿Qué como ahora?
-        </button>
-        <button className="btn" onClick={() => ui.open({ k: 'suggest', mode: 'quick', title: 'Cena rápida' })}>
-          ⚡ Cena rápida
-        </button>
-      </div>
-      <div className="btn-row">
-        <button className="btn" onClick={() => ui.open({ k: 'voice' })}>🎤 Registrar</button>
-        <button className="btn" onClick={() => ui.open({ k: 'photo' })}>📸 Analizar plato</button>
-      </div>
-      {isEvening && trained && (
-        <p className="note" style={{ marginTop: 2, marginBottom: 14 }}>
-          Has entrenado y es tarde. Si no tienes mucha hambre, «Cena rápida» te propone algo pequeño pero
-          suficiente en lugar de un plato enorme.
-        </p>
-      )}
+      {/* ── Macros, en segundo plano ── */}
+      <Section title="Macros de hoy" action={<button className="link" onClick={() => ui.open({ k: 'macros' })}>Ver todo</button>}>
+        <MacroBar macro="protein" value={consumed.protein} range={targets.protein} showRange={false} />
+        <MacroBar macro="carbs" value={consumed.carbs} range={targets.carbs} showRange={false} />
+        <MacroBar macro="fat" value={consumed.fat} range={targets.fat} showRange={false} />
+      </Section>
 
-      {/* ── Comidas del día ── */}
-      <Card title={`Comidas · ${entries.length}`} right={<button className="link-btn" onClick={() => ui.open({ k: 'addMenu' })}>Añadir</button>}>
+      {/* ── Lo registrado ── */}
+      <Section
+        title="Hoy has comido"
+        aside={entries.length ? `${entries.length} ${entries.length === 1 ? 'comida' : 'comidas'}` : undefined}
+      >
         {entries.length === 0 ? (
           <div className="empty">
-            <span className="ico" aria-hidden="true">🍽️</span>
-            Todavía no has registrado nada.
-            <br />
-            Puedes dictarlo con el micrófono, hacer una foto o escribirlo.
+            <strong>Nada registrado todavía</strong>
+            Toca cualquier cosa de arriba, o cuéntaselo por voz desde el botón de añadir.
           </div>
         ) : (
-          MEAL_SLOTS.filter((s) => bySlot.has(s)).map((slot) => {
-            const list = bySlot.get(slot)!;
-            const slotTotal = list.reduce(
-              (acc, e) => {
-                const n = entryNutrients(e);
-                return {
-                  kcal: acc.kcal + n.kcal, protein: acc.protein + n.protein,
-                  carbs: acc.carbs + n.carbs, fat: acc.fat + n.fat, fiber: acc.fiber + n.fiber,
-                };
-              },
-              { kcal: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 },
-            );
+          MEAL_SLOTS.filter((s) => bySlot.has(s)).map((mealSlot) => {
+            const list = bySlot.get(mealSlot)!;
+            const slotKcal = list.reduce((a, e) => a + entryNutrients(e).kcal, 0);
             return (
-              <div key={slot} style={{ marginBottom: 14 }}>
-                <div className="card-title" style={{ marginBottom: 6 }}>
-                  <span>{MEAL_SLOT_LABEL[slot]}</span>
-                  <span style={{ fontFamily: 'var(--fm)', textTransform: 'none', letterSpacing: 0 }}>
-                    {g(slotTotal.kcal)} kcal · {g(slotTotal.protein)} g prot
-                  </span>
+              <div key={mealSlot} style={{ marginBottom: 18 }}>
+                <div className="section-head" style={{ marginBottom: 8, paddingBottom: 6 }}>
+                  <span className="section-title" style={{ fontSize: '0.85rem' }}>{MEAL_SLOT_LABEL[mealSlot]}</span>
+                  <span className="section-aside">{g(slotKcal)} kcal</span>
                 </div>
-                <div className="list">
+                <div className="rows">
                   {list.map((e) => {
                     const n = entryNutrients(e);
                     return (
                       <button className="row" key={e.id} onClick={() => ui.open({ k: 'entry', id: e.id })}>
-                        <div className="row-main">
-                          <div className="row-title">
+                        <span className="row-time">{e.time}</span>
+                        <div className="row-body">
+                          <div className="row-name">
                             {e.name || e.items.map((i) => i.foodName.replace(/\([^)]*\)/g, '').trim()).join(' + ')}
                           </div>
-                          <div className="row-sub">
-                            {e.time} · {g(n.protein)} g prot · {g(n.carbs)} g carb · {g(n.fat)} g gras
-                            {' · '}
-                            {shareOfDay(n.kcal, targets.kcal.target)}% del día
-                          </div>
+                          <div className="row-meta">{g(n.protein)} g de proteína</div>
                         </div>
-                        <div className="row-side">{g(n.kcal)}<br /><span style={{ color: 'var(--text-faint)', fontSize: '0.7rem' }}>kcal</span></div>
+                        <div className="row-num">{g(n.kcal)}<small>kcal</small></div>
                       </button>
                     );
                   })}
@@ -234,36 +213,40 @@ export function TodayScreen() {
             );
           })
         )}
-      </Card>
+      </Section>
 
-      {/* ── Reparto de proteína ── */}
-      {distribution.message && (
-        <Card title="Reparto de proteína">
-          <p className="note" style={{ marginBottom: 6 }}>{distribution.message}</p>
-          {distribution.suggestion && <p className="note" style={{ marginBottom: 10 }}>{distribution.suggestion}</p>}
-          <div className="list">
-            {distribution.bySlot.map((s, i) => (
-              <div className="row" key={i}>
-                <div className="row-main">
-                  <div className="row-title" style={{ fontSize: '0.85rem' }}>{s.slot}</div>
-                  <div className="row-sub">{s.time}</div>
-                </div>
-                <div className="row-side">{s.grams} g</div>
+      {/* ── Contexto del día, al final: informa, no manda ── */}
+      <Section title="El día" action={<button className="link" onClick={() => ui.open({ k: 'dayState' })}>Editar</button>}>
+        <div className="figures">
+          <button className="figure" onClick={() => ui.open({ k: 'workout' })}>
+            <div className="figure-label">Entreno</div>
+            <div className="figure-value text">
+              {day?.training ? `${day.training.minutes} min` : 'Añadir'}
+            </div>
+            {day?.training && (
+              <div className="figure-sub">
+                ~{g(sessionKcal(app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training))} kcal
               </div>
-            ))}
-          </div>
-        </Card>
-      )}
+            )}
+          </button>
+          <Figure label="Pasos" value={day?.steps != null ? g(day.steps) : '—'} />
+          <Figure label="Peso" value={app.weights.at(-1)?.kg ? `${app.weights.at(-1)!.kg} kg` : '—'}
+            sub={app.weights.at(-1)?.date === app.date ? 'hoy' : 'última pesada'} />
+        </div>
+        {day?.deviceKcal != null && (
+          <p className="note tight" style={{ marginTop: 12 }}>
+            Tu reloj marca {g(day.deviceKcal)} kcal. Se guarda como una señal más, no se suma al objetivo: esas
+            estimaciones se equivocan con facilidad en un 20 o 30%.
+          </p>
+        )}
+      </Section>
 
-      {entries.length > 0 && (
-        <Card title="Total del día">
-          <MacroPills n={consumed} />
-          <div className="note">
-            {consumed.protein >= targets.protein.min
-              ? 'La proteína del día está dentro de tu rango. Es el dato que más condiciona tu objetivo.'
-              : `Te faltan unos ${g(Math.max(0, targets.protein.min - consumed.protein))} g de proteína para entrar en tu rango.`}
-          </div>
-        </Card>
+      {/* ── Reparto de proteína, solo si hay algo que decir ── */}
+      {distribution.message && (
+        <Section title="Reparto de proteína">
+          <p className="note">{distribution.message}</p>
+          {distribution.suggestion && <p className="note">{distribution.suggestion}</p>}
+        </Section>
       )}
     </div>
   );

@@ -7,3 +7,6 @@ dist-ssr
 .env.local
 coverage
 dev-dist
+
+# TypeScript build cache
+*.tsbuildinfo

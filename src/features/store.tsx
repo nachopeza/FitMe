@@ -3,21 +3,23 @@ import {
   createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode,
 } from 'react';
 import {
-  DEFAULT_SETTINGS, addEntry, addWeight, allFoods, db, deleteEntry, deleteWeight, getSettings,
-  makeDefaultProfile, markRecipeUsed, markSavedMealUsed, newId, saveProfile, saveSettings,
-  seedIfNeeded, upsertDay, upsertFood, upsertRecipe, upsertSavedMeal,
+  DEFAULT_SETTINGS, addEntry, addWeight, allFoods, db, deleteEntry, deleteWeight,
+  deleteRoutine, deleteWorkout, getSettings, makeDefaultProfile, markRecipeUsed, markRoutineUsed,
+  markSavedMealUsed, newId, saveProfile, saveSettings, seedIfNeeded, upsertDay, upsertExercise,
+  upsertFood, upsertRecipe, upsertRoutine, upsertSavedMeal, upsertWorkout,
 } from '../data/db';
-import { bootPhase } from './bootState';
+import { bootPhase, type BootPhase } from './bootState';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
 } from '../domain/nutrition';
 import { buildIndex, type FoodIndex } from '../domain/parser';
 import { sessionExtraKcal } from '../domain/training';
+import { toTrainingSession } from '../domain/workout';
 import { groupEntriesByDate, nutrientsForEntries } from '../domain/trends';
 import type {
-  AppSettings, DayLog, DayType, Food, IsoDate, MacroTargets, MealEntry, MealSlot, Nutrients,
-  Profile, Recipe, RemainingMacros, SavedMeal, WeightEntry,
+  AppSettings, DayLog, DayType, Exercise, Food, IsoDate, LoggedItem, MacroTargets, MealEntry,
+  MealSlot, Nutrients, Profile, Recipe, RemainingMacros, Routine, SavedMeal, WeightEntry, Workout,
 } from '../domain/types';
 
 /**
@@ -39,8 +41,14 @@ async function requestPersistentStorage(): Promise<boolean> {
 const HISTORY_DAYS = 120;
 
 interface AppContextValue {
-  ready: boolean;
-  needsOnboarding: boolean;
+  /**
+   * Qué hay que pintar: el cargador, el onboarding o la app.
+   *
+   * Se expone la fase y no un par de booleanos porque con `ready` y
+   * `needsOnboarding` por separado era fácil comprobarlos en el orden
+   * equivocado, y entonces el cargador se tragaba el onboarding.
+   */
+  phase: BootPhase;
   profile: Profile | null;
   settings: AppSettings;
   foods: Food[];
@@ -48,6 +56,12 @@ interface AppContextValue {
   foodIndex: FoodIndex;
   recipes: Recipe[];
   savedMeals: SavedMeal[];
+  exercises: Exercise[];
+  routines: Routine[];
+  /** Sesiones cerradas, de la más reciente a la más antigua. */
+  workouts: Workout[];
+  /** Sesión abierta ahora mismo, si la hay. */
+  liveWorkout: Workout | null;
 
   /** Fecha activa (normalmente hoy, pero el historial permite mirar atrás). */
   date: IsoDate;
@@ -81,6 +95,26 @@ interface AppContextValue {
     upsertSavedMeal: (m: SavedMeal) => Promise<void>;
     markRecipeUsed: (id: string) => Promise<void>;
     markSavedMealUsed: (id: string) => Promise<void>;
+    /** Guarda una comida como habitual, o suma un uso si ya existe con ese nombre. */
+    rememberMeal: (
+      name: string,
+      items: LoggedItem[],
+      slotHint?: MealSlot,
+      prepMinutes?: number,
+    ) => Promise<string>;
+    /** Registra una comida guardada tal cual. Devuelve el id para poder deshacer. */
+    logSavedMeal: (mealId: string) => Promise<string | null>;
+
+    // ── Entrenamiento ──
+    /** Abre una sesión, opcionalmente desde una rutina. Devuelve su id. */
+    startWorkout: (opts?: { routineId?: string; name?: string }) => Promise<string>;
+    saveWorkout: (w: Workout) => Promise<void>;
+    /** Cierra la sesión y deriva de ella los datos para la nutrición. */
+    finishWorkout: (w: Workout) => Promise<void>;
+    discardWorkout: (id: string) => Promise<void>;
+    upsertRoutine: (r: Routine) => Promise<void>;
+    deleteRoutine: (id: string) => Promise<void>;
+    upsertExercise: (e: Exercise) => Promise<void>;
   };
 }
 
@@ -94,12 +128,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       await seedIfNeeded();
-      // Pide al navegador que no desaloje la base de datos. En un móvil sin
-      // esto, el sistema puede borrar el almacenamiento del sitio para liberar
-      // espacio. Se concede casi siempre si la app está instalada en la
-      // pantalla de inicio; si no se concede, no pasa nada más.
-      await requestPersistentStorage();
       if (!cancelled) setSeeded(true);
+      // Pedir almacenamiento persistente va DESPUÉS y sin esperar: en algunos
+      // navegadores `persist()` abre un permiso y la promesa puede no resolver
+      // nunca. Esperándola, la app se quedaba en "Abriendo tus datos" para
+      // siempre. Es una mejora, no un requisito para arrancar.
+      void requestPersistentStorage();
     })().catch((err) => {
       console.error('No se ha podido abrir la base de datos local', err);
       if (!cancelled) setSeeded(true);
@@ -130,6 +164,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const foods = useLiveQuery(() => allFoods(), [], [] as Food[]) ?? [];
   const recipes = useLiveQuery(() => db.recipes.toArray(), [], [] as Recipe[]) ?? [];
   const savedMeals = useLiveQuery(() => db.savedMeals.toArray(), [], [] as SavedMeal[]) ?? [];
+  const exercises = useLiveQuery(() => db.exercises.toArray(), [], [] as Exercise[]) ?? [];
+  const routines = useLiveQuery(() => db.routines.toArray(), [], [] as Routine[]) ?? [];
+  const allWorkouts = useLiveQuery(() => db.workouts.toArray(), [], [] as Workout[]) ?? [];
+  const liveWorkout = useMemo(
+    () => allWorkouts.filter((w) => !w.finishedAt).sort((a, b) => b.startedAt - a.startedAt)[0] ?? null,
+    [allWorkouts],
+  );
+  const workouts = useMemo(
+    () => allWorkouts.filter((w) => w.finishedAt).sort((a, b) => (b.finishedAt ?? 0) - (a.finishedAt ?? 0)),
+    [allWorkouts],
+  );
   const weights = useLiveQuery(
     () => db.weights.toArray().then((w) => w.sort((a, b) => a.date.localeCompare(b.date))),
     [],
@@ -270,17 +315,107 @@ export function AppProvider({ children }: { children: ReactNode }) {
       upsertSavedMeal,
       markRecipeUsed,
       markSavedMealUsed,
+
+      rememberMeal: async (name, items, slotHint, prepMinutes = 10) => {
+        const clean = name.trim();
+        // Si ya existe con ese nombre, se suma un uso en lugar de duplicarla:
+        // si no, la lista de habituales se llenaría de copias del mismo café.
+        const existing = (await db.savedMeals.toArray()).find(
+          (m) => m.name.trim().toLowerCase() === clean.toLowerCase(),
+        );
+        if (existing) {
+          await db.savedMeals.put({
+            ...existing,
+            items: items.map(({ id: _id, ...rest }) => rest),
+            useCount: existing.useCount + 1,
+            lastUsedAt: Date.now(),
+          });
+          return existing.id;
+        }
+        const id = newId('sm-');
+        await upsertSavedMeal({
+          id,
+          name: clean,
+          items: items.map(({ id: _id, ...rest }) => rest),
+          slotHint,
+          prepMinutes,
+          useCount: 1,
+          lastUsedAt: Date.now(),
+          createdAt: Date.now(),
+        });
+        return id;
+      },
+
+      startWorkout: async (opts) => {
+        const id = newId('w-');
+        const routine = opts?.routineId ? await db.routines.get(opts.routineId) : undefined;
+        const exerciseRows = await db.exercises.toArray();
+        const byId = new Map(exerciseRows.map((e) => [e.id, e]));
+
+        const workout: Workout = {
+          id,
+          date: toIsoDate(),
+          startedAt: Date.now(),
+          name: opts?.name ?? routine?.name ?? 'Entrenamiento',
+          routineId: routine?.id,
+          exercises: (routine?.exercises ?? []).map((re, i) => {
+            const def = byId.get(re.exerciseId);
+            return {
+              uid: `${id}-${i}`,
+              exerciseId: re.exerciseId,
+              name: def?.name ?? re.exerciseId,
+              restSeconds: re.restSeconds || def?.rest || 120,
+              // Las series llegan vacías: se rellenan al entrenar.
+              sets: Array.from({ length: Math.max(1, re.sets) }, () => ({ done: false })),
+            };
+          }),
+        };
+        await upsertWorkout(workout);
+        if (routine) await markRoutineUsed(routine.id);
+        return id;
+      },
+
+      saveWorkout: upsertWorkout,
+
+      finishWorkout: async (w) => {
+        const finished: Workout = { ...w, finishedAt: Date.now() };
+        await upsertWorkout(finished);
+        // El día hereda la sesión para que la nutrición sepa que hoy se entrenó
+        // y pueda estimar el gasto sin que el usuario lo apunte dos veces.
+        await upsertDay(finished.date, { training: toTrainingSession(finished) });
+      },
+
+      discardWorkout: deleteWorkout,
+      upsertRoutine,
+      deleteRoutine,
+      upsertExercise,
+
+      logSavedMeal: async (mealId) => {
+        const meal = await db.savedMeals.get(mealId);
+        if (!meal) return null;
+        const time = nowTime();
+        const entryId = newId('e-');
+        await addEntry({
+          id: entryId,
+          date,
+          slot: meal.slotHint ?? slotForTime(time, profile?.mealTimes ?? {}),
+          time,
+          name: meal.name,
+          items: meal.items.map((i, idx) => ({ ...i, id: `i-${entryId}-${idx}` })),
+          method: 'saved',
+          createdAt: Date.now(),
+        });
+        await markSavedMealUsed(mealId);
+        return entryId;
+      },
     }),
-    [date, doRecompute],
+    [date, doRecompute, profile],
   );
 
   const phase = bootPhase({ seeded, profile, foodCount: foods.length });
 
   const value: AppContextValue = {
-    // Nada se decide hasta que han respondido el seed, el perfil y los
-    // alimentos. La regla vive en `bootPhase`, que está cubierta por tests.
-    ready: phase === 'app',
-    needsOnboarding: phase === 'onboarding',
+    phase,
     profile: profile ?? null,
     settings,
     foods,
@@ -288,6 +423,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     foodIndex,
     recipes,
     savedMeals,
+    exercises,
+    routines,
+    workouts,
+    liveWorkout,
     date,
     setDate,
     isToday: date === toIsoDate(),

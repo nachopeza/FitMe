@@ -139,8 +139,8 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
         subtitle={food.brand}
         onClose={onClose}
         footer={
-          <div className="btn-row">
-            <button className="btn ghost" onClick={() => setEditing(true)}>Completar datos</button>
+          <div className="btns">
+            <button className="btn quiet" onClick={() => setEditing(true)}>Completar datos</button>
             <button className="btn primary" disabled={!lookup?.missing.length} onClick={() => setEditing(true)}>
               Continuar
             </button>
@@ -148,8 +148,7 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
         }
       >
         <div className="estimate">
-          <span aria-hidden="true">⚠️</span>
-          <div>
+                    <div>
             A este producto le faltan datos en la base: <b>{lookup?.missing.join(', ')}</b>. Hay que completarlos
             mirando el envase; no se pueden suponer.
           </div>
@@ -167,7 +166,6 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
       <Sheet title="Producto no encontrado" onClose={onClose}
         footer={<button className="btn primary" onClick={() => setEditing(true)}>Crearlo a mano</button>}>
         <div className="empty">
-          <span className="ico" aria-hidden="true">🔍</span>
           El código <b>{code}</b> no está en Open Food Facts.
         </div>
         <p className="note">
@@ -181,12 +179,12 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
   // ── Cámara y entrada manual ──
   return (
     <Sheet
-      title="📦 Escanear código"
+      title="Escanear código"
       subtitle={status === 'scanning' ? 'Apunta al código de barras' : undefined}
       onClose={onClose}
       footer={
-        <div className="btn-row">
-          <button className="btn ghost" onClick={() => void startCamera()}>
+        <div className="btns">
+          <button className="btn quiet" onClick={() => void startCamera()}>
             {status === 'error' ? 'Reintentar cámara' : 'Abrir cámara'}
           </button>
           <button className="btn primary" disabled={manualCode.replace(/\D/g, '').length < 8}
@@ -205,8 +203,7 @@ export function BarcodeScan({ onClose }: { onClose: () => void }) {
       )}
       {error && (
         <div className="estimate" style={{ marginTop: 12, borderColor: 'var(--bad)' }}>
-          <span aria-hidden="true">⚠️</span>
-          <div>{error}</div>
+                    <div>{error}</div>
         </div>
       )}
 

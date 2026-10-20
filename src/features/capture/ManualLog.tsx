@@ -58,7 +58,7 @@ export function ManualLog({
 
   return (
     <Sheet
-      title="✍️ Añadir a mano"
+      title="Añadir a mano"
       subtitle="Busca y toca para añadir"
       onClose={onClose}
       footer={
@@ -75,7 +75,7 @@ export function ManualLog({
           {picked.map((p) => (
             <button key={p.id} className="chip" aria-pressed
               onClick={() => setPicked((prev) => prev.filter((x) => x.id !== p.id))}>
-              {p.foodName.replace(/\([^)]*\)/g, '').trim()} ✕
+              {p.foodName.replace(/\([^)]*\)/g, '').trim()}
             </button>
           ))}
         </div>
@@ -85,12 +85,12 @@ export function ManualLog({
         <div className="card-title" style={{ marginTop: 16 }}><span>Tus alimentos habituales</span></div>
       )}
 
-      <div className="list" style={{ marginTop: 8 }}>
+      <div className="rows" style={{ marginTop: 8 }}>
         {results.map((f) => (
           <button className="row" key={f.id} onClick={() => add(f)}>
-            <div className="row-main">
-              <div className="row-title">{f.name}{f.brand ? ` · ${f.brand}` : ''}</div>
-              <div className="row-sub">
+            <div className="row-body">
+              <div className="row-name">{f.name}{f.brand ? ` · ${f.brand}` : ''}</div>
+              <div className="row-meta">
                 {g(f.per100g.kcal)} kcal · {g(f.per100g.protein)} g prot · {g(f.per100g.carbs)} g carb por 100 {f.unit}
               </div>
             </div>
@@ -101,7 +101,6 @@ export function ManualLog({
 
       {query.trim().length >= 2 && results.length === 0 && (
         <div className="empty">
-          <span className="ico" aria-hidden="true">🔍</span>
           No hay nada con ese nombre.
           <br />Puedes crearlo desde + → Etiqueta o + → Código de barras.
         </div>

@@ -83,8 +83,8 @@ export function FoodEditor({
       subtitle="Valores por 100 g, como en la etiqueta"
       onClose={onCancel}
       footer={
-        <div className="btn-row">
-          <button className="btn ghost" onClick={onCancel}>Cancelar</button>
+        <div className="btns">
+          <button className="btn quiet" onClick={onCancel}>Cancelar</button>
           <button className="btn primary" disabled={!canSave} onClick={() => void save()}>Guardar</button>
         </div>
       }
@@ -100,7 +100,7 @@ export function FoodEditor({
         <Field label="Código de barras"><input className="input" value={f.barcode} readOnly /></Field>
       )}
 
-      <div className="grid-2">
+      <div className="figures two">
         <Field label="Estado">
           <select className="input" value={f.state} onChange={(e) => set('state', e.target.value as FoodState)}>
             {Object.entries(STATE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -113,7 +113,7 @@ export function FoodEditor({
           </select>
         </Field>
       </div>
-      <div className="grid-2">
+      <div className="figures two">
         <Field label="Categoría">
           <select className="input" value={f.category} onChange={(e) => set('category', e.target.value as FoodCategory)}>
             {Object.entries(CATEGORY_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
@@ -127,12 +127,12 @@ export function FoodEditor({
         </Field>
       </div>
 
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Por 100 {f.unit}</span></div>
         <Field label="Energía">
           <NumberInput value={f.per100g.kcal} suffix="kcal" onChange={(v) => setN('kcal', v)} />
         </Field>
-        <div className="grid-2">
+        <div className="figures two">
           <Field label="Proteínas">
             <NumberInput value={f.per100g.protein} step={0.1} suffix="g" onChange={(v) => setN('protein', v)} />
           </Field>
@@ -169,8 +169,7 @@ export function FoodEditor({
         <div className={problems.length ? 'estimate' : 'note-strong'} style={{ marginBottom: 12 }}>
           {problems.length ? (
             <>
-              <span aria-hidden="true">⚠️</span>
-              <div>
+                            <div>
                 <b>Revisa los valores:</b>
                 <ul style={{ margin: '5px 0 0', paddingLeft: 16 }}>
                   {problems.map((p, i) => <li key={i}>{p}</li>)}

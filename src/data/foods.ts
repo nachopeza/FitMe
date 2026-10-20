@@ -87,6 +87,12 @@ const ROWS: Row[] = [
   { id: 'alubias-cocidas', name: 'Alubias blancas (cocidas)', al: ['alubias', 'judías blancas', 'frijoles'], cat: 'protein', src: 'legume', st: 'cooked', n: [119, 8.7, 16.6, 0.5, 6.4, 0.1, 0.3, 6], ferm: 'high', vol: 'high' },
   { id: 'proteina-whey', name: 'Proteína de suero en polvo', al: ['proteína', 'whey', 'batido de proteína'], cat: 'protein', src: 'supplement', st: 'product', n: [375, 78, 6, 5, 1, 2, 4, 350], p: [P('cacito', 30, true)], vol: 'low' },
 
+  { id: 'leche-desnatada', name: 'Leche desnatada', al: ['leche desnatada'], cat: 'dairy', src: 'dairy', st: 'product', unit: 'ml', n: [35, 3.4, 4.9, 0.2, 0, 0.1, 4.9, 44], p: [P('vaso', 200, true), P('chorro café', 50)] },
+  { id: 'bebida-avena', name: 'Bebida de avena', al: ['leche de avena', 'bebida de avena', 'avena liquida'], cat: 'dairy', src: 'cereal', st: 'product', unit: 'ml', n: [46, 0.8, 7.6, 1.3, 0.8, 0.2, 4.1, 45], p: [P('vaso', 200, true), P('chorro café', 60)] },
+  { id: 'mermelada', name: 'Mermelada', al: ['mermelada', 'confitura'], cat: 'other', st: 'product', n: [245, 0.4, 60, 0.1, 0.8, 0, 58, 12], p: [P('cucharada', 20, true)] },
+  { id: 'queso-untable', name: 'Queso untable', al: ['queso untable', 'philadelphia', 'queso de untar'], cat: 'dairy', src: 'dairy', st: 'product', n: [253, 6, 4, 23, 0, 15, 4, 390], p: [P('cucharada', 20, true)] },
+  { id: 'edulcorante', name: 'Edulcorante', al: ['sacarina', 'edulcorante', 'estevia'], cat: 'other', st: 'product', n: [0, 0, 0, 0, 0, 0, 0, 0], p: [P('sobre', 1, true)] },
+  { id: 'proteina-caseina', name: 'Caseína en polvo', al: ['caseina', 'caseína'], cat: 'protein', src: 'supplement', st: 'product', n: [360, 77, 5, 2, 1, 1, 3, 400], p: [P('cacito', 30, true)], vol: 'low' },
   // ─────────────────────── Cereales y almidones ───────────────────────
   { id: 'arroz-crudo', name: 'Arroz blanco (crudo)', al: ['arroz crudo', 'arroz en seco'], cat: 'carb', src: 'cereal', st: 'raw', n: [355, 7, 78, 0.9, 1.4, 0.2, 0.1, 5], yield: 2.5, pair: 'arroz-cocido', p: [P('ración', 80, true), P('vaso', 180)] },
   { id: 'arroz-cocido', name: 'Arroz blanco (cocido)', al: ['arroz', 'arroz cocido', 'arroz hervido'], cat: 'carb', src: 'cereal', st: 'cooked', n: [130, 2.7, 28, 0.3, 0.4, 0.1, 0.1, 2], pair: 'arroz-crudo', vol: 'medium', p: [P('plato', 200, true), P('plato pequeño', 150), P('plato grande', 280)] },
@@ -205,4 +211,4 @@ function expand(row: Row): Food {
 export const SEED_FOODS: Food[] = ROWS.map(expand);
 
 /** Versión del seed: al subirla, la base se re-siembra sin tocar datos del usuario. */
-export const SEED_VERSION = 1;
+export const SEED_VERSION = 2;

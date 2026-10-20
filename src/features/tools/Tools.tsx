@@ -6,6 +6,7 @@ import { weekStart, addDays } from '../../domain/dates';
 import { EMPTY_NUTRIENTS, MACRO_KEYS, type Food, type FoodCategory, type Nutrients } from '../../domain/types';
 import { Field, MACRO_META, MacroPills, NumberInput, Sheet, g } from '../../ui/components';
 import { useApp } from '../store';
+import { Icon } from '../../ui/icons';
 
 // ───────────────────────────── Calculadora nutricional ─────────────────────────────
 
@@ -33,20 +34,20 @@ export function CalculatorSheet({ onClose }: { onClose: () => void }) {
   );
 
   return (
-    <Sheet title="🧮 Calculadora" subtitle="Cambia una cantidad y se recalcula todo" onClose={onClose}>
+    <Sheet title="Calculadora" subtitle="Cambia una cantidad y se recalcula todo" onClose={onClose}>
       <input className="input" value={query} onChange={(e) => setQuery(e.target.value)}
         placeholder="Buscar alimento…" aria-label="Buscar alimento" />
       {results.length > 0 && (
-        <div className="list" style={{ marginTop: 8 }}>
+        <div className="rows" style={{ marginTop: 8 }}>
           {results.map((f) => (
             <button className="row" key={f.id} onClick={() => {
               const portion = f.portions.find((p) => p.isDefault) ?? f.portions[0];
               setRows((prev) => [...prev, { foodId: f.id, grams: portion?.grams ?? 100 }]);
               setQuery('');
             }}>
-              <div className="row-main">
-                <div className="row-title" style={{ fontSize: '0.88rem' }}>{f.name}</div>
-                <div className="row-sub">{g(f.per100g.kcal)} kcal / 100 {f.unit}</div>
+              <div className="row-body">
+                <div className="row-name" style={{ fontSize: '0.88rem' }}>{f.name}</div>
+                <div className="row-meta">{g(f.per100g.kcal)} kcal / 100 {f.unit}</div>
               </div>
               <span aria-hidden="true">+</span>
             </button>
@@ -55,9 +56,9 @@ export function CalculatorSheet({ onClose }: { onClose: () => void }) {
       )}
 
       {rows.length === 0 ? (
-        <div className="empty"><span className="ico" aria-hidden="true">🧮</span>Añade alimentos para sumar sus macros.</div>
+        <div className="empty">Añade alimentos para sumar sus macros.</div>
       ) : (
-        <div className="card tight" style={{ marginTop: 12 }}>
+        <div className="card" style={{ marginTop: 12 }}>
           {rows.map((r, idx) => {
             const food = app.foodsById.get(r.foodId);
             if (!food) return null;
@@ -66,13 +67,13 @@ export function CalculatorSheet({ onClose }: { onClose: () => void }) {
               <div key={idx} style={{ borderBottom: '1px solid var(--line)', padding: '9px 0' }}>
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="row-title" style={{ fontSize: '0.88rem' }}>{food.name}</div>
-                    <div className="row-sub">
+                    <div className="row-name" style={{ fontSize: '0.88rem' }}>{food.name}</div>
+                    <div className="row-meta">
                       {g(n.kcal)} kcal · {g(n.protein)} g prot · {g(n.carbs)} g carb · {g(n.fat)} g gras
                     </div>
                   </div>
                   <button className="icon-btn" aria-label="Quitar"
-                    onClick={() => setRows((prev) => prev.filter((_, j) => j !== idx))}>🗑️</button>
+                    onClick={() => setRows((prev) => prev.filter((_, j) => j !== idx))}><Icon name="trash" size={17} /></button>
                 </div>
                 <div className="input-row" style={{ marginTop: 6 }}>
                   <input className="input" type="number" inputMode="decimal" value={r.grams} step={5} min={0}
@@ -95,7 +96,7 @@ export function CalculatorSheet({ onClose }: { onClose: () => void }) {
       )}
 
       {rows.length > 0 && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Total</span></div>
           <MacroPills n={total} />
           <div className="note">
@@ -136,24 +137,24 @@ export function CompareSheet({ onClose }: { onClose: () => void }) {
   const nr = right ? scaleNutrients(right.per100g, amountOf(right)) : null;
 
   return (
-    <Sheet title="⚖️ Comparador" subtitle="Por 100 g o por ración" onClose={onClose}>
+    <Sheet title="Comparador" subtitle="Por 100 g o por ración" onClose={onClose}>
       <div className="seg" style={{ marginBottom: 12 }}>
         <button aria-pressed={basis === '100'} onClick={() => setBasis('100')}>Por 100 g</button>
         <button aria-pressed={basis === 'portion'} onClick={() => setBasis('portion')}>Por ración</button>
       </div>
 
-      <div className="grid-2" style={{ marginBottom: 12 }}>
-        <button className="stat" style={{ textAlign: 'left', borderColor: target === 'left' ? 'var(--accent)' : undefined }}
+      <div className="figures two" style={{ marginBottom: 12 }}>
+        <button className="figure pick" aria-pressed={target === 'left'}
           onClick={() => setTarget('left')}>
-          <div className="stat-label">Alimento A</div>
-          <div className="stat-value" style={{ fontSize: '0.86rem' }}>{left?.name ?? 'Elegir'}</div>
-          {basis === 'portion' && left && <div className="stat-sub">{amountOf(left)} {left.unit}</div>}
+          <div className="figure-label">Alimento A</div>
+          <div className="figure-value" style={{ fontSize: '0.86rem' }}>{left?.name ?? 'Elegir'}</div>
+          {basis === 'portion' && left && <div className="figure-sub">{amountOf(left)} {left.unit}</div>}
         </button>
-        <button className="stat" style={{ textAlign: 'left', borderColor: target === 'right' ? 'var(--accent)' : undefined }}
+        <button className="figure pick" aria-pressed={target === 'right'}
           onClick={() => setTarget('right')}>
-          <div className="stat-label">Alimento B</div>
-          <div className="stat-value" style={{ fontSize: '0.86rem' }}>{right?.name ?? 'Elegir'}</div>
-          {basis === 'portion' && right && <div className="stat-sub">{amountOf(right)} {right.unit}</div>}
+          <div className="figure-label">Alimento B</div>
+          <div className="figure-value" style={{ fontSize: '0.86rem' }}>{right?.name ?? 'Elegir'}</div>
+          {basis === 'portion' && right && <div className="figure-sub">{amountOf(right)} {right.unit}</div>}
         </button>
       </div>
 
@@ -161,13 +162,13 @@ export function CompareSheet({ onClose }: { onClose: () => void }) {
         <input className="input" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="arroz, patata, pollo, atún…" />
       </Field>
       {results.length > 0 && (
-        <div className="list" style={{ marginBottom: 12 }}>
+        <div className="rows" style={{ marginBottom: 12 }}>
           {results.map((f) => (
             <button className="row" key={f.id} onClick={() => {
               if (target === 'left') setLeft(f); else setRight(f);
               setQuery('');
             }}>
-              <div className="row-main"><div className="row-title" style={{ fontSize: '0.88rem' }}>{f.name}</div></div>
+              <div className="row-body"><div className="row-name" style={{ fontSize: '0.88rem' }}>{f.name}</div></div>
               <span aria-hidden="true">→</span>
             </button>
           ))}
@@ -175,7 +176,7 @@ export function CompareSheet({ onClose }: { onClose: () => void }) {
       )}
 
       {nl && nr && left && right && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>{basis === '100' ? 'Por 100 g' : 'Por ración'}</span></div>
           {MACRO_KEYS.map((k) => {
             const a = nl[k];
@@ -183,16 +184,16 @@ export function CompareSheet({ onClose }: { onClose: () => void }) {
             const max = Math.max(a, b, 0.001);
             return (
               <div className="macro" key={k}>
-                <div className="macro-head">
-                  <span className="macro-name">{MACRO_META[k].icon} {MACRO_META[k].label}</span>
-                  <span className="macro-val"><b>{g(a)}</b> <span>vs</span> <b>{g(b)}</b></span>
+                <div className="macro-top">
+                  <span className="macro-name">{MACRO_META[k].label}</span>
+                  <span className="macro-read"><b>{g(a)}</b> <span>vs</span> <b>{g(b)}</b></span>
                 </div>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <div className="bar" style={{ flex: 1 }}>
-                    <span className="bar-fill" style={{ width: `${(a / max) * 100}%`, background: MACRO_META[k].color }} />
+                  <div className="track" style={{ flex: 1 }}>
+                    <span className="track-fill" style={{ width: `${(a / max) * 100}%`, background: MACRO_META[k].color }} />
                   </div>
-                  <div className="bar" style={{ flex: 1 }}>
-                    <span className="bar-fill" style={{ width: `${(b / max) * 100}%`, background: MACRO_META[k].color, opacity: 0.6 }} />
+                  <div className="track" style={{ flex: 1 }}>
+                    <span className="track-fill" style={{ width: `${(b / max) * 100}%`, background: MACRO_META[k].color, opacity: 0.6 }} />
                   </div>
                 </div>
               </div>
@@ -205,16 +206,16 @@ export function CompareSheet({ onClose }: { onClose: () => void }) {
       )}
 
       {left && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Sustituciones de {left.name.replace(/\([^)]*\)/g, '').trim()}</span></div>
-          <div className="list">
+          <div className="rows">
             {substitutionsFor(left, amountOf(left), app.foods, 5).map((s) => (
               <button className="row" key={s.food.id} onClick={() => setRight(s.food)}>
-                <div className="row-main">
-                  <div className="row-title" style={{ fontSize: '0.85rem' }}>{s.food.name}</div>
-                  <div className="row-sub">{s.note}</div>
+                <div className="row-body">
+                  <div className="row-name" style={{ fontSize: '0.85rem' }}>{s.food.name}</div>
+                  <div className="row-meta">{s.note}</div>
                 </div>
-                <div className="row-side">{s.grams} g</div>
+                <div className="row-num">{s.grams} g</div>
               </button>
             ))}
           </div>
@@ -248,13 +249,13 @@ function compareVerdict(a: Food, b: Food, na: Nutrients, nb: Nutrients): string 
 // ───────────────────────────── Lista de la compra ─────────────────────────────
 
 const CATEGORY_GROUP: { key: FoodCategory[]; label: string; icon: string }[] = [
-  { key: ['protein'], label: 'Proteínas', icon: '🥩' },
-  { key: ['carb'], label: 'Carbohidratos', icon: '🍚' },
-  { key: ['vegetable'], label: 'Verduras', icon: '🥦' },
-  { key: ['fruit'], label: 'Frutas', icon: '🍌' },
-  { key: ['dairy'], label: 'Lácteos y alternativas', icon: '🥛' },
-  { key: ['fat'], label: 'Grasas', icon: '🥑' },
-  { key: ['drink', 'other'], label: 'Otros', icon: '⭐' },
+  { key: ['protein'], label: 'Proteínas', icon: '' },
+  { key: ['carb'], label: 'Carbohidratos', icon: '' },
+  { key: ['vegetable'], label: 'Verduras', icon: '' },
+  { key: ['fruit'], label: 'Frutas', icon: '' },
+  { key: ['dairy'], label: 'Lácteos y alternativas', icon: '' },
+  { key: ['fat'], label: 'Grasas', icon: '' },
+  { key: ['drink', 'other'], label: 'Otros', icon: '' },
 ];
 
 /**
@@ -330,7 +331,7 @@ export function ShoppingSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="🛒 Lista de la compra"
+      title="Lista de la compra"
       subtitle="Generada con lo que comes de verdad"
       onClose={onClose}
       footer={
@@ -349,7 +350,6 @@ export function ShoppingSheet({ onClose }: { onClose: () => void }) {
 
       {plan.items.length === 0 ? (
         <div className="empty">
-          <span className="ico" aria-hidden="true">🛒</span>
           Todavía no hay suficiente historial.
           <br />Registra unos días de comidas o crea alguna receta y la lista se genera sola.
         </div>
@@ -363,16 +363,16 @@ export function ShoppingSheet({ onClose }: { onClose: () => void }) {
             const rows = plan.items.filter((i) => group.key.includes(i.food.category));
             if (!rows.length) return null;
             return (
-              <div className="card tight" key={group.label}>
+              <div className="card" key={group.label}>
                 <div className="card-title"><span>{group.icon} {group.label}</span></div>
-                <div className="list">
+                <div className="rows">
                   {rows.map((r) => (
                     <button className="row" key={r.food.id} onClick={() => toggle(r.food.id)}>
                       <span aria-hidden="true" style={{ fontSize: '1.05rem' }}>
-                        {checked.has(r.food.id) ? '☑️' : '⬜'}
+                        {checked.has(r.food.id) ? '' : ''}
                       </span>
-                      <div className="row-main">
-                        <div className="row-title" style={{
+                      <div className="row-body">
+                        <div className="row-name" style={{
                           fontSize: '0.88rem',
                           textDecoration: checked.has(r.food.id) ? 'line-through' : undefined,
                           opacity: checked.has(r.food.id) ? 0.5 : 1,
@@ -380,7 +380,7 @@ export function ShoppingSheet({ onClose }: { onClose: () => void }) {
                           {r.food.name.replace(/\([^)]*\)/g, '').trim()}
                         </div>
                       </div>
-                      <div className="row-side">{formatAmount(r.grams, r.food)}</div>
+                      <div className="row-num">{formatAmount(r.grams, r.food)}</div>
                     </button>
                   ))}
                 </div>

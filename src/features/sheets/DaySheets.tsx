@@ -13,6 +13,7 @@ import {
 import { EstimateNotice, Field, NumberInput, Sheet, Segmented, g } from '../../ui/components';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
+import { Icon } from '../../ui/icons';
 
 /** Hambre, digestión, pasos y calorías del reloj. Todo opcional. */
 export function DayStateSheet({ onClose }: { onClose: () => void }) {
@@ -97,10 +98,10 @@ export function DayStateSheet({ onClose }: { onClose: () => void }) {
 }
 
 const HUNGER: Record<Hunger, string> = {
-  high: '😋 Mucha', normal: '🙂 Normal', low: '😐 Poca', veryLow: '🤢 Muy poco apetito',
+  high: 'Mucha', normal: 'Normal', low: 'Poca', veryLow: 'Muy poca',
 };
 const DIGESTION: Record<Digestion, string> = {
-  good: '🟢 Bien', bloated: '🟡 Hinchado', bad: '🔴 Muy incómodo',
+  good: 'Bien', bloated: 'Hinchado', bad: 'Muy incómodo',
 };
 
 // ───────────────────────────── Entrenamiento ─────────────────────────────
@@ -167,17 +168,17 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="🏋️ Entrenamiento de hoy"
+      title="Entrenamiento de hoy"
       subtitle={existing ? 'Editando la sesión de hoy' : undefined}
       onClose={onClose}
       footer={
-        <div className="btn-row">
+        <div className="btns">
           {existing ? (
             <button className="btn danger" onClick={async () => { await app.actions.patchDay({ training: undefined }); onClose(); }}>
               Quitar
             </button>
           ) : (
-            <button className="btn ghost" onClick={onClose}>Cancelar</button>
+            <button className="btn quiet" onClick={onClose}>Cancelar</button>
           )}
           <button className="btn primary" onClick={() => void save()}>Guardar</button>
         </div>
@@ -185,7 +186,7 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
     >
       {/* ── Tipo ── */}
       <Field label="Tipo de entrenamiento">
-        <div className="list">
+        <div className="rows">
           {(Object.keys(TRAINING_KIND_LABEL) as TrainingKind[]).map((k) => (
             <button
               className="row"
@@ -197,11 +198,11 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
               }}
               style={{ borderLeft: kind === k ? '3px solid var(--accent)' : '3px solid transparent', paddingLeft: 8 }}
             >
-              <div className="row-main">
-                <div className="row-title" style={{ fontSize: '0.9rem' }}>{TRAINING_KIND_LABEL[k]}</div>
-                <div className="row-sub">{TRAINING_KIND_HINT[k]}</div>
+              <div className="row-body">
+                <div className="row-name" style={{ fontSize: '0.9rem' }}>{TRAINING_KIND_LABEL[k]}</div>
+                <div className="row-meta">{TRAINING_KIND_HINT[k]}</div>
               </div>
-              {kind === k && <span aria-hidden="true">✓</span>}
+              {kind === k && <Icon name="check" size={16} />}
             </button>
           ))}
         </div>
@@ -225,7 +226,7 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
       </Field>
 
       {/* ── Duración e intensidad ── */}
-      <div className="grid-2">
+      <div className="figures two">
         <Field label="Duración">
           <NumberInput value={minutes} step={5} min={1} max={480} suffix="min" label="Duración en minutos"
             onChange={setMinutes} />
@@ -241,22 +242,22 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
       </div>
 
       <Field label="Intensidad" hint="Es lo que más cambia el coste estimado de la sesión.">
-        <div className="list">
+        <div className="rows">
           {(Object.keys(TRAINING_INTENSITY_LABEL) as TrainingIntensity[]).map((i) => (
             <button className="row" key={i} onClick={() => setIntensity(i)}
               style={{ borderLeft: intensity === i ? '3px solid var(--accent)' : '3px solid transparent', paddingLeft: 8 }}>
-              <div className="row-main">
-                <div className="row-title" style={{ fontSize: '0.88rem' }}>{TRAINING_INTENSITY_LABEL[i]}</div>
-                <div className="row-sub">{TRAINING_INTENSITY_HINT[i]}</div>
+              <div className="row-body">
+                <div className="row-name" style={{ fontSize: '0.88rem' }}>{TRAINING_INTENSITY_LABEL[i]}</div>
+                <div className="row-meta">{TRAINING_INTENSITY_HINT[i]}</div>
               </div>
-              {intensity === i && <span aria-hidden="true">✓</span>}
+              {intensity === i && <Icon name="check" size={16} />}
             </button>
           ))}
         </div>
       </Field>
 
       {/* ── Ejercicios ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title">
           <span>{usesSetsAndReps(kind) ? `Ejercicios · ${exercises.length}` : `Bloques · ${exercises.length}`}</span>
           <span style={{ textTransform: 'none', letterSpacing: 0 }}>opcional</span>
@@ -270,16 +271,16 @@ export function TrainingSheet({ onClose }: { onClose: () => void }) {
 
         {exercises.map((ex, i) => (
           <div className="row" key={`${ex.exercise}-${i}`}>
-            <div className="row-main">
-              <div className="row-title" style={{ fontSize: '0.88rem' }}>{ex.exercise}</div>
-              <div className="row-sub">
+            <div className="row-body">
+              <div className="row-name" style={{ fontSize: '0.88rem' }}>{ex.exercise}</div>
+              <div className="row-meta">
                 {usesSetsAndReps(kind) ? `${ex.sets} × ${ex.reps}` : 'bloque'}
                 {ex.weightKg ? ` · ${ex.weightKg} kg` : ''}
                 {ex.distanceKm ? ` · ${ex.distanceKm} km` : ''}
               </div>
             </div>
             <button className="icon-btn" aria-label={`Quitar ${ex.exercise}`}
-              onClick={() => setExercises((prev) => prev.filter((_, j) => j !== i))}>🗑️</button>
+              onClick={() => setExercises((prev) => prev.filter((_, j) => j !== i))}><Icon name="trash" size={17} /></button>
           </div>
         ))}
 
@@ -390,12 +391,12 @@ export function WeightSheet({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <Sheet title="⚖️ Registrar peso" onClose={onClose}
+    <Sheet title="Registrar peso" onClose={onClose}
       footer={<button className="btn primary" disabled={kg === '' || kg <= 0} onClick={() => void save()}>Guardar</button>}>
       <Field label="Peso">
         <NumberInput value={kg} step={0.1} suffix="kg" onChange={setKg} />
       </Field>
-      <div className="grid-2">
+      <div className="figures two">
         <Field label="Fecha">
           <input className="input" type="date" value={date} max={toIsoDate()} onChange={(e) => setDate(e.target.value)} />
         </Field>
@@ -410,7 +411,7 @@ export function WeightSheet({ onClose }: { onClose: () => void }) {
           ))}
         </div>
       </Field>
-      <div className="grid-2">
+      <div className="figures two">
         <Field label="Grasa corporal (opcional)">
           <NumberInput value={bodyFat} step={0.1} suffix="%" onChange={setBodyFat} />
         </Field>
@@ -425,17 +426,17 @@ export function WeightSheet({ onClose }: { onClose: () => void }) {
       </EstimateNotice>
 
       {app.weights.length > 0 && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Últimas pesadas</span></div>
-          <div className="list">
+          <div className="rows">
             {[...app.weights].reverse().slice(0, 8).map((w) => (
               <div className="row" key={w.id}>
-                <div className="row-main">
-                  <div className="row-title" style={{ fontSize: '0.88rem' }}>{w.kg} kg</div>
-                  <div className="row-sub">{w.date} · {w.time}{w.conditions ? ` · ${w.conditions}` : ''}</div>
+                <div className="row-body">
+                  <div className="row-name" style={{ fontSize: '0.88rem' }}>{w.kg} kg</div>
+                  <div className="row-meta">{w.date} · {w.time}{w.conditions ? ` · ${w.conditions}` : ''}</div>
                 </div>
                 <button className="icon-btn" aria-label="Borrar pesada"
-                  onClick={() => void app.actions.deleteWeight(w.id)}>🗑️</button>
+                  onClick={() => void app.actions.deleteWeight(w.id)}><Icon name="trash" size={17} /></button>
               </div>
             ))}
           </div>

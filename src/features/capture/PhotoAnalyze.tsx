@@ -76,7 +76,7 @@ export function PhotoAnalyze({ onClose }: { onClose: () => void }) {
               margen amplio. Revísalas: son tu mejor punto de partida, no una medición.
             </EstimateNotice>
             {analysis.notes.length > 0 && (
-              <div className="card tight" style={{ marginTop: 12 }}>
+              <div className="card" style={{ marginTop: 12 }}>
                 <div className="card-title"><span>Avisos del análisis</span></div>
                 <ul style={{ margin: 0, paddingLeft: 18 }}>
                   {analysis.notes.map((n, i) => <li key={i} className="note">{n}</li>)}
@@ -84,13 +84,13 @@ export function PhotoAnalyze({ onClose }: { onClose: () => void }) {
               </div>
             )}
             {notes.ranges.length > 0 && (
-              <div className="card tight">
+              <div className="card">
                 <div className="card-title"><span>Margen de cada cantidad</span></div>
-                <div className="list">
+                <div className="rows">
                   {notes.ranges.map((r, i) => (
                     <div className="row" key={i}>
-                      <div className="row-main"><div className="row-title" style={{ fontSize: '0.85rem' }}>{r.name}</div></div>
-                      <div className="row-side">{r.low}–{r.high} g</div>
+                      <div className="row-body"><div className="row-name" style={{ fontSize: '0.85rem' }}>{r.name}</div></div>
+                      <div className="row-num">{r.low}–{r.high} g</div>
                     </div>
                   ))}
                 </div>
@@ -123,14 +123,14 @@ export function PhotoAnalyze({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="📸 Analizar plato"
+      title="Analizar plato"
       subtitle={aiReady ? 'Haz una foto de la comida' : 'Análisis automático no configurado'}
       onClose={onClose}
       footer={
         payload ? (
           aiReady ? (
-            <div className="btn-row">
-              <button className="btn ghost" onClick={() => setManual(true)}>Apuntar a mano</button>
+            <div className="btns">
+              <button className="btn quiet" onClick={() => setManual(true)}>Apuntar a mano</button>
               <button className="btn primary" disabled={busy} onClick={() => void analyse()}>
                 {busy ? <span className="spinner" /> : 'Analizar'}
               </button>
@@ -159,13 +159,12 @@ export function PhotoAnalyze({ onClose }: { onClose: () => void }) {
       {preview ? (
         <>
           <img className="preview" src={preview} alt="Foto seleccionada" />
-          <button className="btn ghost sm" style={{ marginTop: 10 }} onClick={() => { setPreview(null); setPayload(null); }}>
+          <button className="btn quiet sm" style={{ marginTop: 10 }} onClick={() => { setPreview(null); setPayload(null); }}>
             Cambiar foto
           </button>
         </>
       ) : (
         <div className="empty" style={{ padding: '36px 16px' }}>
-          <span className="ico" aria-hidden="true">📷</span>
           Haz una foto del plato entero, desde arriba y con algo de referencia
           <br />(un cubierto, la mano) para que la estimación de tamaño sea mejor.
         </div>
@@ -173,13 +172,12 @@ export function PhotoAnalyze({ onClose }: { onClose: () => void }) {
 
       {error && (
         <div className="estimate" style={{ marginTop: 12, borderColor: 'var(--bad)' }}>
-          <span aria-hidden="true">⚠️</span>
-          <div>{error}</div>
+                    <div>{error}</div>
         </div>
       )}
 
       {!aiReady && (
-        <div className="card tight" style={{ marginTop: 12 }}>
+        <div className="card" style={{ marginTop: 12 }}>
           <div className="card-title"><span>Reconocimiento automático</span></div>
           <p className="note">
             El reconocimiento de platos necesita un modelo de visión. No viene activado porque ninguna función

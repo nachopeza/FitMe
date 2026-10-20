@@ -447,3 +447,85 @@ export interface AppSettings {
   theme: 'dark' | 'light' | 'system';
   lastBackupAt?: number;
 }
+
+// ───────────────────────────── Entrenamiento con series ─────────────────────────────
+
+export type MuscleGroup =
+  | 'chest' | 'back' | 'shoulders' | 'biceps' | 'triceps' | 'forearms'
+  | 'quads' | 'hamstrings' | 'glutes' | 'calves' | 'core' | 'fullBody' | 'cardio';
+
+export type Equipment =
+  | 'barbell' | 'dumbbell' | 'machine' | 'cable' | 'bodyweight' | 'kettlebell' | 'band' | 'other';
+
+/** Cómo se mide el ejercicio. Determina qué campos pide la tabla de series. */
+export type ExerciseKind =
+  | 'weightReps'        // peso × repeticiones (press banca)
+  | 'bodyweightReps'    // solo repeticiones (flexiones)
+  | 'weightedBodyweight' // peso añadido × repeticiones (dominadas lastradas)
+  | 'time'              // duración (plancha)
+  | 'distance';         // distancia y tiempo (carrera)
+
+export interface Exercise {
+  id: string;
+  name: string;
+  aliases: string[];
+  muscle: MuscleGroup;
+  secondary: MuscleGroup[];
+  equipment: Equipment;
+  kind: ExerciseKind;
+  /** Descanso sugerido, en segundos. */
+  rest: number;
+  /** true si lo ha creado el usuario. */
+  custom?: boolean;
+}
+
+export interface WorkoutSet {
+  kg?: number;
+  reps?: number;
+  seconds?: number;
+  km?: number;
+  /** Marcada como hecha. Es lo que dispara el descanso. */
+  done: boolean;
+  /** Serie de aproximación: no cuenta para el volumen ni para los récords. */
+  warmup?: boolean;
+}
+
+export interface WorkoutExercise {
+  /** Identificador único dentro de la sesión: un ejercicio puede repetirse. */
+  uid: string;
+  exerciseId: string;
+  /** Copia del nombre, por si el ejercicio se renombra o se borra. */
+  name: string;
+  sets: WorkoutSet[];
+  restSeconds: number;
+  note?: string;
+}
+
+export interface Workout {
+  id: string;
+  date: IsoDate;
+  startedAt: number;
+  /** Sin este campo, la sesión sigue abierta. */
+  finishedAt?: number;
+  name: string;
+  exercises: WorkoutExercise[];
+  routineId?: string;
+  note?: string;
+}
+
+export interface RoutineExercise {
+  exerciseId: string;
+  sets: number;
+  restSeconds: number;
+  /** Objetivo orientativo: "8-10", "al fallo". */
+  targetReps?: string;
+}
+
+export interface Routine {
+  id: string;
+  name: string;
+  exercises: RoutineExercise[];
+  useCount: number;
+  lastUsedAt?: number;
+  createdAt: number;
+}

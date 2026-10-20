@@ -5,6 +5,7 @@ import { useApp } from '../store';
 import { itemsFromParsed } from '../logging';
 import { ConfirmEntry } from './ConfirmEntry';
 import { isSpeechSupported, startDictation, type SpeechSession } from './speech';
+import { Icon } from '../../ui/icons';
 
 /**
  * Registro por voz.
@@ -28,10 +29,15 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
 
   const toggle = () => {
     if (listening) {
-      session.current?.stop();
+      // El estado se baja AQUÍ, no al recibir `onend`: si el navegador no cierra
+      // el dictado (pasa en iOS), la interfaz se quedaba creyendo que seguía
+      // escuchando y el botón de parar no respondía.
       setListening(false);
+      session.current?.stop();
+      session.current = null;
       return;
     }
+    if (session.current) return;
     setError(null);
     const s = startDictation({
       onPartial: setText,
@@ -40,7 +46,10 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
         setError(msg);
         setListening(false);
       },
-      onEnd: () => setListening(false),
+      onEnd: () => {
+        setListening(false);
+        session.current = null;
+      },
     });
     if (s) {
       session.current = s;
@@ -76,7 +85,7 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="🎤 Registrar por voz"
+      title="Registrar por voz"
       subtitle={supported ? 'Di lo que has comido, con naturalidad' : 'Escribe lo que has comido'}
       onClose={onClose}
       footer={
@@ -88,19 +97,19 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
       {supported ? (
         <>
           <button
-            className={`mic-btn${listening ? ' listening' : ''}`}
+            className={`mic${listening ? ' on' : ''}`}
             onClick={toggle}
             aria-label={listening ? 'Parar de dictar' : 'Empezar a dictar'}
           >
-            {listening ? '■' : '🎤'}
+            <Icon name={listening ? 'check' : 'mic'} size={30} />
           </button>
           <p className="note" style={{ textAlign: 'center' }}>
-            {listening ? 'Te escucho… toca para parar.' : 'Toca el micrófono y habla.'}
+            {listening ? 'Te escucho. Toca otra vez para parar.' : 'Toca y di lo que has comido.'}
           </p>
         </>
       ) : (
         <div className="estimate" style={{ marginBottom: 12 }}>
-          <span aria-hidden="true">ℹ️</span>
+          
           <div>
             Este navegador no tiene reconocimiento de voz. Escribe la frase igual que la dirías: la app la
             interpreta con el mismo sistema.
@@ -110,8 +119,7 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
 
       {error && (
         <div className="estimate" style={{ marginBottom: 12, borderColor: 'var(--bad)' }}>
-          <span aria-hidden="true">⚠️</span>
-          <div>{error}</div>
+                    <div>{error}</div>
         </div>
       )}
 
@@ -126,7 +134,7 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
         />
       </div>
 
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Ejemplos que entiende</span></div>
         <div className="chips">
           {EXAMPLES.map((ex) => (

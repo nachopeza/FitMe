@@ -3,7 +3,7 @@ import type { MealEntry, MealSlot } from '../domain/types';
 import type { ParsedItem } from '../domain/parser';
 
 /** Pestañas de la barra inferior. */
-export type Tab = 'today' | 'add' | 'macros' | 'progress' | 'profile';
+export type Tab = 'today' | 'workout' | 'add' | 'progress' | 'profile';
 
 /**
  * Hojas modales de la app. Un único tipo discriminado en lugar de un router:
@@ -29,10 +29,15 @@ export type SheetSpec =
   | { k: 'calculator' }
   | { k: 'shopping' }
   | { k: 'food'; id: string }
+  | { k: 'macros' }
   | { k: 'targets' }
   | { k: 'history' }
   | { k: 'privacy' }
-  | { k: 'ai' };
+  | { k: 'ai' }
+  | { k: 'composition'; id: string }
+  | { k: 'workout' }
+  | { k: 'routine'; id?: string }
+  | { k: 'exercise'; id: string };
 
 interface UIContextValue {
   tab: Tab;
@@ -42,8 +47,18 @@ interface UIContextValue {
   close: () => void;
   /** Sustituye la hoja actual sin apilar (p. ej. voz → confirmar). */
   replace: (s: SheetSpec) => void;
-  toast: string | null;
-  notify: (msg: string) => void;
+  toast: Toast | null;
+  notify: (msg: string, undo?: () => void | Promise<void>) => void;
+  dismissToast: () => void;
+}
+
+/**
+ * Aviso flotante. `undo` existe para que registrar de un toque no dé miedo: si
+ * se añade algo por error, se deshace desde el propio aviso.
+ */
+export interface Toast {
+  message: string;
+  undo?: () => void | Promise<void>;
 }
 
 const UIContext = createContext<UIContextValue | null>(null);
@@ -51,11 +66,13 @@ const UIContext = createContext<UIContextValue | null>(null);
 export function UIProvider({ children }: { children: ReactNode }) {
   const [tab, setTab] = useState<Tab>('today');
   const [sheet, setSheet] = useState<SheetSpec | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
 
-  const notify = (msg: string) => {
-    setToast(msg);
-    window.setTimeout(() => setToast((t) => (t === msg ? null : t)), 2600);
+  const notify = (message: string, undo?: () => void | Promise<void>) => {
+    const next: Toast = { message, undo };
+    setToast(next);
+    // Con opción de deshacer se deja más tiempo: hay que poder reaccionar.
+    window.setTimeout(() => setToast((t) => (t === next ? null : t)), undo ? 5000 : 2600);
   };
 
   const value: UIContextValue = {
@@ -67,6 +84,7 @@ export function UIProvider({ children }: { children: ReactNode }) {
     replace: setSheet,
     toast,
     notify,
+    dismissToast: () => setToast(null),
   };
   return <UIContext.Provider value={value}>{children}</UIContext.Provider>;
 }

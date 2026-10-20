@@ -47,8 +47,20 @@ export function isSpeechSupported(): boolean {
 }
 
 export interface SpeechSession {
+  /** Para el dictado. Si el navegador no responde, aborta a la fuerza. */
   stop: () => void;
 }
+
+/**
+ * Margen que se le da al navegador para cerrar el dictado por las buenas antes
+ * de abortarlo. En iOS, `stop()` a veces no dispara `onend` nunca, y entonces
+ * la interfaz se quedaba creyendo que seguía escuchando: el botón de parar no
+ * hacía nada y la app parecía colgada.
+ */
+const STOP_GRACE_MS = 800;
+
+/** Tope de seguridad: nadie dicta una comida durante más de dos minutos. */
+const MAX_SESSION_MS = 120_000;
 
 export interface SpeechHandlers {
   onPartial: (text: string) => void;
@@ -78,6 +90,23 @@ export function startDictation(handlers: SpeechHandlers): SpeechSession | null {
   rec.maxAlternatives = 1;
 
   let finalText = '';
+  let lastPartial = '';
+  let closed = false;
+  let graceTimer = 0;
+  let maxTimer = 0;
+
+  /** Cierra la sesión una sola vez, venga por donde venga. */
+  const settle = () => {
+    if (closed) return;
+    closed = true;
+    window.clearTimeout(graceTimer);
+    window.clearTimeout(maxTimer);
+    // Si no llegó ningún resultado final, se entrega lo último que se oyó: es
+    // mejor devolver algo revisable que perder lo dictado.
+    const text = finalText.trim() || lastPartial.trim();
+    if (text) handlers.onFinal(text);
+    handlers.onEnd();
+  };
 
   rec.onresult = (e) => {
     let interim = '';
@@ -86,16 +115,17 @@ export function startDictation(handlers: SpeechHandlers): SpeechSession | null {
       if (res.isFinal) finalText += `${res[0].transcript} `;
       else interim += res[0].transcript;
     }
-    handlers.onPartial(`${finalText}${interim}`.trim());
+    lastPartial = `${finalText}${interim}`.trim();
+    handlers.onPartial(lastPartial);
   };
   rec.onerror = (e) => {
     const msg = ERROR_MESSAGES[e.error] ?? `Error de reconocimiento: ${e.error}`;
     if (msg) handlers.onError(msg);
+    // 'no-speech' y 'aborted' no son fatales, pero el motor ya no devuelve nada:
+    // se cierra igual para que la interfaz no se quede escuchando a ciegas.
+    settle();
   };
-  rec.onend = () => {
-    if (finalText.trim()) handlers.onFinal(finalText.trim());
-    handlers.onEnd();
-  };
+  rec.onend = settle;
 
   try {
     rec.start();
@@ -103,5 +133,32 @@ export function startDictation(handlers: SpeechHandlers): SpeechSession | null {
     handlers.onError('No se ha podido iniciar el micrófono.');
     return null;
   }
-  return { stop: () => rec.stop() };
+
+  maxTimer = window.setTimeout(() => {
+    try {
+      rec.abort();
+    } catch {
+      /* el motor ya estaba cerrado */
+    }
+    settle();
+  }, MAX_SESSION_MS);
+
+  return {
+    stop: () => {
+      try {
+        rec.stop();
+      } catch {
+        /* el motor ya estaba cerrado */
+      }
+      // Si `onend` no llega a tiempo, se aborta y se cierra por nuestra cuenta.
+      graceTimer = window.setTimeout(() => {
+        try {
+          rec.abort();
+        } catch {
+          /* ya estaba */
+        }
+        settle();
+      }, STOP_GRACE_MS);
+    },
+  };
 }

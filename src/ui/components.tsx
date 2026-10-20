@@ -1,135 +1,120 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { STATUS_DOT, STATUS_TEXT, macroStatus, type MacroStatus } from '../domain/nutrition';
+import { STATUS_TEXT, macroStatus, type MacroStatus } from '../domain/nutrition';
 import type { MacroKey, Nutrients, TargetRange } from '../domain/types';
 
-// ───────────────────────────── Vocabulario visual de macros ─────────────────────────────
+/**
+ * Piezas compartidas de la interfaz.
+ *
+ * Dos cambios de criterio respecto a la primera versión:
+ *
+ * - Fuera los emoji como marcadores. Llenaban las celdas, descuadraban las
+ *   cajas estrechas y cada sistema los dibuja distinto. Las etiquetas de texto
+ *   dicen lo mismo y caben.
+ * - Fuera el color por macro. Había cinco tintas compitiendo; ahora la energía y
+ *   la proteína llevan el acento, porque son lo que condiciona el objetivo, y el
+ *   resto va en grises graduados.
+ */
 
-export const MACRO_META: Record<MacroKey, { label: string; short: string; icon: string; unit: string; color: string }> = {
-  kcal: { label: 'Calorías', short: 'kcal', icon: '🔥', unit: 'kcal', color: 'var(--kcal)' },
-  protein: { label: 'Proteína', short: 'Prot', icon: '🥩', unit: 'g', color: 'var(--protein)' },
-  carbs: { label: 'Carbohidratos', short: 'Carb', icon: '🍚', unit: 'g', color: 'var(--carbs)' },
-  fat: { label: 'Grasas', short: 'Gras', icon: '🥑', unit: 'g', color: 'var(--fat)' },
-  fiber: { label: 'Fibra', short: 'Fibra', icon: '🌾', unit: 'g', color: 'var(--fiber)' },
-};
-
-const STATUS_CLASS: Record<MacroStatus, string> = {
-  under: '',
-  inRange: 'ok',
-  nearLimit: 'warn',
-  over: 'bad',
+export const MACRO_META: Record<MacroKey, { label: string; short: string; unit: string; color: string }> = {
+  kcal: { label: 'Calorías', short: 'kcal', unit: 'kcal', color: 'var(--m-kcal)' },
+  protein: { label: 'Proteína', short: 'prot', unit: 'g', color: 'var(--m-protein)' },
+  carbs: { label: 'Carbohidratos', short: 'carb', unit: 'g', color: 'var(--m-carbs)' },
+  fat: { label: 'Grasas', short: 'gras', unit: 'g', color: 'var(--m-fat)' },
+  fiber: { label: 'Fibra', short: 'fibra', unit: 'g', color: 'var(--m-fiber)' },
 };
 
 export function fmt(n: number, decimals = 0): string {
   return n.toLocaleString('es-ES', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
 }
 
-/** Redondeo de presentación: los gramos a entero, las kcal a entero. */
+/** Entero con separador de miles español. */
 export function g(n: number): string {
   return fmt(Math.round(n));
 }
 
-// ───────────────────────────── Barra de macro con rango ─────────────────────────────
+// ───────────────────────────── Secciones ─────────────────────────────
 
-interface MacroBarProps {
-  macro: MacroKey;
-  value: number;
-  range: TargetRange;
-  /** Muestra el rango aceptable bajo la barra. */
-  showRange?: boolean;
+export function Section({
+  title, aside, children, action,
+}: { title: string; aside?: ReactNode; children: ReactNode; action?: ReactNode }) {
+  return (
+    <section className="section">
+      <div className="section-head">
+        <h2 className="section-title">{title}</h2>
+        {action ?? (aside ? <span className="section-aside">{aside}</span> : null)}
+      </div>
+      {children}
+    </section>
+  );
 }
 
+export function Card({ children }: { children: ReactNode }) {
+  return <div className="card">{children}</div>;
+}
+
+// ───────────────────────────── Barra de macro ─────────────────────────────
+
 /**
- * Barra con el rango aceptable dibujado.
+ * Barra con el rango aceptable marcado.
  *
- * La barra no representa "objetivo cumplido o no", sino dónde caes dentro de una
- * franja razonable. El máximo del eje es el mayor entre el límite superior y lo
- * consumido, para que pasarse se vea sin que la barra reviente.
+ * No representa "cumplido o no", sino dónde caes dentro de una franja
+ * razonable. El eje llega al mayor entre el límite alto y lo consumido, para
+ * que pasarse se vea sin que la barra reviente.
  */
-export function MacroBar({ macro, value, range, showRange = true }: MacroBarProps) {
+export function MacroBar({
+  macro, value, range, showRange = true,
+}: { macro: MacroKey; value: number; range: TargetRange; showRange?: boolean }) {
   const meta = MACRO_META[macro];
   const status = macroStatus(value, range);
-  const axisMax = Math.max(range.max * 1.12, value * 1.02, 1);
-  const pct = (v: number) => `${Math.min(100, (v / axisMax) * 100)}%`;
+  const axis = Math.max(range.max * 1.1, value * 1.02, 1);
+  const pct = (v: number) => `${Math.min(100, (v / axis) * 100)}%`;
 
   return (
     <div className="macro">
-      <div className="macro-head">
-        <span className="macro-name">
-          <span aria-hidden="true">{meta.icon}</span> {meta.label}
-        </span>
-        <span className="macro-val">
-          <b>{g(value)}</b> <span>/ {g(range.target)} {meta.unit}</span>
+      <div className="macro-top">
+        <span className="macro-name">{meta.label}</span>
+        <span className="macro-read">
+          <b>{g(value)}</b> / {g(range.target)} {meta.unit}
         </span>
       </div>
       <div
-        className="bar"
+        className="track"
         role="meter"
         aria-valuenow={Math.round(value)}
         aria-valuemin={0}
         aria-valuemax={Math.round(range.max)}
         aria-label={`${meta.label}: ${g(value)} de ${g(range.target)} ${meta.unit}. ${STATUS_TEXT[status]}.`}
       >
-        <span
-          className="bar-range"
-          style={{ left: pct(range.min), width: `calc(${pct(range.max)} - ${pct(range.min)})` }}
-        />
-        <span className="bar-fill" style={{ width: pct(value), background: meta.color }} />
-        <span className="bar-target" style={{ left: pct(range.target) }} />
+        <span className="track-band" style={{ left: pct(range.min), width: `calc(${pct(range.max)} - ${pct(range.min)})` }} />
+        <span className="track-fill" style={{ width: pct(value), background: meta.color }} />
       </div>
       {showRange && (
         <div className="macro-foot">
-          <span>
-            Rango {g(range.min)}–{g(range.max)} {meta.unit}
-          </span>
-          <span className={`tag ${STATUS_CLASS[status]}`}>
-            {STATUS_DOT[status]} {STATUS_TEXT[status]}
-          </span>
+          <span>Rango {g(range.min)}–{g(range.max)}</span>
+          <span style={{ color: status === 'over' ? 'var(--over)' : undefined }}>{STATUS_TEXT[status]}</span>
         </div>
       )}
     </div>
   );
 }
 
-// ───────────────────────────── Anillo de calorías ─────────────────────────────
-
-export function KcalRing({ value, range, size = 104 }: { value: number; range: TargetRange; size?: number }) {
-  const stroke = 9;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const ratio = range.target > 0 ? Math.min(1.25, value / range.target) : 0;
-  const status = macroStatus(value, range);
-  const color =
-    status === 'over' ? 'var(--bad)' : status === 'nearLimit' ? 'var(--warn)' : 'var(--kcal)';
-  return (
-    <svg className="ring" width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img"
-      aria-label={`${g(value)} de ${g(range.target)} kcal`}>
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--bg-elev-2)" strokeWidth={stroke} />
-      <circle
-        cx={size / 2} cy={size / 2} r={r} fill="none" stroke={color} strokeWidth={stroke}
-        strokeLinecap="round" strokeDasharray={c}
-        strokeDashoffset={c * (1 - Math.min(1, ratio))}
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dashoffset 0.4s ease' }}
-      />
-      <text x="50%" y="46%" textAnchor="middle" fill="var(--text)" fontSize="19" fontWeight="700"
-        fontFamily="var(--fm)">{g(value)}</text>
-      <text x="50%" y="62%" textAnchor="middle" fill="var(--text-faint)" fontSize="10.5">
-        de {g(range.target)}
-      </text>
-      <text x="50%" y="76%" textAnchor="middle" fill="var(--text-faint)" fontSize="9.5">kcal</text>
-    </svg>
-  );
-}
+export const STATUS_TONE: Record<MacroStatus, string> = {
+  under: 'var(--ink-3)',
+  inRange: 'var(--accent)',
+  nearLimit: 'var(--warn)',
+  over: 'var(--over)',
+};
 
 // ───────────────────────────── Píldoras de macros ─────────────────────────────
 
-export function MacroPills({ n, keys = ['kcal', 'protein', 'carbs', 'fat', 'fiber'] }: { n: Nutrients; keys?: MacroKey[] }) {
+export function MacroPills({
+  n, keys = ['kcal', 'protein', 'carbs', 'fat', 'fiber'],
+}: { n: Nutrients; keys?: MacroKey[] }) {
   return (
-    <div className="sugg-macros">
+    <div className="pills">
       {keys.map((k) => (
-        <span className="pill" key={k} style={{ color: MACRO_META[k].color }}>
-          {MACRO_META[k].icon} {g(n[k])}
-          {k === 'kcal' ? '' : ' g'}
+        <span className={`pill${k === 'kcal' || k === 'protein' ? ' lead' : ''}`} key={k}>
+          {g(n[k])}{k === 'kcal' ? ' kcal' : ' g'} {MACRO_META[k].short}
         </span>
       ))}
     </div>
@@ -138,16 +123,15 @@ export function MacroPills({ n, keys = ['kcal', 'protein', 'carbs', 'fat', 'fibe
 
 // ───────────────────────────── Hoja inferior ─────────────────────────────
 
-interface SheetProps {
+export function Sheet({
+  title, subtitle, onClose, children, footer,
+}: {
   title: string;
+  subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
-  /** Texto de apoyo bajo el título. */
-  subtitle?: string;
-}
-
-export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps) {
+}) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -170,11 +154,13 @@ export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps
       <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1}>
         <div className="sheet-grab" />
         <div className="sheet-head">
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h2>{title}</h2>
-            {subtitle && <div className="screen-sub">{subtitle}</div>}
+            {subtitle && <div className="sheet-sub">{subtitle}</div>}
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">✕</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+            <Close />
+          </button>
         </div>
         <div className="sheet-body">{children}</div>
         {footer && <div className="sheet-foot">{footer}</div>}
@@ -183,26 +169,30 @@ export function Sheet({ title, subtitle, onClose, children, footer }: SheetProps
   );
 }
 
+function Close() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" aria-hidden="true">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 // ───────────────────────────── Controles ─────────────────────────────
 
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
   return (
     <div className="field">
-      <label>{label}</label>
+      <span className="field-label">{label}</span>
       {children}
       {hint && <div className="hint">{hint}</div>}
     </div>
   );
 }
 
-interface SegmentedProps<T extends string> {
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (v: T) => void;
-  label?: string;
-}
-
-export function Segmented<T extends string>({ value, options, onChange, label }: SegmentedProps<T>) {
+export function Segmented<T extends string>({
+  value, options, onChange, label,
+}: { value: T; options: { value: T; label: string }[]; onChange: (v: T) => void; label?: string }) {
   return (
     <div className="seg" role="group" aria-label={label}>
       {options.map((o) => (
@@ -225,15 +215,13 @@ interface NumberInputProps {
   placeholder?: string;
   label?: string;
   /**
-   * `blur` confirma al salir del campo o al pulsar Enter; `change` confirma en
-   * cada pulsación válida.
+   * `blur` confirma al salir del campo o al pulsar Enter; `change`, en cada
+   * pulsación válida.
    *
-   * Por defecto es `blur`, y es importante: cuando se confirmaba en cada
-   * pulsación, cada tecla guardaba en la base de datos y el valor recién
-   * guardado volvía a pintarse encima de lo que se estaba escribiendo. Borrar
-   * el campo para teclear otro número era imposible: se rellenaba solo con el
-   * valor anterior. Es lo que hacía que los días de entrenamiento no se
-   * pudieran cambiar.
+   * Por defecto `blur`, y es importante: confirmando en cada pulsación, cada
+   * tecla guardaba en la base de datos y el valor recién guardado se repintaba
+   * encima de lo que se estaba escribiendo. Borrar el campo para teclear otro
+   * número era imposible.
    */
   commitOn?: 'blur' | 'change';
 }
@@ -244,13 +232,12 @@ export function NumberInput({
   const [text, setText] = useState(value === '' ? '' : String(value));
   const [editing, setEditing] = useState(false);
 
-  // El valor de fuera solo se copia al campo cuando no se está escribiendo.
   useEffect(() => {
     if (!editing) setText(value === '' ? '' : String(value));
   }, [value, editing]);
 
   const parse = (raw: string): number | null => {
-    // Se acepta la coma decimal: en un móvil español es lo que sale del teclado.
+    // Se acepta la coma decimal: es lo que da el teclado español.
     const n = Number(raw.replace(',', '.'));
     if (raw.trim() === '' || !Number.isFinite(n)) return null;
     if (min != null && n < min) return min;
@@ -261,7 +248,6 @@ export function NumberInput({
   const commit = () => {
     const n = parse(text);
     if (n == null) {
-      // Campo vacío o ilegible: se recupera el último valor válido.
       setText(value === '' ? '' : String(value));
       return;
     }
@@ -282,7 +268,6 @@ export function NumberInput({
         onFocus={() => setEditing(true)}
         onChange={(e) => {
           const raw = e.target.value;
-          // Solo dígitos, una coma o punto y un signo menos inicial.
           if (!/^-?[0-9]*[.,]?[0-9]*$/.test(raw)) return;
           setText(raw);
           if (commitOn === 'change') {
@@ -295,9 +280,7 @@ export function NumberInput({
           commit();
         }}
         onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.currentTarget.blur();
-          }
+          if (e.key === 'Enter') e.currentTarget.blur();
         }}
       />
       {suffix && <span className="suffix">{suffix}</span>}
@@ -305,36 +288,35 @@ export function NumberInput({
   );
 }
 
-/** Aviso reutilizable: la app dice siempre cuándo está estimando. */
-export function EstimateNotice({ children }: { children: ReactNode }) {
+/** Aviso de estimación: la app dice siempre cuándo no sabe con exactitud. */
+export function EstimateNotice({ children, alert = false }: { children: ReactNode; alert?: boolean }) {
   return (
-    <div className="estimate">
-      <span aria-hidden="true">≈</span>
+    <div className={`estimate${alert ? ' alert' : ''}`}>
       <div>{children}</div>
     </div>
   );
 }
 
-export function Empty({ icon = '🍽️', children }: { icon?: string; children: ReactNode }) {
+export function Empty({ title, children }: { title?: string; children: ReactNode }) {
   return (
     <div className="empty">
-      <span className="ico" aria-hidden="true">{icon}</span>
+      {title && <strong>{title}</strong>}
       {children}
     </div>
   );
 }
 
-/** Botón "¿Por qué?": toda recomendación importante se puede auditar. */
+/** Toda recomendación importante se puede auditar. */
 export function WhyButton({ reasons, label = '¿Por qué?' }: { reasons: string[]; label?: string }) {
   const [open, setOpen] = useState(false);
   if (!reasons.length) return null;
   return (
     <div>
-      <button className="link-btn" onClick={() => setOpen(!open)} aria-expanded={open}>
-        {open ? 'Ocultar explicación' : label}
+      <button className="link" onClick={() => setOpen(!open)} aria-expanded={open}>
+        {open ? 'Ocultar' : label}
       </button>
       {open && (
-        <div className="sugg-why" style={{ marginTop: 8 }}>
+        <div className="sugg-why" style={{ marginTop: 8, marginBottom: 0 }}>
           <ul>
             {reasons.map((r, i) => (
               <li key={i}>{r}</li>
@@ -346,17 +328,15 @@ export function WhyButton({ reasons, label = '¿Por qué?' }: { reasons: string[
   );
 }
 
-
-export function Card({ title, right, children, tight }: { title?: string; right?: ReactNode; children: ReactNode; tight?: boolean }) {
+/** Cifra suelta: etiqueta, valor y apunte. */
+export function Figure({
+  label, value, sub, text = false,
+}: { label: string; value: string; sub?: string; text?: boolean }) {
   return (
-    <section className={`card${tight ? ' tight' : ''}`}>
-      {title && (
-        <div className="card-title">
-          <span>{title}</span>
-          {right}
-        </div>
-      )}
-      {children}
-    </section>
+    <div className="figure">
+      <div className="figure-label">{label}</div>
+      <div className={`figure-value${text ? ' text' : ''}`}>{value}</div>
+      {sub && <div className="figure-sub">{sub}</div>}
+    </div>
   );
 }

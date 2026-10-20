@@ -5,7 +5,7 @@ import { computeTargets, profileAge } from '../../domain/nutrition';
 import { nutrientsForEntries, groupEntriesByDate } from '../../domain/trends';
 import { describeSession } from '../../domain/training';
 import { MACRO_KEYS, MEAL_SLOT_LABEL, type MacroKey, type MacroTargets } from '../../domain/types';
-import { Card, EstimateNotice, Field, MACRO_META, MacroPills, NumberInput, Sheet, g } from '../../ui/components';
+import { Section, EstimateNotice, Field, MACRO_META, MacroPills, NumberInput, Sheet, g } from '../../ui/components';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
 import { CONFIDENCE_LABEL, entryNutrients, shareOfDay } from '../logging';
@@ -26,7 +26,7 @@ export function EntrySheet({ id, onClose }: { id: string; onClose: () => void })
       subtitle={`${entry.time} · ${METHOD_LABEL[entry.method]}`}
       onClose={onClose}
       footer={
-        <div className="btn-row">
+        <div className="btns">
           <button className="btn danger" onClick={async () => {
             await app.actions.deleteEntry(entry.id);
             ui.notify('Comida borrada.');
@@ -43,7 +43,7 @@ export function EntrySheet({ id, onClose }: { id: string; onClose: () => void })
               createdAt: Date.now(),
             });
             ui.notify('Guardada como comida habitual.');
-          }}>⭐ Guardar como habitual</button>
+          }}>Guardar como habitual</button>
         </div>
       }
     >
@@ -54,25 +54,25 @@ export function EntrySheet({ id, onClose }: { id: string; onClose: () => void })
       </p>
 
       {entry.sourceNote && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Registro original</span></div>
           <p className="note" style={{ marginBottom: 0, fontStyle: 'italic' }}>«{entry.sourceNote}»</p>
         </div>
       )}
 
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Alimentos</span></div>
-        <div className="list">
+        <div className="rows">
           {entry.items.map((i) => (
             <button className="row" key={i.id} onClick={() => { onClose(); ui.open({ k: 'food', id: i.foodId }); }}>
-              <div className="row-main">
-                <div className="row-title">{i.foodName}</div>
-                <div className="row-sub">
+              <div className="row-body">
+                <div className="row-name">{i.foodName}</div>
+                <div className="row-meta">
                   {Math.round(i.grams)} g
-                  {i.confidence !== 'exact' && <span className="tag warn" style={{ marginLeft: 6 }}>≈ {CONFIDENCE_LABEL[i.confidence]}</span>}
+                  {i.confidence !== 'exact' && <span className="tag" style={{ marginLeft: 6 }}>≈ {CONFIDENCE_LABEL[i.confidence]}</span>}
                 </div>
               </div>
-              <div className="row-side">{g(i.nutrients.kcal)} kcal<br />
+              <div className="row-num">{g(i.nutrients.kcal)} kcal<br />
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>{g(i.nutrients.protein)} g prot</span>
               </div>
             </button>
@@ -102,20 +102,20 @@ export function FoodSheet({ id, onClose }: { id: string; onClose: () => void }) 
       <MacroPills n={food.per100g} />
       <p className="note">Valores por 100 {food.unit}.</p>
 
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Raciones</span></div>
-        <div className="list">
+        <div className="rows">
           {food.portions.map((p) => (
             <div className="row" key={p.label}>
-              <div className="row-main"><div className="row-title" style={{ fontSize: '0.88rem' }}>{p.label}</div></div>
-              <div className="row-side">{p.grams} {food.unit}</div>
+              <div className="row-body"><div className="row-name" style={{ fontSize: '0.88rem' }}>{p.label}</div></div>
+              <div className="row-num">{p.grams} {food.unit}</div>
             </div>
           ))}
         </div>
       </div>
 
       {food.counterpartId && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Ojo con el estado</span></div>
           <p className="note" style={{ marginBottom: 8 }}>
             Existe también <b>{app.foodsById.get(food.counterpartId)?.name}</b>, que no es lo mismo.
@@ -127,8 +127,8 @@ export function FoodSheet({ id, onClose }: { id: string; onClose: () => void }) 
         </div>
       )}
 
-      <div className="btn-row">
-        <button className="btn" onClick={() => { onClose(); ui.open({ k: 'compare' }); }}>⚖️ Comparar</button>
+      <div className="btns">
+        <button className="btn" onClick={() => { onClose(); ui.open({ k: 'compare' }); }}>Comparar</button>
         <button className="btn" aria-pressed={disliked} onClick={async () => {
           const p = app.profile;
           if (!p) return;
@@ -138,7 +138,7 @@ export function FoodSheet({ id, onClose }: { id: string; onClose: () => void }) 
           });
           ui.notify(disliked ? 'Volverá a proponerse.' : 'No se volverá a proponer.');
         }}>
-          {disliked ? '↩️ Volver a proponer' : '🚫 No proponer'}
+          {disliked ? 'Volver a proponer' : 'No proponer'}
         </button>
       </div>
     </Sheet>
@@ -178,8 +178,8 @@ export function TargetsSheet({ onClose }: { onClose: () => void }) {
       subtitle="Puedes fijarlos a mano"
       onClose={onClose}
       footer={
-        <div className="btn-row">
-          <button className="btn ghost" onClick={async () => {
+        <div className="btns">
+          <button className="btn quiet" onClick={async () => {
             // Vuelve al cálculo automático descartando el ajuste manual.
             // `force` es necesario porque los objetivos están marcados como
             // manuales y el recálculo normal los respeta.
@@ -197,15 +197,15 @@ export function TargetsSheet({ onClose }: { onClose: () => void }) {
       }
     >
       {MACRO_KEYS.map((k) => (
-        <div className="card tight" key={k}>
+        <div className="card" key={k}>
           <div className="card-title">
-            <span>{MACRO_META[k].icon} {MACRO_META[k].label}</span>
+            <span>{MACRO_META[k].label}</span>
             <span style={{ textTransform: 'none', letterSpacing: 0 }}>{MACRO_META[k].unit}</span>
           </div>
           <Field label="Objetivo">
             <NumberInput value={t[k].target} step={k === 'kcal' ? 50 : 1} onChange={(v) => setTargetWithRange(k, v)} />
           </Field>
-          <div className="grid-2">
+          <div className="figures two">
             <Field label="Mínimo aceptable">
               <NumberInput value={t[k].min} onChange={(v) => setMacro(k, 'min', v)} />
             </Field>
@@ -218,8 +218,7 @@ export function TargetsSheet({ onClose }: { onClose: () => void }) {
 
       {drift > t.kcal.target * 0.08 && (
         <div className="estimate">
-          <span aria-hidden="true">⚠️</span>
-          <div>
+                    <div>
             Tus macros suman {Math.round(macroSum)} kcal pero el objetivo de calorías es {t.kcal.target}. Si es
             a propósito, adelante; si no, ajusta los carbohidratos.
           </div>
@@ -259,22 +258,22 @@ export function HistorySheet({ onClose }: { onClose: () => void }) {
           <button key={s} className="chip" aria-pressed={span === s} onClick={() => setSpan(s)}>{s} días</button>
         ))}
       </div>
-      <div className="list">
+      <div className="rows">
         {days.map((d) => {
           const entries = byDate.get(d) ?? [];
           const n = nutrientsForEntries(entries);
           const day = app.history.days.get(d);
           return (
             <button className="row" key={d} onClick={() => { app.setDate(d); ui.setTab('today'); onClose(); }}>
-              <div className="row-main">
-                <div className="row-title" style={{ fontSize: '0.88rem' }}>{formatDayLabel(d)}</div>
-                <div className="row-sub">
+              <div className="row-body">
+                <div className="row-name" style={{ fontSize: '0.88rem' }}>{formatDayLabel(d)}</div>
+                <div className="row-meta">
                   {entries.length ? `${entries.length} comidas` : 'sin registro'}
                   {day?.training ? ` · 🏋️ ${describeSession(day.training)}` : ''}
                   {day?.steps != null ? ` · 🚶 ${g(day.steps)}` : ''}
                 </div>
               </div>
-              <div className="row-side">
+              <div className="row-num">
                 {entries.length ? <>{g(n.kcal)} kcal<br /><span style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>{g(n.protein)} g prot</span></> : '—'}
               </div>
             </button>
@@ -313,15 +312,14 @@ export function PrivacySheet({ onClose }: { onClose: () => void }) {
         </button>
       }>
       <div className="estimate" style={{ borderColor: 'var(--bad)' }}>
-        <span aria-hidden="true">⚠️</span>
-        <div>
+                <div>
           Esto es <b>irreversible</b>. Se borrará todo de este dispositivo y no hay copia en ningún servidor
           porque nunca la ha habido.
         </div>
       </div>
 
-      <Card title="Lo que se va a borrar">
-        <div className="list">
+      <Section title="Lo que se va a borrar">
+        <div className="rows">
           <Row label="Comidas registradas" value={counts.entries} />
           <Row label="Pesadas" value={counts.weights} />
           <Row label="Recetas" value={counts.recipes} />
@@ -329,7 +327,7 @@ export function PrivacySheet({ onClose }: { onClose: () => void }) {
           <Row label="Alimentos creados por ti" value={counts.customFoods} />
           <Row label="Tu perfil y objetivos" value={1} />
         </div>
-      </Card>
+      </Section>
 
       <p className="note">
         Si lo que quieres es una copia antes de borrar, cierra esto y usa <b>Exportar</b> en el perfil.
@@ -345,8 +343,8 @@ export function PrivacySheet({ onClose }: { onClose: () => void }) {
 function Row({ label, value }: { label: string; value: number }) {
   return (
     <div className="row">
-      <div className="row-main"><div className="row-title" style={{ fontSize: '0.88rem' }}>{label}</div></div>
-      <div className="row-side">{value}</div>
+      <div className="row-body"><div className="row-name" style={{ fontSize: '0.88rem' }}>{label}</div></div>
+      <div className="row-num">{value}</div>
     </div>
   );
 }
@@ -365,17 +363,17 @@ export function AiSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="🤖 Análisis de fotos con IA"
+      title="Análisis de fotos con IA"
       subtitle={enabled ? 'Activado' : 'Desactivado'}
       onClose={onClose}
       footer={
-        <div className="btn-row">
-          <button className="btn ghost" disabled={!key.trim() || testing} onClick={async () => {
+        <div className="btns">
+          <button className="btn quiet" disabled={!key.trim() || testing} onClick={async () => {
             setTesting(true);
             setResult(null);
             try {
               await testApiKey(key.trim(), model);
-              setResult('✅ La clave funciona.');
+              setResult('La clave funciona.');
             } catch (err) {
               setResult(`⚠️ ${describeAiError(err)}`);
             } finally {
@@ -417,10 +415,10 @@ export function AiSheet({ onClose }: { onClose: () => void }) {
         </select>
       </Field>
 
-      {result && <div className="note-strong" style={{ marginBottom: 12 }}><span className="note">{result}</span></div>}
+      {result && <div className="panel" style={{ marginBottom: 12 }}><span className="note">{result}</span></div>}
 
       <div className="estimate">
-        <span aria-hidden="true">🔐</span>
+        
         <div>
           <b>Aviso honesto sobre la clave.</b> Las peticiones van de este navegador directamente a la API, sin
           servidor intermedio. Eso es bueno para tu privacidad —nadie más ve tus fotos— pero significa que la

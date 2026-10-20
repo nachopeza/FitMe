@@ -101,17 +101,17 @@ export function LabelScan({ onClose }: { onClose: () => void }) {
 
   return (
     <Sheet
-      title="🏷️ Escanear etiqueta"
+      title="Escanear etiqueta"
       subtitle="Crea un alimento a partir de su tabla nutricional"
       onClose={onClose}
       footer={
-        <div className="btn-row">
+        <div className="btns">
           {aiReady && payload ? (
-            <button className="btn ghost" disabled={busy} onClick={() => void transcribeWithAi()}>
+            <button className="btn quiet" disabled={busy} onClick={() => void transcribeWithAi()}>
               {busy ? <span className="spinner" /> : 'Leer con IA'}
             </button>
           ) : (
-            <button className="btn ghost" onClick={() => fileInput.current?.click()}>Hacer foto</button>
+            <button className="btn quiet" onClick={() => fileInput.current?.click()}>Hacer foto</button>
           )}
           <button className="btn primary" disabled={!text.trim()} onClick={() => buildDraft(text)}>
             Extraer valores
@@ -125,18 +125,18 @@ export function LabelScan({ onClose }: { onClose: () => void }) {
       {preview ? (
         <>
           <img className="preview" src={preview} alt="Foto de la etiqueta" />
-          <div className="btn-row" style={{ marginTop: 10 }}>
-            <button className="btn ghost sm" onClick={() => { setPreview(null); setPayload(null); }}>Cambiar foto</button>
-            <button className="btn ghost sm" onClick={() => fileInput.current?.click()}>Otra foto</button>
+          <div className="btns" style={{ marginTop: 10 }}>
+            <button className="btn quiet sm" onClick={() => { setPreview(null); setPayload(null); }}>Cambiar foto</button>
+            <button className="btn quiet sm" onClick={() => fileInput.current?.click()}>Otra foto</button>
           </div>
         </>
       ) : (
-        <button className="btn" onClick={() => fileInput.current?.click()}>📷 Fotografiar la etiqueta</button>
+        <button className="btn" onClick={() => fileInput.current?.click()}>Fotografiar la etiqueta</button>
       )}
 
       {error && (
         <div className="estimate" style={{ marginTop: 12, borderColor: 'var(--bad)' }}>
-          <span aria-hidden="true">⚠️</span><div>{error}</div>
+          <div>{error}</div>
         </div>
       )}
 

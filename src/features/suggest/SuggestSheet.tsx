@@ -9,13 +9,14 @@ import { useUI } from '../../ui/shell';
 import { slotForTime, useApp } from '../store';
 import { foodIdsUsed } from '../logging';
 import { ConfirmEntry } from '../capture/ConfirmEntry';
+import { Icon } from '../../ui/icons';
 
 type Mode = 'normal' | 'quick' | 'noCook';
 
 const MODE_TITLE: Record<Mode, string> = {
-  normal: '🍽️ ¿Qué como ahora?',
-  quick: '⚡ Cena rápida',
-  noCook: '😴 No quiero cocinar',
+  normal: '¿Qué como ahora?',
+  quick: 'Algo rápido',
+  noCook: 'Sin cocinar',
 };
 
 const MODE_SUB: Record<Mode, string> = {
@@ -130,13 +131,13 @@ export function SuggestSheet({
   return (
     <Sheet title={title ?? MODE_TITLE[mode]} subtitle={MODE_SUB[mode]} onClose={onClose}>
       {/* ── Lo que falta: es la base de todo lo que viene debajo ── */}
-      <div className="card tight">
+      <div className="card">
         <div className="card-title"><span>Te queda hoy</span></div>
-        <div className="grid-3">
+        <div className="figures">
           {(['kcal', 'protein', 'carbs'] as const).map((k) => (
-            <div className="stat" key={k}>
-              <div className="stat-label">{MACRO_META[k].icon} {MACRO_META[k].short}</div>
-              <div className="stat-value">{g(Math.max(0, app.remaining[k]))}</div>
+            <div className="figure" key={k}>
+              <div className="figure-label">{MACRO_META[k].short}</div>
+              <div className="figure-value">{g(Math.max(0, app.remaining[k]))}</div>
             </div>
           ))}
         </div>
@@ -149,16 +150,15 @@ export function SuggestSheet({
       <div className="chips" style={{ marginBottom: 12 }}>
         {(['normal', 'quick', 'noCook'] as Mode[]).map((m) => (
           <button key={m} className="chip" aria-pressed={mode === m} onClick={() => setMode(m)}>
-            {m === 'normal' ? 'Normal' : m === 'quick' ? '⚡ Rápido' : '😴 Sin cocinar'}
+            {m === 'normal' ? 'Normal' : m === 'quick' ? 'Rápido' : 'Sin cocinar'}
           </button>
         ))}
-        <button className="chip" aria-pressed={pantryMode} onClick={() => setPantryMode((v) => !v)}>
-          🏠 Tengo esto en casa
+        <button className="chip" aria-pressed={pantryMode} onClick={() => setPantryMode((v) => !v)}>Tengo esto en casa
         </button>
       </div>
 
       {pantryMode && (
-        <div className="card tight">
+        <div className="card">
           <div className="card-title"><span>Qué tienes en casa</span></div>
           <textarea className="input" rows={3} value={pantryText} onChange={(e) => setPantryText(e.target.value)}
             placeholder="arroz, huevos, atún, tomate, yogur, pollo" />
@@ -172,7 +172,7 @@ export function SuggestSheet({
       {/* ── Propuestas ── */}
       {nothingLeft && (
         <div className="estimate" style={{ marginBottom: 12 }}>
-          <span aria-hidden="true">✓</span>
+          <Icon name="check" size={16} />
           <div>
             Hoy ya has cubierto prácticamente tus objetivos. Si tienes hambre, come: un día por encima no
             estropea nada. Estas opciones son pequeñas a propósito.
@@ -182,7 +182,6 @@ export function SuggestSheet({
 
       {suggestions.length === 0 ? (
         <div className="empty">
-          <span className="ico" aria-hidden="true">🤔</span>
           No encuentro nada que encaje con estas condiciones.
           {pantryMode && <><br />Prueba a añadir algún alimento más a la lista.</>}
           {mode === 'noCook' && <><br />O permite cocinar algo (modo Normal o Rápido).</>}
@@ -195,7 +194,7 @@ export function SuggestSheet({
         Las propuestas se ordenan por lo que más te falta, en este orden: proteína, energía, reparto de
         carbohidratos y grasa, fibra, entrenamiento, apetito, digestión, lo que tienes en casa y facilidad.
       </p>
-      <button className="btn ghost sm" onClick={() => { onClose(); ui.open({ k: 'dayState' }); }}>
+      <button className="btn quiet sm" onClick={() => { onClose(); ui.open({ k: 'dayState' }); }}>
         Cambiar hambre o digestión de hoy
       </button>
     </Sheet>
@@ -208,12 +207,12 @@ function SuggestionCard({
   const [why, setWhy] = useState(false);
   return (
     <div className="sugg">
-      <div className="sugg-head">
+      <div className="sugg-top">
         <div>
           <div className="screen-sub" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
             Opción {index + 1}
           </div>
-          <div className="sugg-title">{s.title}</div>
+          <div className="sugg-name">{s.title}</div>
         </div>
         <span className="tag">{s.prepMinutes <= 5 ? 'Sin cocinar' : `${s.prepMinutes} min`}</span>
       </div>
@@ -233,7 +232,7 @@ function SuggestionCard({
 
       {s.why.length > 0 && (
         <>
-          <button className="link-btn" onClick={() => setWhy((v) => !v)} aria-expanded={why}>
+          <button className="link" onClick={() => setWhy((v) => !v)} aria-expanded={why}>
             {why ? 'Ocultar explicación' : '¿Por qué?'}
           </button>
           {why && (
