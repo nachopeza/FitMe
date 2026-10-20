@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import { formatDayLabel } from '../../domain/dates';
-import type { Routine, Workout } from '../../domain/types';
+import type { Exercise, Routine, Workout } from '../../domain/types';
 import {
   musclesWorked, totalSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
@@ -89,17 +89,30 @@ export function WorkoutScreen() {
           title="Tus rutinas"
           action={<button className="link" onClick={() => ui.open({ k: 'routine' })}>Editar</button>}
         >
-          <div className="rows">
+          {/* Tarjeta por rutina: lo que lleva dentro se lee antes de empezarla,
+              y el botón de empezar ocupa todo el ancho porque es lo que se va a
+              tocar nueve de cada diez veces. */}
+          <div className="routines">
             {[...app.routines]
               .sort((a, b) => b.useCount - a.useCount || b.createdAt - a.createdAt)
               .map((r) => (
-                <div className="row" key={r.id}>
-                  <div className="row-body">
-                    <div className="row-name">{r.name}</div>
-                    <div className="row-meta">{describeRoutine(r)}</div>
+                <div className="routine" key={r.id}>
+                  <div className="routine-head">
+                    <div style={{ minWidth: 0 }}>
+                      <div className="routine-name">{r.name}</div>
+                      <div className="row-meta">{describeRoutine(r)}</div>
+                    </div>
+                    <button
+                      className="icon-btn"
+                      aria-label={`Editar ${r.name}`}
+                      onClick={() => ui.open({ k: 'routine', id: r.id })}
+                    >
+                      <Icon name="pen" size={17} />
+                    </button>
                   </div>
-                  <button className="btn sm auto" disabled={!!live} onClick={() => void start(r.id)}>
-                    Empezar
+                  <p className="routine-list">{listExercises(r, app.exercises)}</p>
+                  <button className="btn primary" disabled={!!live} onClick={() => void start(r.id)}>
+                    Empezar rutina
                   </button>
                 </div>
               ))}
@@ -198,6 +211,18 @@ function describeRoutine(r: Routine): string {
   const sets = r.exercises.reduce((a, e) => a + e.sets, 0);
   const used = r.useCount > 0 ? ` · usada ${r.useCount} ${r.useCount === 1 ? 'vez' : 'veces'}` : '';
   return `${count} ${count === 1 ? 'ejercicio' : 'ejercicios'} · ${sets} series${used}`;
+}
+
+/**
+ * Los ejercicios de una rutina, en una línea.
+ *
+ * Es lo que de verdad identifica una rutina: "Espalda/Bíceps" no dice nada,
+ * "Jalón al pecho, Remo con barra, Curl…" sí.
+ */
+function listExercises(r: Routine, exercises: Exercise[]): string {
+  const byId = new Map(exercises.map((e) => [e.id, e.name] as const));
+  const names = r.exercises.map((re) => byId.get(re.exerciseId)).filter((n): n is string => !!n);
+  return names.length ? names.join(', ') : 'Sin ejercicios todavía';
 }
 
 /** Ejercicios más registrados, para ofrecer su progresión. */

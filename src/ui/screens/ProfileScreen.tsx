@@ -5,6 +5,7 @@ import { estimateMaintenance, profileAge } from '../../domain/nutrition';
 import { GOAL_LABEL, MACRO_KEYS, MEAL_SLOTS, MEAL_SLOT_LABEL, type ActivityLevel, type Goal, type Hunger, type Sex } from '../../domain/types';
 import { Section, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from '../components';
 import { MacroAnalysis } from '../../features/sheets/MacroAnalysis';
+import { Icon } from '../icons';
 import { useUI } from '../shell';
 
 const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
@@ -165,19 +166,28 @@ export function ProfileScreen() {
         </Field>
       </Section>
 
+      {/* Cuadrícula de herramientas: antes eran tres botones en una rejilla de
+          dos columnas, con el tercero descolgado. */}
       <Section title="Herramientas">
-        <div className="btns">
-          <button className="btn" onClick={() => ui.open({ k: 'calculator' })}>Calculadora</button>
-          <button className="btn" onClick={() => ui.open({ k: 'compare' })}>Comparador</button>
+        <div className="tools">
+          {([
+            ['calendar', 'calendar', 'Calendario', 'Tus días'],
+            ['basics', 'bowl', 'Mis básicos', 'Un toque'],
+            ['recipe', 'book', 'Recetas', 'Lo que cocinas'],
+            ['shopping', 'cart', 'La compra', 'Lo que falta'],
+            ['compare', 'progress', 'Comparador', 'Dos alimentos'],
+            ['calculator', 'pen', 'Calculadora', 'Cuentas sueltas'],
+          ] as const).map(([sheet, icon, label, sub]) => (
+            <button className="tool" key={sheet} onClick={() => ui.open({ k: sheet })}>
+              <span className="tool-ico"><Icon name={icon} size={19} /></span>
+              <span className="tool-name">{label}</span>
+              <span className="tool-sub">{sub}</span>
+            </button>
+          ))}
         </div>
-        <div className="btns">
-          <button className="btn" onClick={() => ui.open({ k: 'basics' })}>Mis básicos</button>
-          <button className="btn" onClick={() => ui.open({ k: 'recipe' })}>Recetas</button>
-          <button className="btn" onClick={() => ui.open({ k: 'shopping' })}>Lista de la compra</button>
-        </div>
-        <div className="btns one">
-          <button className="btn" onClick={() => ui.open({ k: 'ai' })}>Análisis de fotos con IA</button>
-        </div>
+        <button className="btn" style={{ marginTop: 11 }} onClick={() => ui.open({ k: 'ai' })}>
+          Análisis de fotos con IA
+        </button>
       </Section>
 
       <Section title="Apariencia">

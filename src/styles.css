@@ -1683,3 +1683,202 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 }
 .done-set b { color: var(--ink-3); font-size: 0.72rem; font-weight: 700; }
 .tag.record { background: var(--m-carbs-soft); color: var(--m-carbs); font-weight: 700; }
+
+/* ═══════════ Anillo pequeño: una comida ═══════════ */
+
+.mini-ring { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
+.mini-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.mini-ring circle { fill: none; stroke-width: 5; stroke-linecap: round; }
+.mini-track { stroke: var(--paper-3); }
+.mini-arc {
+  stroke: var(--accent);
+  transition: stroke-dasharray 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* La comida en la que va corto se señala; la cubierta, en verde. Nunca en rojo:
+   quedarse corto es información, no una falta. */
+.tone-behind .mini-arc { stroke: var(--m-carbs); }
+.tone-done .mini-arc { stroke: var(--m-fat); }
+
+@media (prefers-reduced-motion: reduce) {
+  .mini-arc { transition: none; }
+}
+
+/* ═══════════ Las comidas del día ═══════════ */
+
+.meals { display: grid; gap: 1px; background: var(--rule); border-radius: var(--r); overflow: hidden; }
+.meal {
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 13px 14px;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-height: 68px;
+}
+.meal:active { background: var(--paper-2); }
+.meal-body { min-width: 0; flex: 1 1 auto; }
+.meal-name { font-weight: 650; letter-spacing: -0.01em; }
+.meal-read { font-size: 0.82rem; color: var(--ink-3); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.meal-read b { color: var(--ink-2); font-weight: 650; }
+.meal-what {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.meal-add {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--r-pill);
+  display: grid;
+  place-items: center;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+/* La comida señalada lleva un canto de color a la izquierda. */
+.meal.is-behind { box-shadow: inset 3px 0 0 var(--m-carbs); }
+
+/* ═══════════ Macros compactos bajo el anillo ═══════════ */
+
+.macro-mini { display: grid; gap: 9px; margin-top: 4px; }
+.macro-mini-item { display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; align-items: baseline; }
+.macro-mini-name { font-size: 0.82rem; color: var(--ink-2); }
+.macro-mini-read {
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.macro-mini-read b { color: var(--ink); font-weight: 650; }
+.macro-mini-bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--paper-3);
+  overflow: hidden;
+}
+.macro-mini-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) { .macro-mini-bar > span { transition: none; } }
+
+/* ═══════════ Tarjeta de rutina ═══════════ */
+
+.routines { display: grid; gap: 11px; }
+.routine {
+  background: var(--card);
+  border-radius: var(--r);
+  padding: 15px 16px 14px;
+  box-shadow: var(--shadow-tap);
+  border: 1px solid var(--rule);
+}
+.routine-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.routine-name {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+/* Dos líneas de ejercicios y lo demás con puntos suspensivos: identifica la
+   rutina sin convertir la tarjeta en una lista interminable. */
+.routine-list {
+  margin: 9px 0 13px;
+  font-size: 0.86rem;
+  color: var(--ink-3);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ═══════════ Calendario del mes ═══════════ */
+
+.cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-month {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  text-transform: capitalize;
+}
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.cal-wd {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--ink-3);
+  font-weight: 650;
+  padding-bottom: 4px;
+}
+.cal-day {
+  aspect-ratio: 1;
+  border: 0;
+  background: var(--paper-2);
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  align-content: center;
+  padding: 0;
+  font: inherit;
+  color: var(--ink-2);
+  cursor: pointer;
+  min-width: 0;
+}
+.cal-day:active { background: var(--paper-3); }
+.cal-day.is-today { outline: 2px solid var(--accent); outline-offset: -2px; color: var(--accent); font-weight: 700; }
+.cal-day.is-future { opacity: 0.35; cursor: default; }
+.cal-num { font-size: 0.85rem; font-variant-numeric: tabular-nums; line-height: 1; }
+.cal-dots { display: flex; gap: 3px; height: 6px; align-items: center; }
+.cal-dots i, .cal-legend i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot-ate { background: var(--m-protein); }
+.dot-gym { background: var(--m-carbs); }
+.cal-legend {
+  display: flex;
+  gap: 16px;
+  margin: 14px 0 10px;
+  font-size: 0.8rem;
+  color: var(--ink-2);
+}
+.cal-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.cal-legend i { width: 7px; height: 7px; }
+
+/* ═══════════ Cuadrícula de herramientas ═══════════ */
+
+.tools { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
+.tool {
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  padding: 13px 14px;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-height: 84px;
+  box-shadow: var(--shadow-tap);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tool:active { transform: scale(0.97); }
+.tool-ico { color: var(--accent); display: grid; margin-bottom: 4px; }
+.tool-name { font-weight: 650; letter-spacing: -0.01em; }
+.tool-sub { font-size: 0.78rem; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { .tool { transition: none; } .tool:active { transform: none; } }

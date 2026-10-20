@@ -4,13 +4,14 @@ import { behindMacro, closeTheGap, loggingStreak } from '../../domain/motivation
 import { scaleNutrients } from '../../domain/nutrition';
 import { describeSession, sessionKcal } from '../../domain/training';
 import { proteinDistribution } from '../../domain/trends';
+import { eatenBySlot, mealBehind, mealTargets } from '../../domain/meals';
 import { MEAL_SLOTS, MEAL_SLOT_LABEL, type MealEntry, type MealSlot } from '../../domain/types';
 import { entryNutrients, itemsNutrients } from '../../features/logging';
 import { iconForText, quickAddItems, slotFromHour } from '../../features/quickAdd';
 import { useApp } from '../../features/store';
-import { Figure, MacroBar, Section, g } from '../components';
+import { Figure, Section, g } from '../components';
 import { Icon } from '../icons';
-import { Ring } from '../Ring';
+import { MiniRing, Ring } from '../Ring';
 import { useUI } from '../shell';
 
 /**
@@ -71,6 +72,23 @@ export function TodayScreen() {
   const distribution = useMemo(
     () => proteinDistribution(entries, targets.protein.target),
     [entries, targets.protein.target],
+  );
+
+  /** Objetivo de cada comida, sobre las franjas que él usa de verdad. */
+  const slotTargets = useMemo(() => {
+    const times = profile?.mealTimes ?? {};
+    const slots = MEAL_SLOTS.filter((sl) => sl !== 'extra' && times[sl]);
+    return mealTargets(targets.kcal.target, targets.protein.target, slots.length ? slots : undefined);
+  }, [profile?.mealTimes, targets.kcal.target, targets.protein.target]);
+
+  const eaten = useMemo(
+    () => eatenBySlot(entries.map((e) => ({ slot: e.slot, nutrients: entryNutrients(e) }))),
+    [entries],
+  );
+
+  const behindSlot = useMemo(
+    () => mealBehind(slotTargets, eaten, profile?.mealTimes ?? {}, nowTime()),
+    [slotTargets, eaten, profile?.mealTimes],
   );
 
   const kcalLeft = Math.max(0, Math.round(remaining.kcal));
@@ -195,11 +213,33 @@ export function TodayScreen() {
           )}
         </Ring>
 
-        {/* Leyenda de lo cargado. El anillo ya dice cuánto; esto, de qué. */}
-        <div className="load-legend">
-          <span><i style={{ background: 'var(--m-protein)' }} />{g(consumed.protein)} g prot</span>
-          <span><i style={{ background: 'var(--m-carbs)' }} />{g(consumed.carbs)} g carb</span>
-          <span><i style={{ background: 'var(--m-fat)' }} />{g(consumed.fat)} g gras</span>
+        {/* Macros bajo el anillo: cuánto de cada uno y cuánto queda, con su
+            color de disco. El anillo dice cuánto llevas; esto, de qué. */}
+        <div className="macro-mini">
+          {([
+            ['protein', 'Proteína', consumed.protein, targets.protein.target],
+            ['carbs', 'Carbohidratos', consumed.carbs, targets.carbs.target],
+            ['fat', 'Grasas', consumed.fat, targets.fat.target],
+          ] as const).map(([key, label, value, target]) => (
+            <div className="macro-mini-item" key={key}>
+              <span className="macro-mini-name">{label}</span>
+              <span className="macro-mini-bar">
+                <span
+                  style={{
+                    width: `${Math.min(100, (value / Math.max(1, target)) * 100)}%`,
+                    background: `var(--m-${key})`,
+                  }}
+                />
+              </span>
+              <span className="macro-mini-read">
+                <b>{g(value)}</b> / {g(target)} g
+              </span>
+            </div>
+          ))}
+          <button className="link" style={{ justifySelf: 'start', marginTop: 2 }}
+            onClick={() => ui.open({ k: 'macros' })}>
+            Ver rangos y fibra
+          </button>
         </div>
         <div className="fuel-foot" style={{ marginTop: 10 }}>
           <span>{g(consumed.kcal)} de {g(targets.kcal.target)} kcal</span>
@@ -274,11 +314,47 @@ export function TodayScreen() {
         </div>
       </Section>
 
-      {/* ── Macros, en segundo plano ── */}
-      <Section title="Macros de hoy" action={<button className="link" onClick={() => ui.open({ k: 'macros' })}>Ver todo</button>}>
-        <MacroBar macro="protein" value={consumed.protein} range={targets.protein} showRange={false} />
-        <MacroBar macro="carbs" value={consumed.carbs} range={targets.carbs} showRange={false} />
-        <MacroBar macro="fat" value={consumed.fat} range={targets.fat} showRange={false} />
+      {/* ── Las comidas del día ──
+          Un objetivo por comida convierte "te faltan 2000 kcal" en algo
+          accionable: señala en qué comida se está quedando corto. */}
+      <Section title="Las comidas de hoy">
+        <div className="meals">
+          {slotTargets.map((t) => {
+            const got = eaten.get(t.slot) ?? null;
+            const kcal = Math.round(got?.kcal ?? 0);
+            const pct = t.kcal > 0 ? kcal / t.kcal : 0;
+            const what = (bySlot.get(t.slot) ?? []).map((e) => e.name).filter(Boolean).join(', ');
+            const isBehind = behindSlot === t.slot;
+            return (
+              <button
+                className={`meal${isBehind ? ' is-behind' : ''}`}
+                key={t.slot}
+                onClick={() => ui.open({ k: 'manual', slot: t.slot })}
+              >
+                <MiniRing
+                  value={kcal}
+                  target={t.kcal}
+                  tone={pct >= 0.85 ? 'done' : isBehind ? 'behind' : 'accent'}
+                  label={`${MEAL_SLOT_LABEL[t.slot]}: ${kcal} de ${t.kcal} kcal`}
+                />
+                <div className="meal-body">
+                  <div className="meal-name">{MEAL_SLOT_LABEL[t.slot]}</div>
+                  <div className="meal-read">
+                    <b>{g(kcal)}</b> / {g(t.kcal)} kcal · {g(Math.round(got?.protein ?? 0))} / {t.protein} g prot
+                  </div>
+                  {what && <div className="meal-what">{what}</div>}
+                </div>
+                <span className="meal-add" aria-hidden="true"><Icon name="plus" size={16} /></span>
+              </button>
+            );
+          })}
+        </div>
+        {behindSlot && (
+          <p className="note tight" style={{ marginTop: 11 }}>
+            Vas corto en <b>{MEAL_SLOT_LABEL[behindSlot].toLowerCase()}</b>. No hace falta recuperarlo
+            de golpe: reparte lo que falta en lo que queda de día.
+          </p>
+        )}
       </Section>
 
       {/* ── Lo registrado ── */}

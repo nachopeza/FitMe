@@ -16,6 +16,7 @@ export type SheetSpec =
   | { k: 'voice' }
   | { k: 'photo' }
   | { k: 'basics' }
+  | { k: 'calendar' }
   | { k: 'barcode' }
   | { k: 'label' }
   | { k: 'saved' }

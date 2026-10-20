@@ -13,6 +13,7 @@ import { Onboarding } from './screens/Onboarding';
 import { ProfileScreen, applyTheme } from './screens/ProfileScreen';
 import { TodayScreen } from './screens/Today';
 import { WorkoutScreen } from './screens/Workout';
+import { CalendarSheet } from '../features/sheets/CalendarSheet';
 import { FoodEditSheet } from '../features/sheets/FoodEditSheet';
 import { MyBasics } from '../features/sheets/MyBasics';
 import { Icon, type IconName } from './icons';
@@ -153,6 +154,7 @@ function SheetRouter() {
     case 'composition': return <CompositionSheet id={s.id} onClose={close} />;
     case 'photo': return <PhotoAnalyze onClose={close} />;
     case 'basics': return <MyBasics onClose={close} />;
+    case 'calendar': return <CalendarSheet onClose={close} />;
     case 'barcode': return <BarcodeScan onClose={close} />;
     case 'label': return <LabelScan onClose={close} />;
     case 'saved': return <SavedMealsSheet onClose={close} />;

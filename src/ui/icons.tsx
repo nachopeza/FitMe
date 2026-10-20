@@ -12,7 +12,7 @@ export type IconName =
   | 'coffee' | 'bread' | 'bowl' | 'sandwich' | 'shake' | 'plate'
   | 'mic' | 'camera' | 'barcode' | 'tag' | 'star' | 'pen'
   | 'dumbbell' | 'timer' | 'check' | 'search' | 'trash' | 'chevron'
-  | 'weight' | 'steps' | 'book' | 'cart' | 'flame';
+  | 'weight' | 'steps' | 'book' | 'cart' | 'flame' | 'calendar';
 
 interface IconProps {
   name: IconName;
@@ -216,6 +216,14 @@ export function Icon({ name, size = 24, active = false }: IconProps) {
           <rect x="14.4" y="6.5" width="3.6" height="11" rx="1.4" />
           <path d="M9.6 12h4.8" />
           <path d="M3.2 9.5v5M20.8 9.5v5" />
+        </svg>
+      );
+    case 'calendar':
+      return (
+        <svg {...p}>
+          <rect x="3.4" y="5.2" width="17.2" height="15.4" rx="3" />
+          <path d="M3.4 9.6h17.2M8 3.4v3.4M16 3.4v3.4" />
+          <path d="M7.6 13.4h.01M12 13.4h.01M16.4 13.4h.01M7.6 17h.01M12 17h.01" strokeWidth={2.4} />
         </svg>
       );
     case 'timer':

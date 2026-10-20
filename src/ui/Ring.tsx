@@ -60,3 +60,40 @@ export function Ring({
     </div>
   );
 }
+
+
+/**
+ * Anillo pequeño de una comida.
+ *
+ * Un solo tramo —la energía de esa franja— y el número de kcal dentro. Puesto
+ * en fila, el día entero se lee de un vistazo y se ve en qué comida se queda
+ * corto, que es justo lo que no decía una cifra única del día.
+ */
+export function MiniRing({
+  value, target, tone = 'accent', size = 46, label,
+}: {
+  value: number;
+  target: number;
+  tone?: 'accent' | 'behind' | 'done';
+  size?: number;
+  label?: string;
+}) {
+  const r = 20;
+  const c = 2 * Math.PI * r;
+  const fraction = target > 0 ? Math.min(1, Math.max(0, value / target)) : 0;
+  return (
+    <span className={`mini-ring tone-${tone}`} style={{ width: size, height: size }} role="img"
+      aria-label={label ?? `${Math.round(fraction * 100)}% de la comida`}>
+      <svg viewBox="0 0 48 48">
+        <circle className="mini-track" cx="24" cy="24" r={r} />
+        <circle
+          className="mini-arc"
+          cx="24"
+          cy="24"
+          r={r}
+          strokeDasharray={`${fraction * c} ${c - fraction * c}`}
+        />
+      </svg>
+    </span>
+  );
+}
