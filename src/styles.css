@@ -1933,10 +1933,13 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .body-map { display: flex; gap: 10px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
 .body-map figure { margin: 0; }
 .body-svg { width: var(--body-size, 150px); height: auto; display: block; }
-.body-base { fill: var(--paper-3); }
-/* Las piezas se dibujan con un hilo del color del papel entre ellas, para que
-   brazos y tronco se distingan en vez de fundirse en una mancha. */
-.body-base path { stroke: var(--paper); stroke-width: 1.4; }
+.body-fill { fill: var(--paper-3); }
+/* Los miembros van como trazo con remate redondo: es lo que los hace parecer
+   brazos y piernas en vez de piezas rectas encajadas. */
+.body-limbs { fill: none; stroke: var(--paper-3); stroke-linecap: round; }
+/* Una zona encendida puede ser una forma rellena (pecho, espalda, core) o un
+   miembro, y entonces se pinta con el mismo trazo que la silueta. */
+.body-on.is-limb { fill: none; stroke: var(--m-protein); stroke-linecap: round; }
 /* Tres niveles de intensidad con el azul de la proteína: más series, más
    saturado. Siempre sobre la silueta, nunca sustituyéndola. */
 .body-on { fill: var(--m-protein); }
