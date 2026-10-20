@@ -562,6 +562,9 @@ select.input { appearance: none; background-image: none; }
   color: var(--ink-2);
   min-height: 38px;
   min-width: 0;
+  /* Una etiqueta corta como "30 d" no debe partirse en dos líneas y descuadrar
+     el resto del grupo cuando la pantalla es estrecha. */
+  white-space: nowrap;
 }
 .seg button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: var(--shadow-tap); }
 

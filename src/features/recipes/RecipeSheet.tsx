@@ -310,8 +310,10 @@ export function SavedMealsSheet({ onClose }: { onClose: () => void }) {
       footer={<button className="btn quiet" onClick={() => { onClose(); ui.open({ k: 'recipe' }); }}>Ver recetas</button>}>
       {sorted.length === 0 ? (
         <div className="empty">
-          Aún no has guardado ninguna.
-          <br />Cuando registres una comida, marca «Guardar como comida habitual».
+          <strong>Aún no has guardado ninguna</strong>
+          La vía más corta es montar tu café o tu tostada desde Hoy y darle a «Añadir y recordar».
+          Cualquier comida registrada también se puede guardar: marca «Guardar como comida habitual»
+          al confirmarla.
         </div>
       ) : (
         <div className="rows">
