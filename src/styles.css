@@ -1950,3 +1950,20 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   margin-top: 4px;
 }
 .body-extra { flex: 1 0 100%; text-align: center; font-size: 0.78rem; color: var(--ink-3); margin: 6px 0 0; }
+
+/* Bloque de SQL para copiar: monoespaciado y con desplazamiento propio, que es
+   largo y no debe romper el ancho de la hoja. */
+.sql {
+  background: var(--iron);
+  color: var(--iron-ink);
+  border-radius: var(--r-sm);
+  padding: 12px 13px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  white-space: pre;
+  margin: 10px 0;
+  max-height: 220px;
+  overflow-y: auto;
+}

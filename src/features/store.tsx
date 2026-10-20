@@ -168,6 +168,40 @@ export function AppProvider({ children }: { children: ReactNode }) {
    */
   const profile = useLiveQuery(async () => (await db.profile.get('me')) ?? null, [], undefined);
   const settings = useLiveQuery(() => getSettings(), [], DEFAULT_SETTINGS) ?? DEFAULT_SETTINGS;
+
+  /**
+   * Sincronización automática.
+   *
+   * Al abrir la app y al recuperar la red. Falla en silencio a propósito: que
+   * no haya cobertura en el gimnasio no es un error que haya que anunciar, y
+   * los cambios quedan anotados para la próxima.
+   */
+  useEffect(() => {
+    if (!settings.syncUrl || !settings.syncKey || !settings.syncSession) return;
+    let cancelled = false;
+    const creds = { url: settings.syncUrl, anonKey: settings.syncKey };
+    const session = settings.syncSession;
+
+    const run = async () => {
+      if (cancelled || !navigator.onLine) return;
+      try {
+        const { syncNow } = await import('./account/sync');
+        const result = await syncNow(creds, session);
+        if (cancelled) return;
+        await saveSettings({ ...settings, syncSession: result.session, lastSyncAt: result.at });
+      } catch {
+        /* sin red o servidor caído: se reintenta en la próxima ocasión */
+      }
+    };
+
+    void run();
+    window.addEventListener('online', run);
+    return () => { cancelled = true; window.removeEventListener('online', run); };
+    // Solo depende de la identidad de la cuenta: si dependiera del objeto entero
+    // de ajustes, cada sincronización se volvería a disparar a sí misma.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [settings.syncUrl, settings.syncKey, settings.syncSession?.userId]);
+
   const foods = useLiveQuery(() => allFoods(), [], [] as Food[]) ?? [];
   const recipes = useLiveQuery(() => db.recipes.toArray(), [], [] as Recipe[]) ?? [];
   const savedMeals = useLiveQuery(() => db.savedMeals.toArray(), [], [] as SavedMeal[]) ?? [];

@@ -10,10 +10,32 @@ import type {
 /**
  * Almacenamiento local en IndexedDB.
  *
- * Todo vive en el dispositivo: no hay servidor, no hay cuentas y no se envía
- * nada a ningún sitio salvo que el usuario active explícitamente la búsqueda
- * por código de barras (OpenFoodFacts) o el análisis de fotos con IA.
+ * El dispositivo sigue siendo la fuente de verdad y la app funciona entera sin
+ * conexión y sin cuenta. Si el usuario crea una, los mismos datos se copian a
+ * su servidor para poder recuperarlos en otro móvil; nada sale de aquí sin que
+ * él lo active, igual que con el escáner o el análisis de fotos.
  */
+
+/** Tipos de registro que se sincronizan, si hay cuenta. */
+export const SYNCED = ['profile', 'settings', 'entries', 'days', 'weights', 'workouts',
+  'routines', 'savedMeals', 'recipes', 'foods', 'exercises'] as const;
+export type SyncedKind = (typeof SYNCED)[number];
+
+/**
+ * Cambios pendientes de subir.
+ *
+ * Se rellena con ganchos de Dexie y no desde cada acción: así cualquier
+ * escritura queda anotada, también las que se escriban en el futuro, sin tener
+ * que acordarse de llamar a nada.
+ */
+export interface OutboxRow {
+  /** `${kind}:${id}` */
+  key: string;
+  kind: SyncedKind;
+  id: string;
+  updatedAt: number;
+  deleted?: boolean;
+}
 
 interface MetaRow {
   key: string;
@@ -33,6 +55,7 @@ export class FitMeDB extends Dexie {
   workouts!: EntityTable<Workout, 'id'>;
   routines!: EntityTable<Routine, 'id'>;
   exercises!: EntityTable<Exercise, 'id'>;
+  outbox!: EntityTable<OutboxRow, 'key'>;
 
   constructor() {
     super('fitme');
@@ -63,6 +86,40 @@ export class FitMeDB extends Dexie {
         if (!Array.isArray(p.basicFoodIds)) p.basicFoodIds = [];
       });
     });
+
+    // v4: la bandeja de salida de la sincronización.
+    this.version(4).stores({ outbox: 'key, kind, updatedAt' });
+
+    this.installOutboxHooks();
+  }
+
+  /**
+   * Anota cada escritura de las tablas sincronizadas.
+   *
+   * Los ganchos corren dentro de la misma transacción que la escritura, así que
+   * no puede quedar un dato guardado sin su anotación. El catálogo de alimentos
+   * y de ejercicios también entra: él puede corregirlos, y esas correcciones son
+   * suyas y deben viajar.
+   */
+  private installOutboxHooks(): void {
+    for (const kind of SYNCED) {
+      const table = this.table(kind);
+      const keyOf = (id: unknown) => `${kind}:${String(id)}`;
+      const stamp = (id: unknown, deleted = false) => {
+        void this.outbox.put({
+          key: keyOf(id), kind, id: String(id), updatedAt: Date.now(), ...(deleted ? { deleted: true } : {}),
+        });
+      };
+      table.hook('creating', (primKey, obj) => {
+        // En las tablas con clave dentro del objeto, `primKey` llega indefinido
+        // al crear; se saca del propio objeto.
+        const id = primKey ?? (obj as { id?: string; date?: string; key?: string }).id
+          ?? (obj as { date?: string }).date;
+        stamp(id);
+      });
+      table.hook('updating', (_mods, primKey) => stamp(primKey));
+      table.hook('deleting', (primKey) => stamp(primKey, true));
+    }
   }
 }
 

@@ -1,4 +1,7 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+  cloneElement, isValidElement, useEffect, useId, useRef, useState,
+  type ReactElement, type ReactNode,
+} from 'react';
 import { STATUS_TEXT, macroStatus, type MacroStatus } from '../domain/nutrition';
 import type { MacroKey, Nutrients, TargetRange } from '../domain/types';
 
@@ -183,11 +186,24 @@ function Close() {
 
 // ───────────────────────────── Controles ─────────────────────────────
 
+/**
+ * Un campo con su etiqueta.
+ *
+ * La etiqueta se ASOCIA al control: antes era un <span> suelto, así que un
+ * lector de pantalla leía el campo sin saber de qué era, y nada podía
+ * localizarlo por su nombre. Cuando el hijo es un único elemento se le pasa un
+ * id generado y la etiqueta apunta a él; con varios hijos (una fila de chips,
+ * por ejemplo) se deja sin asociar, que es lo correcto ahí.
+ */
 export function Field({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  const generated = useId();
+  const single = isValidElement(children) ? (children as ReactElement<{ id?: string }>) : null;
+  const id = single?.props.id ?? generated;
+  const child = single ? cloneElement(single, { id }) : children;
   return (
     <div className="field">
-      <span className="field-label">{label}</span>
-      {children}
+      <label className="field-label" htmlFor={single ? id : undefined}>{label}</label>
+      {child}
       {hint && <div className="hint">{hint}</div>}
     </div>
   );
@@ -208,6 +224,8 @@ export function Segmented<T extends string>({
 }
 
 interface NumberInputProps {
+  /** Lo inyecta `Field` para poder asociarle su etiqueta. */
+  id?: string;
   value: number | '';
   /** Se llama con el valor confirmado. Nunca con una cadena vacía. */
   onChange: (v: number) => void;
@@ -230,7 +248,7 @@ interface NumberInputProps {
 }
 
 export function NumberInput({
-  value, onChange, suffix, step = 1, min, max, placeholder, label, commitOn = 'blur',
+  id, value, onChange, suffix, step = 1, min, max, placeholder, label, commitOn = 'blur',
 }: NumberInputProps) {
   const [text, setText] = useState(value === '' ? '' : String(value));
   const [editing, setEditing] = useState(false);
@@ -261,6 +279,7 @@ export function NumberInput({
   return (
     <div className="input-row">
       <input
+        id={id}
         className="input"
         type="text"
         inputMode="decimal"

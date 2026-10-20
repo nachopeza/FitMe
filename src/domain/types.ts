@@ -458,6 +458,23 @@ export interface AppSettings {
   showSecondaryNutrients: boolean;
   theme: 'dark' | 'light' | 'system';
   lastBackupAt?: number;
+  /**
+   * Cuenta en la nube. Vacío = la app funciona entera en local, que es como
+   * viene de fábrica. La dirección y la clave pública del proyecto las pega él;
+   * la clave pública está pensada para ir en el cliente, y quien decide qué
+   * puede ver cada cuenta son las reglas por fila del servidor.
+   */
+  syncUrl?: string;
+  syncKey?: string;
+  /** Sesión guardada, para no pedir la contraseña en cada arranque. */
+  syncSession?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: number;
+    userId: string;
+    email: string;
+  };
+  lastSyncAt?: number;
 }
 
 // ───────────────────────────── Entrenamiento con series ─────────────────────────────

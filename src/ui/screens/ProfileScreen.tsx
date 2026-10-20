@@ -166,6 +166,25 @@ export function ProfileScreen() {
         </Field>
       </Section>
 
+      <Section title="Tu cuenta">
+        <button className="row" style={{ width: '100%' }} onClick={() => ui.open({ k: 'account' })}>
+          <span className="meal-add" style={{ marginRight: 2 }}><Icon name="profile" size={16} /></span>
+          <div className="row-body">
+            <div className="row-name">
+              {app.settings.syncSession ? app.settings.syncSession.email : 'Sin cuenta'}
+            </div>
+            <div className="row-meta">
+              {app.settings.syncSession
+                ? app.settings.lastSyncAt
+                  ? `Sincronizado ${new Date(app.settings.lastSyncAt).toLocaleString('es-ES', { dateStyle: 'short', timeStyle: 'short' })}`
+                  : 'Pendiente de la primera sincronización'
+                : 'Los datos viven solo en este móvil'}
+            </div>
+          </div>
+          <Icon name="chevron" size={18} />
+        </button>
+      </Section>
+
       {/* Cuadrícula de herramientas: antes eran tres botones en una rejilla de
           dos columnas, con el tercero descolgado. */}
       <Section title="Herramientas">
