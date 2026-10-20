@@ -30,6 +30,7 @@ export type SheetSpec =
   | { k: 'calculator' }
   | { k: 'shopping' }
   | { k: 'food'; id: string }
+  | { k: 'foodEdit'; id?: string; name?: string }
   | { k: 'macros' }
   | { k: 'targets' }
   | { k: 'history' }

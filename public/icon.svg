@@ -1,7 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#0d1117"/>
-  <circle cx="32" cy="32" r="19" fill="none" stroke="#262d36" stroke-width="6"/>
-  <path d="M32 13a19 19 0 0 1 16.5 28.4" fill="none" stroke="#ff8c42" stroke-width="6" stroke-linecap="round"/>
-  <path d="M22 44V26M42 44V26" stroke="#4da3ff" stroke-width="4" stroke-linecap="round"/>
-  <path d="M22 35h20" stroke="#4da3ff" stroke-width="4" stroke-linecap="round"/>
+  <!-- Fondo de hierro: el material de la mitad de entreno de la app. -->
+  <rect width="64" height="64" rx="14" fill="#1d2227"/>
+  <!-- El anillo del día, con los colores de los discos olímpicos. El icono dice
+       lo mismo que la pantalla principal: cuánto llevas cargado. -->
+  <g transform="rotate(-90 32 32)" fill="none" stroke-width="6">
+    <circle cx="32" cy="32" r="20" stroke="#39424b"/>
+    <circle cx="32" cy="32" r="20" stroke="#5f9bf0" stroke-dasharray="40 85.66"/>
+    <circle cx="32" cy="32" r="20" stroke="#f0b43c" stroke-dasharray="35 90.66" stroke-dashoffset="-40"/>
+    <circle cx="32" cy="32" r="20" stroke="#44b877" stroke-dasharray="19 106.66" stroke-dashoffset="-75"/>
+  </g>
+  <!-- Barra con discos, centrada. -->
+  <g stroke="#f2f5f7" stroke-linecap="round">
+    <path d="M24 32h16" stroke-width="3.4"/>
+    <path d="M23 27.5v9M41 27.5v9" stroke-width="3.4"/>
+  </g>
 </svg>

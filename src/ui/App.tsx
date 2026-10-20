@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
 import { useApp } from '../features/store';
 import { ManualLog } from '../features/capture/ManualLog';
 import { VoiceLog } from '../features/capture/VoiceLog';
@@ -13,6 +13,7 @@ import { Onboarding } from './screens/Onboarding';
 import { ProfileScreen, applyTheme } from './screens/ProfileScreen';
 import { TodayScreen } from './screens/Today';
 import { WorkoutScreen } from './screens/Workout';
+import { FoodEditSheet } from '../features/sheets/FoodEditSheet';
 import { MyBasics } from '../features/sheets/MyBasics';
 import { Icon, type IconName } from './icons';
 import { useUI, type Tab } from './shell';
@@ -81,6 +82,7 @@ export function App() {
 
   return (
     <div className="app">
+      <TopBar />
       <div {...behind}>
         {ui.tab === 'today' && <TodayScreen />}
         {ui.tab === 'workout' && <WorkoutScreen />}
@@ -157,6 +159,7 @@ function SheetRouter() {
     case 'dayState': return <DayStateSheet onClose={close} />;
     case 'entry': return <EntrySheet id={s.id} onClose={close} />;
     case 'food': return <FoodSheet id={s.id} onClose={close} />;
+    case 'foodEdit': return <FoodEditSheet id={s.id} name={s.name} onClose={close} />;
     case 'recipe': return <RecipeSheet id={s.id} onClose={close} />;
     case 'compare': return <CompareSheet onClose={close} />;
     case 'calculator': return <CalculatorSheet onClose={close} />;
@@ -183,6 +186,39 @@ function WorkoutRedirect() {
   return null;
 }
 
+/**
+ * Barra superior de cristal.
+ *
+ * Aparece al desplazar, igual que en iOS: arriba del todo manda el título
+ * grande de la pantalla y, en cuanto se va, su nombre queda fijo sobre un
+ * cristal translúcido por el que se ve pasar el contenido.
+ */
+function TopBar() {
+  const ui = useUI();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 28);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Al cambiar de pestaña se vuelve arriba: si no, la barra aparece encendida
+  // sobre una pantalla que está en su principio.
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+    setScrolled(false);
+  }, [ui.tab]);
+
+  const title = NAV.find((n) => n.tab === ui.tab)?.label ?? '';
+  return (
+    <div className={`topbar${scrolled ? ' is-visible' : ''}`} aria-hidden={!scrolled}>
+      <span>{title}</span>
+    </div>
+  );
+}
+
 /** Menú de añadir: las vías de registro, de la más rápida a la más laboriosa. */
 function AddMenu() {
   const ui = useUI();
@@ -200,6 +236,7 @@ function AddMenu() {
     { sheet: { k: 'photo' }, icon: 'camera', label: 'Foto', sub: aiReady ? 'Analizar un plato' : 'Sin activar' },
     { sheet: { k: 'barcode' }, icon: 'barcode', label: 'Código', sub: 'De un envase' },
     { sheet: { k: 'label' }, icon: 'tag', label: 'Etiqueta', sub: 'Tabla nutricional' },
+    { sheet: { k: 'foodEdit' }, icon: 'pen', label: 'Producto nuevo', sub: 'Crearlo a mano' },
   ];
 
   return (

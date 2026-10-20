@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { energyFromMacros, energyMismatchKcal } from '../../domain/nutrition';
-import type { Food, FoodCategory, FoodState, ProteinSource } from '../../domain/types';
+import type { Food, FoodCategory, FoodState, Portion, ProteinSource } from '../../domain/types';
 import { Field, NumberInput, Sheet } from '../../ui/components';
+import { Icon } from '../../ui/icons';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
 import { validateLabel } from './labelParser';
@@ -33,19 +34,27 @@ const SOURCE_LABEL: Record<ProteinSource, string> = {
  * siempre significa que se ha copiado la columna de la ración por error.
  */
 export function FoodEditor({
-  initial, title = 'Nuevo alimento', onSaved, onCancel,
+  initial, title = 'Nuevo alimento', mode = 'create', onSaved, onCancel,
 }: {
   initial: Food;
   title?: string;
+  /**
+   * 'create' para un producto nuevo; 'edit' para corregir uno que ya existe,
+   * donde hay que conservar sus raciones en lugar de rehacerlas.
+   */
+  mode?: 'create' | 'edit';
   onSaved: (food: Food) => void;
   onCancel: () => void;
 }) {
   const app = useApp();
   const ui = useUI();
   const [f, setF] = useState<Food>(initial);
-  const [servingGrams, setServingGrams] = useState<number | ''>(
-    initial.portions.find((p) => p.label === 'ración')?.grams ?? '',
+  const [portions, setPortions] = useState<Portion[]>(
+    initial.portions.length
+      ? initial.portions
+      : [{ label: initial.unit === 'ml' ? '100 ml' : '100 g', grams: 100, isDefault: true }],
   );
+  const [newPortion, setNewPortion] = useState('');
 
   const set = <K extends keyof Food>(k: K, v: Food[K]) => setF((prev) => ({ ...prev, [k]: v }));
   const setN = (k: keyof Food['per100g'], v: number | '') =>
@@ -57,23 +66,52 @@ export function FoodEditor({
 
   const canSave = f.name.trim().length >= 2 && f.per100g.kcal > 0;
 
+  const setPortionGrams = (label: string, grams: number | '') => {
+    setPortions((prev) => prev.map((p) => (p.label === label ? { ...p, grams: grams === '' ? 0 : grams } : p)));
+  };
+
+  const makeDefault = (label: string) => {
+    setPortions((prev) => prev.map((p) => ({ ...p, isDefault: p.label === label })));
+  };
+
+  const removePortion = (label: string) => {
+    setPortions((prev) => {
+      const left = prev.filter((p) => p.label !== label);
+      // Siempre tiene que quedar una por defecto, o no se sabría qué ofrecer.
+      if (left.length && !left.some((p) => p.isDefault)) left[0] = { ...left[0], isDefault: true };
+      return left;
+    });
+  };
+
+  const addPortion = () => {
+    const label = newPortion.trim().toLowerCase();
+    if (!label || portions.some((p) => p.label.toLowerCase() === label)) return;
+    setPortions((prev) => [...prev, { label, grams: 100, isDefault: prev.length === 0 }]);
+    setNewPortion('');
+  };
+
   const save = async () => {
-    const portions = [
-      ...(servingGrams !== '' && servingGrams > 0
-        ? [{ label: 'ración', grams: Math.round(servingGrams), isDefault: true }]
-        : []),
-      { label: f.unit === 'ml' ? '100 ml' : '100 g', grams: 100, isDefault: !(servingGrams !== '' && servingGrams > 0) },
-    ];
+    const clean = portions
+      .filter((p) => p.grams > 0)
+      .map((p) => ({ ...p, label: p.label.trim(), grams: Math.round(p.grams) }));
+    const withDefault = clean.some((p) => p.isDefault)
+      ? clean
+      : clean.map((p, i) => ({ ...p, isDefault: i === 0 }));
     const saved: Food = {
       ...f,
       name: f.name.trim(),
       aliases: [...new Set([f.name.trim().toLowerCase(), ...f.aliases].filter(Boolean))],
-      portions,
-      custom: true,
+      portions: withDefault.length
+        ? withDefault
+        : [{ label: f.unit === 'ml' ? '100 ml' : '100 g', grams: 100, isDefault: true }],
+      // Un alimento creado por él es suyo; uno del catálogo que corrige queda
+      // marcado para que una actualización del catálogo no le pise los valores.
+      custom: mode === 'create' ? true : f.custom,
+      edited: mode === 'edit' ? true : f.edited,
       createdAt: f.createdAt ?? Date.now(),
     };
     await app.actions.upsertFood(saved);
-    ui.notify('Alimento guardado en tu base de datos.');
+    ui.notify(mode === 'edit' ? 'Alimento corregido.' : 'Alimento guardado en tu base de datos.');
     onSaved(saved);
   };
 
@@ -90,11 +128,12 @@ export function FoodEditor({
       }
     >
       <Field label="Nombre">
-        <input className="input" value={f.name} onChange={(e) => set('name', e.target.value)}
-          placeholder="Yogur proteico de fresa" />
+        <input className="input" aria-label="Nombre del alimento" value={f.name}
+          onChange={(e) => set('name', e.target.value)} placeholder="Yogur proteico de fresa" />
       </Field>
       <Field label="Marca (opcional)">
-        <input className="input" value={f.brand ?? ''} onChange={(e) => set('brand', e.target.value || undefined)} />
+        <input className="input" aria-label="Marca" value={f.brand ?? ''}
+          onChange={(e) => set('brand', e.target.value || undefined)} />
       </Field>
       {f.barcode && (
         <Field label="Código de barras"><input className="input" value={f.barcode} readOnly /></Field>
@@ -130,39 +169,78 @@ export function FoodEditor({
       <div className="card">
         <div className="card-title"><span>Por 100 {f.unit}</span></div>
         <Field label="Energía">
-          <NumberInput value={f.per100g.kcal} suffix="kcal" onChange={(v) => setN('kcal', v)} />
+          <NumberInput label="Energía" value={f.per100g.kcal} suffix="kcal" onChange={(v) => setN('kcal', v)} />
         </Field>
         <div className="figures two">
           <Field label="Proteínas">
-            <NumberInput value={f.per100g.protein} step={0.1} suffix="g" onChange={(v) => setN('protein', v)} />
+            <NumberInput label="Proteínas" value={f.per100g.protein} step={0.1} suffix="g" onChange={(v) => setN('protein', v)} />
           </Field>
           <Field label="Grasas">
-            <NumberInput value={f.per100g.fat} step={0.1} suffix="g" onChange={(v) => setN('fat', v)} />
+            <NumberInput label="Grasas" value={f.per100g.fat} step={0.1} suffix="g" onChange={(v) => setN('fat', v)} />
           </Field>
           <Field label="Hidratos de carbono" >
-            <NumberInput value={f.per100g.carbs} step={0.1} suffix="g" onChange={(v) => setN('carbs', v)} />
+            <NumberInput label="Hidratos de carbono" value={f.per100g.carbs} step={0.1} suffix="g" onChange={(v) => setN('carbs', v)} />
           </Field>
           <Field label="Fibra">
-            <NumberInput value={f.per100g.fiber} step={0.1} suffix="g" onChange={(v) => setN('fiber', v)} />
+            <NumberInput label="Fibra" value={f.per100g.fiber} step={0.1} suffix="g" onChange={(v) => setN('fiber', v)} />
           </Field>
           <Field label="De las cuales saturadas">
-            <NumberInput value={f.per100g.satFat ?? 0} step={0.1} suffix="g" onChange={(v) => setN('satFat', v)} />
+            <NumberInput label="Saturadas" value={f.per100g.satFat ?? 0} step={0.1} suffix="g" onChange={(v) => setN('satFat', v)} />
           </Field>
           <Field label="De los cuales azúcares">
-            <NumberInput value={f.per100g.sugars ?? 0} step={0.1} suffix="g" onChange={(v) => setN('sugars', v)} />
+            <NumberInput label="Azúcares" value={f.per100g.sugars ?? 0} step={0.1} suffix="g" onChange={(v) => setN('sugars', v)} />
           </Field>
         </div>
         <Field label="Sodio" hint="Si la etiqueta da sal en gramos, multiplícala por 400 para obtener los mg de sodio.">
-          <NumberInput value={f.per100g.sodium ?? 0} suffix="mg" onChange={(v) => setN('sodium', v)} />
+          <NumberInput label="Sodio" value={f.per100g.sodium ?? 0} suffix="mg" onChange={(v) => setN('sodium', v)} />
         </Field>
         <p className="hint" style={{ marginTop: 0 }}>
           Como en las etiquetas españolas, los hidratos de carbono van <b>sin</b> la fibra.
         </p>
       </div>
 
-      <Field label="Tamaño de ración (opcional)" hint="Si lo pones, será la cantidad que se ofrezca por defecto.">
-        <NumberInput value={servingGrams} suffix={f.unit} onChange={setServingGrams} />
-      </Field>
+      {/* Raciones: es lo que de verdad se usa al registrar, y lo que más falla
+          si no coincide con cómo come uno. Por eso se editan aquí. */}
+      <div className="card">
+        <div className="card-title"><span>Raciones</span></div>
+        <p className="hint" style={{ marginTop: 0 }}>
+          La marcada es la que se ofrece por defecto al añadirlo de un toque.
+        </p>
+        {portions.map((p) => (
+          <div className="portion-row" key={p.label}>
+            <button
+              className="chip"
+              aria-pressed={p.isDefault}
+              onClick={() => makeDefault(p.label)}
+              aria-label={`Usar ${p.label} por defecto`}
+            >
+              {p.label}
+            </button>
+            <NumberInput
+              value={p.grams}
+              suffix={f.unit}
+              onChange={(v) => setPortionGrams(p.label, v)}
+              label={`Gramos de ${p.label}`}
+            />
+            {portions.length > 1 && (
+              <button className="icon-btn" aria-label={`Quitar ${p.label}`} onClick={() => removePortion(p.label)}>
+                <Icon name="trash" size={17} />
+              </button>
+            )}
+          </div>
+        ))}
+        <div className="portion-row" style={{ marginTop: 6 }}>
+          <input
+            className="input"
+            value={newPortion}
+            onChange={(e) => setNewPortion(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') addPortion(); }}
+            placeholder="unidad, plato, puñado…"
+            aria-label="Nombre de la ración nueva"
+          />
+          <button className="btn sm auto" disabled={!newPortion.trim()} onClick={addPortion}>Añadir</button>
+        </div>
+      </div>
 
       {/* Comprobación de coherencia: detecta el error más típico al copiar. */}
       {f.per100g.kcal > 0 && (

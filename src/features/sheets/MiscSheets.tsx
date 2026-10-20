@@ -127,8 +127,21 @@ export function FoodSheet({ id, onClose }: { id: string; onClose: () => void }) 
         </div>
       )}
 
+      {(food.edited || food.custom) && (
+        <p className="note tight">
+          {food.custom
+            ? 'Este alimento lo creaste tú.'
+            : 'Has corregido este alimento: tus valores mandan y no se sobrescriben al actualizar la app.'}
+        </p>
+      )}
+
       <div className="btns">
+        <button className="btn primary" onClick={() => { onClose(); ui.open({ k: 'foodEdit', id: food.id }); }}>
+          Corregir datos
+        </button>
         <button className="btn" onClick={() => { onClose(); ui.open({ k: 'compare' }); }}>Comparar</button>
+      </div>
+      <div className="btns" style={{ marginTop: 9 }}>
         <button className="btn" aria-pressed={disliked} onClick={async () => {
           const p = app.profile;
           if (!p) return;

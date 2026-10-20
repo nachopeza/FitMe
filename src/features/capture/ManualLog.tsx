@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { searchFoods } from '../../domain/parser';
 import { MEAL_SLOT_LABEL, type Food, type LoggedItem, type MealSlot } from '../../domain/types';
 import { Sheet, g } from '../../ui/components';
+import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
 import { itemsFromParsed, makeItem } from '../logging';
 import type { ParsedItem } from '../../domain/parser';
@@ -22,6 +23,7 @@ export function ManualLog({
   method?: LoggedItem extends never ? never : 'manual' | 'voice' | 'photo' | 'saved' | 'recipe';
 }) {
   const app = useApp();
+  const ui = useUI();
   const [query, setQuery] = useState('');
   const [picked, setPicked] = useState<LoggedItem[]>(() =>
     prefill ? itemsFromParsed(prefill, app.foodsById) : [],
@@ -101,9 +103,22 @@ export function ManualLog({
 
       {query.trim().length >= 2 && results.length === 0 && (
         <div className="empty">
-          No hay nada con ese nombre.
-          <br />Puedes crearlo desde + → Etiqueta o + → Código de barras.
+          <strong>No hay nada con ese nombre</strong>
+          Créalo tú copiando la tabla del envase: queda guardado para siempre y la próxima vez lo
+          encuentras buscando.
         </div>
+      )}
+
+      {/* Antes esto era una frase que mandaba al escáner, sin botón. Un producto
+          del súper que no esté en ninguna base hay que poder crearlo a mano. */}
+      {query.trim().length >= 2 && (
+        <button
+          className="btn"
+          style={{ marginTop: 12 }}
+          onClick={() => ui.replace({ k: 'foodEdit', name: query.trim() })}
+        >
+          Crear «{query.trim()}»
+        </button>
       )}
     </Sheet>
   );

@@ -35,8 +35,14 @@ describe('coherencia de la base de alimentos', () => {
     // erratas de captura sin exigir que la energía publicada coincida con los
     // factores generales de Atwater, de los que legítimamente se separa en
     // carnes, aceites y frutos secos.
+    // El alcohol aporta 7 kcal/g y no es proteína, hidrato ni grasa, así que en
+    // las bebidas alcohólicas la energía declarada NO puede cuadrar con los
+    // macros: lo que falta es justamente el alcohol. Son el único caso, y se
+    // nombran una a una para que nadie cuele aquí una errata de captura.
+    const CON_ALCOHOL = ['cerveza', 'vino-tinto'];
     const bad = SEED_FOODS.filter(
-      (f) => energyMismatch(f.per100g) > 0.12 && energyMismatchKcal(f.per100g) > 25,
+      (f) => !CON_ALCOHOL.includes(f.id)
+        && energyMismatch(f.per100g) > 0.12 && energyMismatchKcal(f.per100g) > 25,
     ).map((f) => f.id);
     expect(bad).toEqual([]);
   });

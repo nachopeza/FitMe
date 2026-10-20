@@ -10,6 +10,7 @@ import { iconForText, quickAddItems, slotFromHour } from '../../features/quickAd
 import { useApp } from '../../features/store';
 import { Figure, MacroBar, Section, g } from '../components';
 import { Icon } from '../icons';
+import { Ring } from '../Ring';
 import { useUI } from '../shell';
 
 /**
@@ -75,9 +76,6 @@ export function TodayScreen() {
   const kcalLeft = Math.max(0, Math.round(remaining.kcal));
   const proteinLeft = Math.max(0, Math.round(remaining.protein));
   const done = kcalLeft <= 60 && proteinLeft <= 5;
-  const fuelPct = Math.min(100, (consumed.kcal / Math.max(1, targets.kcal.target)) * 100);
-  /** Porcentaje del objetivo que ocupa una parte de la energía comida. */
-  const pct = (kcal: number) => Math.min(100, (kcal / Math.max(1, targets.kcal.target)) * 100);
 
   const behind = behindMacro(consumed, {
     protein: targets.protein.target, carbs: targets.carbs.target, fat: targets.fat.target,
@@ -171,37 +169,39 @@ export function TodayScreen() {
           El borde superior lleva el color del macro más atrasado, así que la
           tarjeta ya dice de qué va el día antes de leer un número. */}
       <div className="hero" style={{ ['--behind' as string]: `var(--m-${behind})` }}>
-        {done ? (
-          <>
-            <div className="gap-label">Hoy ya has comido lo que necesitabas</div>
-            <div className="gap-done">{g(consumed.kcal)} kcal · {g(consumed.protein)} g de proteína</div>
-          </>
-        ) : (
-          <>
-            <div className="gap-label">Te falta por comer</div>
-            <span className="gap-figure">
-              {g(kcalLeft)}<span className="gap-unit">kcal</span>
-            </span>
-            {proteinLeft > 0 && (
-              <div className="gap-second">
-                y <b>{g(proteinLeft)} g</b> de proteína
-              </div>
-            )}
-          </>
-        )}
+        <Ring
+          target={targets.kcal.target}
+          segments={[
+            { key: 'protein', kcal: consumed.protein * 4 },
+            { key: 'carbs', kcal: consumed.carbs * 4 },
+            { key: 'fat', kcal: consumed.fat * 9 },
+          ]}
+        >
+          {done ? (
+            <>
+              <span className="ring-label">Hoy ya has comido</span>
+              <span className="ring-figure">{g(consumed.kcal)}</span>
+              <span className="ring-unit">kcal · listo</span>
+            </>
+          ) : (
+            <>
+              <span className="ring-label">Te falta</span>
+              <span className="ring-figure">{g(kcalLeft)}</span>
+              <span className="ring-unit">kcal por comer</span>
+              {proteinLeft > 0 && (
+                <span className="ring-second">y <b>{g(proteinLeft)} g</b> de proteína</span>
+              )}
+            </>
+          )}
+        </Ring>
 
-        {/* La barra se carga como una barra de discos: cada color, su macro. */}
-        <div className="load" role="img" aria-label={`${Math.round(fuelPct)}% del objetivo de hoy`}>
-          <span className="s-protein" style={{ width: `${pct(consumed.protein * 4)}%` }} />
-          <span className="s-carbs" style={{ width: `${pct(consumed.carbs * 4)}%` }} />
-          <span className="s-fat" style={{ width: `${pct(consumed.fat * 9)}%` }} />
-        </div>
+        {/* Leyenda de lo cargado. El anillo ya dice cuánto; esto, de qué. */}
         <div className="load-legend">
           <span><i style={{ background: 'var(--m-protein)' }} />{g(consumed.protein)} g prot</span>
           <span><i style={{ background: 'var(--m-carbs)' }} />{g(consumed.carbs)} g carb</span>
           <span><i style={{ background: 'var(--m-fat)' }} />{g(consumed.fat)} g gras</span>
         </div>
-        <div className="fuel-foot" style={{ marginTop: 8 }}>
+        <div className="fuel-foot" style={{ marginTop: 10 }}>
           <span>{g(consumed.kcal)} de {g(targets.kcal.target)} kcal</span>
           {streak > 1 && (
             <span className="streak">

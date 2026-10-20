@@ -6,10 +6,20 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#0d1117" />
+    <!-- El color de tema pinta la barra de estado del iPhone: tiene que ser el
+         del papel de la app, no un azul oscuro, o se ve una franja ajena
+         encima del contenido. Se declara en los dos modos. -->
+    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7f8" />
+    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111417" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <!-- Translúcida: el contenido sube hasta arriba y las áreas seguras del CSS
+         se encargan de que el notch no tape nada. -->
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="FitMe" />
     <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <!-- iOS no lee los iconos del manifiesto para la pantalla de inicio. -->
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>FitMe</title>
   </head>
   <body>

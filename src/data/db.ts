@@ -74,13 +74,25 @@ export const db = new FitMeDB();
  * Siembra la base de alimentos. Es idempotente y NO toca los alimentos que haya
  * creado el usuario: si sube la versión del seed, se refrescan solo los propios.
  */
+/**
+ * Qué alimentos del catálogo se refrescan al actualizar.
+ *
+ * Los que el usuario ha corregido o creado quedan fuera: sus valores son los de
+ * su producto y los nuestros solo una referencia. Perder una corrección suya
+ * porque hemos ampliado el catálogo sería lo peor que podría pasar aquí.
+ */
+export function foodsToRefresh(seed: Food[], stored: Food[]): Food[] {
+  const mine = new Set(stored.filter((f) => f.edited || f.custom).map((f) => f.id));
+  return seed.filter((f) => !mine.has(f.id));
+}
+
 export async function seedIfNeeded(): Promise<void> {
   const row = await db.meta.get('seedVersion');
   const current = typeof row?.value === 'number' ? row.value : 0;
   if (current >= SEED_VERSION) return;
   await db.transaction('rw', db.foods, db.exercises, db.meta, async () => {
-    // bulkPut sobrescribe los del seed y deja intactos los personalizados.
-    await db.foods.bulkPut(SEED_FOODS);
+    const stored = await db.foods.toArray();
+    await db.foods.bulkPut(foodsToRefresh(SEED_FOODS, stored));
     await db.exercises.bulkPut(EXERCISES);
     await db.meta.put({ key: 'seedVersion', value: SEED_VERSION });
   });

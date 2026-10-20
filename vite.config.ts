@@ -17,13 +17,13 @@ export default defineConfig({
     react(),
     pwa && VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg'],
+      includeAssets: ['icon.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'FitMe — Asistente nutricional',
         short_name: 'FitMe',
         description: 'Contador de macros y asistente nutricional para ganancia muscular controlada',
-        theme_color: '#0d1117',
-        background_color: '#0d1117',
+        theme_color: '#f5f7f8',
+        background_color: '#f5f7f8',
         display: 'standalone',
         orientation: 'portrait',
         // Relativos, para que la app se pueda instalar igual servida desde la

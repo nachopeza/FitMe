@@ -97,8 +97,9 @@ const ROWS: Row[] = [
   { id: 'arroz-crudo', name: 'Arroz blanco (crudo)', al: ['arroz crudo', 'arroz en seco'], cat: 'carb', src: 'cereal', st: 'raw', n: [355, 7, 78, 0.9, 1.4, 0.2, 0.1, 5], yield: 2.5, pair: 'arroz-cocido', p: [P('ración', 80, true), P('vaso', 180)] },
   { id: 'arroz-cocido', name: 'Arroz blanco (cocido)', al: ['arroz', 'arroz cocido', 'arroz hervido'], cat: 'carb', src: 'cereal', st: 'cooked', n: [130, 2.7, 28, 0.3, 0.4, 0.1, 0.1, 2], pair: 'arroz-crudo', vol: 'medium', p: [P('plato', 200, true), P('plato pequeño', 150), P('plato grande', 280)] },
   { id: 'arroz-integral-cocido', name: 'Arroz integral (cocido)', al: ['arroz integral'], cat: 'carb', src: 'cereal', st: 'cooked', n: [123, 2.7, 26, 1, 1.8, 0.2, 0.2, 4], ferm: 'medium', p: [P('plato', 200, true)] },
-  { id: 'pasta-cruda', name: 'Pasta (cruda)', al: ['pasta cruda', 'macarrones crudos', 'espaguetis crudos'], cat: 'carb', src: 'cereal', st: 'raw', n: [359, 12.5, 71, 1.5, 3, 0.3, 3, 6], yield: 2.4, pair: 'pasta-cocida', p: [P('ración', 80, true)] },
-  { id: 'pasta-cocida', name: 'Pasta (cocida)', al: ['pasta', 'macarrones', 'espaguetis', 'fideos'], cat: 'carb', src: 'cereal', st: 'cooked', n: [150, 5.2, 30, 0.6, 1.3, 0.1, 1.3, 3], pair: 'pasta-cruda', vol: 'medium', p: [P('plato', 200, true)] },
+  { id: 'pasta-cruda', name: 'Pasta (cruda)', al: ['pasta cruda', 'macarrones crudos', 'espaguetis crudos', 'espirales crudos', 'fusilli crudo'], cat: 'carb', src: 'cereal', st: 'raw', n: [359, 12.5, 71, 1.5, 3, 0.3, 3, 6], yield: 2.4, pair: 'pasta-cocida', p: [P('ración', 80, true)] },
+  { id: 'pasta-cocida', name: 'Pasta (cocida)', al: ['pasta', 'macarrones', 'espaguetis', 'fideos', 'espirales', 'fusilli', 'helices', 'hélices',
+    'plumas', 'penne', 'lazos', 'tiburones', 'coditos', 'tallarines', 'farfalle', 'rigatoni', 'spaghetti'], cat: 'carb', src: 'cereal', st: 'cooked', n: [150, 5.2, 30, 0.6, 1.3, 0.1, 1.3, 3], pair: 'pasta-cruda', vol: 'medium', p: [P('plato', 200, true)] },
   { id: 'patata-cruda', name: 'Patata (cruda)', al: ['patata cruda'], cat: 'carb', src: 'cereal', st: 'raw', n: [77, 2, 17, 0.1, 2.2, 0, 0.8, 6], yield: 0.95, pair: 'patata-cocida' },
   { id: 'patata-cocida', name: 'Patata (cocida)', al: ['patata', 'patatas', 'patata hervida'], cat: 'carb', src: 'cereal', st: 'cooked', n: [86, 1.7, 20, 0.1, 1.8, 0, 0.9, 5], pair: 'patata-cruda', vol: 'high', p: [P('unidad mediana', 170, true)] },
   { id: 'boniato-cocido', name: 'Boniato (cocido)', al: ['boniato', 'batata'], cat: 'carb', src: 'cereal', st: 'cooked', n: [90, 2, 17.7, 0.1, 3.3, 0, 6.5, 36], vol: 'high' },
@@ -129,7 +130,7 @@ const ROWS: Row[] = [
   { id: 'pina', name: 'Piña', al: ['piña'], cat: 'fruit', st: 'asIs', n: [50, 0.5, 9.6, 0.1, 1.4, 0, 9.6, 1] },
   { id: 'arandanos', name: 'Arándanos', al: ['arándanos'], cat: 'fruit', st: 'asIs', n: [52, 0.7, 9.6, 0.3, 2.4, 0, 9.6, 1], p: [P('puñado', 60, true)] },
   { id: 'datiles', name: 'Dátiles', al: ['dátil', 'dátiles'], cat: 'fruit', st: 'asIs', n: [275, 2.5, 63, 0.4, 8, 0, 63, 2], vol: 'low', p: [P('unidad', 8, true)] },
-  { id: 'aguacate', name: 'Aguacate', al: ['aguacate'], cat: 'fat', st: 'asIs', n: [160, 2, 0, 15, 6.7, 2.1, 0, 7], vol: 'medium', p: [P('medio', 100, true), P('unidad', 200)] },
+  { id: 'aguacate', name: 'Aguacate', al: ['aguacate', 'palta'], cat: 'fat', st: 'asIs', n: [160, 2, 1.8, 15, 6.7, 2.1, 0.7, 7], vol: 'medium', p: [P('medio', 100, true), P('unidad', 200)] },
 
   // ─────────────────────── Verduras ───────────────────────
   { id: 'tomate', name: 'Tomate', al: ['tomate', 'tomates'], cat: 'vegetable', st: 'asIs', n: [18, 0.9, 2.7, 0.2, 1.2, 0, 2.6, 5], vol: 'high', p: [P('unidad', 150, true), P('rodaja', 20)] },
@@ -176,6 +177,101 @@ const ROWS: Row[] = [
   { id: 'azucar', name: 'Azúcar', al: ['azúcar'], cat: 'other', st: 'product', n: [400, 0, 100, 0, 0, 0, 100, 0], p: [P('cucharadita', 5, true)] },
   { id: 'ketchup', name: 'Ketchup', al: ['ketchup'], cat: 'other', st: 'product', n: [102, 1.3, 24, 0.2, 0.4, 0, 21, 900], p: [P('cucharada', 17, true)] },
   { id: 'salsa-soja', name: 'Salsa de soja', al: ['salsa de soja', 'soy sauce'], cat: 'other', src: 'soy', st: 'product', unit: 'ml', n: [53, 8, 4.9, 0.1, 0.8, 0, 0.4, 5500], p: [P('cucharada', 15, true)] },
+  // ─────────────────────── Ampliación: lo que hay en el súper ───────────────────────
+  // Añadido después de ver que faltaba lo más corriente de una compra normal.
+  // Mismo convenio europeo: los hidratos van sin la fibra.
+
+  // Pasta, ñoquis y guarniciones
+  { id: 'nioquis', name: 'Ñoquis de patata', al: ['ñoquis', 'nioquis', 'gnocchi', 'noquis'], cat: 'carb', src: 'cereal', st: 'product', n: [165, 4.2, 33, 1.2, 2, 0.3, 1, 290], vol: 'medium', p: [P('ración', 250, true), P('paquete', 500)] },
+  { id: 'pasta-integral-cruda', name: 'Pasta integral (cruda)', al: ['pasta integral cruda'], cat: 'carb', src: 'cereal', st: 'raw', n: [348, 13, 62, 2.5, 9, 0.5, 3, 8], yield: 2.4, pair: 'pasta-integral-cocida', p: [P('ración', 80, true)] },
+  { id: 'pasta-integral-cocida', name: 'Pasta integral (cocida)', al: ['pasta integral', 'macarrones integrales', 'espirales integrales'], cat: 'carb', src: 'cereal', st: 'cooked', n: [124, 5, 22, 1, 3.5, 0.2, 1, 3], pair: 'pasta-integral-cruda', ferm: 'medium', p: [P('plato', 200, true)] },
+  { id: 'pasta-fresca-rellena', name: 'Pasta fresca rellena', al: ['raviolis', 'tortellini', 'pasta rellena', 'ravioli'], cat: 'carb', src: 'cereal', st: 'product', n: [268, 11, 35, 8.5, 2.2, 3.5, 2, 420], p: [P('ración', 125, true)] },
+  { id: 'pasta-legumbres-cocida', name: 'Pasta de legumbres (cocida)', al: ['pasta de lentejas', 'pasta de garbanzos', 'pasta proteica'], cat: 'carb', src: 'legume', st: 'cooked', n: [157, 11, 21, 1.2, 4.5, 0.2, 1.5, 5], ferm: 'high', p: [P('plato', 200, true)] },
+  { id: 'noodles-cocidos', name: 'Noodles (cocidos)', al: ['noodles', 'fideos chinos', 'ramen'], cat: 'carb', src: 'cereal', st: 'cooked', n: [138, 4.5, 25, 2, 1.2, 0.4, 0.5, 180], p: [P('plato', 200, true)] },
+  { id: 'arroz-integral-crudo', name: 'Arroz integral (crudo)', al: ['arroz integral crudo'], cat: 'carb', src: 'cereal', st: 'raw', n: [355, 7.9, 72, 2.9, 3.5, 0.6, 0.9, 5], yield: 2.6, pair: 'arroz-integral-cocido', p: [P('ración', 70, true)] },
+  { id: 'pure-patata', name: 'Puré de patata (preparado)', al: ['puré de patata', 'pure de patata', 'puré'], cat: 'carb', src: 'cereal', st: 'product', n: [85, 2, 13, 2.6, 1.3, 1.6, 1.4, 240], vol: 'high', p: [P('plato', 250, true)] },
+  { id: 'patatas-horno', name: 'Patatas de horno (congeladas)', al: ['patatas fritas de horno', 'patatas congeladas', 'gajos'], cat: 'carb', src: 'cereal', st: 'product', n: [150, 2.4, 23, 4.8, 2.6, 0.5, 0.4, 230], p: [P('ración', 150, true)] },
+
+  // Panes y bollería
+  { id: 'pan-pita', name: 'Pan de pita', al: ['pita', 'pan pita'], cat: 'carb', src: 'cereal', st: 'product', n: [275, 9, 51, 1.2, 2.4, 0.2, 2, 480], p: [P('unidad', 60, true)] },
+  { id: 'biscotes', name: 'Tostadas / biscotes', al: ['biscote', 'pan tostado', 'tostadas de pan'], cat: 'carb', src: 'cereal', st: 'product', n: [395, 12, 70, 6, 4, 0.8, 5, 500], p: [P('rebanada', 10, true)] },
+  { id: 'pan-hamburguesa', name: 'Pan de hamburguesa', al: ['pan de burger', 'bollo de hamburguesa'], cat: 'carb', src: 'cereal', st: 'product', n: [280, 9, 48, 4.5, 2.5, 1, 6, 480], p: [P('unidad', 60, true)] },
+  { id: 'croissant', name: 'Croissant', al: ['cruasán', 'cruasan', 'napolitana'], cat: 'carb', src: 'cereal', st: 'product', n: [406, 8, 42, 21, 2.5, 13, 9, 420], p: [P('unidad', 60, true)] },
+  { id: 'harina-trigo', name: 'Harina de trigo', al: ['harina'], cat: 'carb', src: 'cereal', st: 'raw', n: [364, 10, 73, 1, 2.7, 0.2, 0.3, 2], p: [P('cucharada', 10, true)] },
+
+  // Carnes y embutidos
+  { id: 'salchichas-frankfurt', name: 'Salchichas tipo Frankfurt', al: ['salchichas', 'frankfurt'], cat: 'protein', src: 'redMeat', st: 'product', n: [269, 11, 2.5, 24, 0, 9, 1.5, 900], p: [P('unidad', 25, true)] },
+  { id: 'chorizo', name: 'Chorizo', al: ['chorizo'], cat: 'protein', src: 'redMeat', st: 'product', n: [455, 24, 2, 38, 0, 14, 1, 1600], p: [P('loncha', 10, true)] },
+  { id: 'bacon', name: 'Bacon (cocinado)', al: ['bacon', 'beicon', 'panceta'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [410, 29, 1, 32, 0, 11, 0, 1800], p: [P('loncha', 12, true)] },
+  { id: 'hamburguesa-ternera-cruda', name: 'Hamburguesa de ternera (cruda)', al: ['hamburguesa cruda', 'burger meat'], cat: 'protein', src: 'redMeat', st: 'raw', n: [220, 18, 1, 16, 0, 7, 0.5, 350], yield: 0.75, p: [P('unidad', 120, true)] },
+  { id: 'albondigas', name: 'Albóndigas (cocinadas)', al: ['albóndigas', 'albondigas'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [220, 15, 8, 14, 1, 5, 1.5, 600], p: [P('unidad', 25, true)] },
+  { id: 'pollo-empanado', name: 'Pollo empanado (cocinado)', al: ['pollo empanado', 'nuggets', 'san jacobo', 'fingers de pollo'], cat: 'protein', src: 'poultry', st: 'cooked', n: [240, 17, 16, 12, 1, 2, 1, 520], p: [P('ración', 120, true)] },
+
+  // Pescados y conservas
+  { id: 'salmon-ahumado', name: 'Salmón ahumado', al: ['salmón ahumado', 'salmon ahumado'], cat: 'protein', src: 'fish', st: 'product', n: [180, 22, 0, 10, 0, 2, 0, 1200], p: [P('loncha', 20, true), P('sobre', 100)] },
+  { id: 'caballa-aceite', name: 'Caballa en aceite (escurrida)', al: ['caballa', 'melva'], cat: 'protein', src: 'fish', st: 'product', n: [220, 22, 0, 15, 0, 3, 0, 420], p: [P('lata', 80, true)] },
+  { id: 'mejillones-escabeche', name: 'Mejillones en escabeche (escurridos)', al: ['mejillones', 'mejillones en lata'], cat: 'protein', src: 'fish', st: 'product', n: [150, 17, 4, 7, 0, 1.2, 0.5, 600], p: [P('lata', 70, true)] },
+  { id: 'surimi', name: 'Palitos de cangrejo (surimi)', al: ['surimi', 'palitos de cangrejo', 'palitos de mar'], cat: 'protein', src: 'fish', st: 'product', n: [95, 8, 14, 0.5, 0, 0.1, 4, 800], p: [P('unidad', 17, true)] },
+  { id: 'atun-fresco', name: 'Atún fresco (cocinado)', al: ['atún fresco', 'lomo de atún'], cat: 'protein', src: 'fish', st: 'cooked', n: [184, 30, 0, 6, 0, 1.6, 0, 50], p: [P('ración', 150, true)] },
+
+  // Vegetales proteicos
+  { id: 'seitan', name: 'Seitán', al: ['seitán', 'seitan'], cat: 'protein', src: 'cereal', st: 'product', n: [145, 24, 4, 1.5, 1, 0.3, 0.5, 400], p: [P('ración', 100, true)] },
+  { id: 'hummus', name: 'Hummus', al: ['hummus', 'humus'], cat: 'fat', src: 'legume', st: 'product', n: [230, 7, 12, 17, 5, 2.3, 0.5, 400], ferm: 'high', p: [P('cucharada', 25, true), P('tarrina', 200)] },
+
+  // Lácteos y postres
+  { id: 'kefir', name: 'Kéfir natural', al: ['kéfir', 'kefir'], cat: 'dairy', src: 'dairy', st: 'product', unit: 'ml', n: [62, 3.4, 4.5, 3.3, 0, 2.1, 4.5, 50], p: [P('vaso', 200, true)] },
+  { id: 'yogur-sabores', name: 'Yogur de sabores', al: ['yogur de fresa', 'yogur de limón', 'yogur de sabores'], cat: 'dairy', src: 'dairy', st: 'product', n: [85, 3.2, 12, 2.5, 0, 1.6, 12, 50], p: [P('unidad', 125, true)] },
+  { id: 'petit-suisse', name: 'Petit suisse', al: ['petit', 'petit suisse', 'danonino'], cat: 'dairy', src: 'dairy', st: 'product', n: [145, 6, 14, 6.5, 0, 4, 13, 60], p: [P('unidad', 55, true)] },
+  { id: 'natillas', name: 'Natillas / flan', al: ['natillas', 'flan'], cat: 'dairy', src: 'dairy', st: 'product', n: [120, 3.2, 18, 3.5, 0, 2.2, 16, 65], p: [P('unidad', 125, true)] },
+  { id: 'helado-vainilla', name: 'Helado de vainilla', al: ['helado'], cat: 'dairy', src: 'dairy', st: 'product', n: [200, 3.5, 23, 10, 0.5, 6.5, 21, 80], p: [P('bola', 50, true), P('tarrina', 100)] },
+  { id: 'nata-cocinar', name: 'Nata para cocinar 18%', al: ['nata', 'nata líquida'], cat: 'dairy', src: 'dairy', st: 'product', unit: 'ml', n: [185, 2.5, 3.5, 18, 0, 12, 3.5, 40], p: [P('cucharada', 15, true)] },
+  { id: 'bebida-almendras', name: 'Bebida de almendras (sin azúcar)', al: ['leche de almendras', 'bebida de almendra'], cat: 'dairy', src: 'none', st: 'product', unit: 'ml', n: [13, 0.5, 0.1, 1.1, 0.3, 0.1, 0.1, 60], p: [P('vaso', 200, true)] },
+
+  // Verduras y hortalizas
+  { id: 'guisantes', name: 'Guisantes (cocidos)', al: ['guisantes'], cat: 'vegetable', src: 'legume', st: 'cooked', n: [84, 5.4, 9, 0.4, 5, 0.1, 3, 3], ferm: 'medium', p: [P('ración', 150, true)] },
+  { id: 'coliflor', name: 'Coliflor (cocida)', al: ['coliflor'], cat: 'vegetable', st: 'cooked', n: [25, 1.9, 2, 0.3, 2.3, 0.1, 1.9, 15], ferm: 'high', vol: 'high', p: [P('ración', 200, true)] },
+  { id: 'repollo', name: 'Col / repollo', al: ['col', 'repollo', 'berza'], cat: 'vegetable', st: 'raw', n: [25, 1.3, 3.5, 0.1, 2.5, 0, 3.2, 18], ferm: 'high', vol: 'high' },
+  { id: 'puerro', name: 'Puerro', al: ['puerro', 'puerros'], cat: 'vegetable', st: 'raw', n: [61, 1.5, 12, 0.3, 1.8, 0, 3.9, 20], ferm: 'high' },
+  { id: 'ajo', name: 'Ajo', al: ['ajo', 'ajos', 'diente de ajo'], cat: 'vegetable', st: 'raw', n: [149, 6.4, 28, 0.5, 2.1, 0.1, 1, 17], ferm: 'high', p: [P('diente', 3, true)] },
+  { id: 'alcachofa', name: 'Alcachofa (cocida)', al: ['alcachofa', 'alcachofas'], cat: 'vegetable', st: 'cooked', n: [53, 2.9, 6, 0.3, 5.7, 0.1, 1, 60], ferm: 'high', p: [P('unidad', 100, true)] },
+  { id: 'remolacha', name: 'Remolacha (cocida)', al: ['remolacha'], cat: 'vegetable', st: 'cooked', n: [44, 1.7, 8, 0.2, 2, 0, 7.9, 80] },
+  { id: 'calabaza', name: 'Calabaza (cocida)', al: ['calabaza'], cat: 'vegetable', st: 'cooked', n: [26, 1, 4.5, 0.1, 1.1, 0, 2.8, 1], vol: 'high', p: [P('ración', 200, true)] },
+  { id: 'menestra', name: 'Menestra de verduras (congelada)', al: ['menestra', 'verduras congeladas', 'salteado de verduras'], cat: 'vegetable', st: 'cooked', n: [45, 2.8, 5, 0.4, 3, 0.1, 2.5, 25], vol: 'high', p: [P('ración', 200, true)] },
+  { id: 'gazpacho', name: 'Gazpacho', al: ['gazpacho', 'salmorejo ligero'], cat: 'vegetable', st: 'product', unit: 'ml', n: [37, 0.7, 3, 2.3, 0.9, 0.3, 2.6, 300], vol: 'high', p: [P('vaso', 250, true)] },
+
+  // Frutas
+  { id: 'melocoton', name: 'Melocotón', al: ['melocotón', 'melocoton', 'nectarina', 'paraguayo'], cat: 'fruit', st: 'asIs', n: [39, 0.9, 8, 0.3, 1.5, 0, 8, 0], vol: 'high', p: [P('unidad', 150, true)] },
+  { id: 'ciruela', name: 'Ciruela', al: ['ciruela', 'ciruelas'], cat: 'fruit', st: 'asIs', n: [46, 0.7, 10, 0.3, 1.4, 0, 9.9, 0], p: [P('unidad', 65, true)] },
+  { id: 'cerezas', name: 'Cerezas', al: ['cerezas', 'picotas'], cat: 'fruit', st: 'asIs', n: [63, 1.1, 14, 0.2, 2.1, 0, 12.8, 0], p: [P('puñado', 100, true)] },
+  { id: 'mango', name: 'Mango', al: ['mango'], cat: 'fruit', st: 'asIs', n: [60, 0.8, 13.4, 0.4, 1.6, 0.1, 13.4, 1], p: [P('unidad', 200, true)] },
+  { id: 'granada', name: 'Granada', al: ['granada'], cat: 'fruit', st: 'asIs', n: [83, 1.7, 15, 1.2, 4, 0.1, 13.7, 3], p: [P('unidad', 175, true)] },
+  { id: 'frutos-rojos-congelados', name: 'Frutos rojos (congelados)', al: ['frutos rojos', 'frutos del bosque', 'mora'], cat: 'fruit', st: 'asIs', n: [45, 0.9, 7, 0.4, 3.5, 0, 6.5, 2], p: [P('puñado', 100, true)] },
+
+  // Snacks y dulces
+  { id: 'galletas-maria', name: 'Galletas María', al: ['galletas maría', 'galletas maria', 'galletas'], cat: 'other', src: 'cereal', st: 'product', n: [430, 7, 72, 12, 2.5, 5, 20, 400], p: [P('unidad', 7, true)] },
+  { id: 'galletas-chocolate', name: 'Galletas con chocolate', al: ['galletas de chocolate', 'cookies'], cat: 'other', src: 'cereal', st: 'product', n: [490, 6, 62, 23, 3, 13, 32, 350], p: [P('unidad', 15, true)] },
+  { id: 'tortitas-arroz', name: 'Tortitas de arroz', al: ['tortitas de arroz', 'tortita de maíz'], cat: 'carb', src: 'cereal', st: 'product', n: [387, 8, 80, 3, 2, 0.6, 0.5, 20], vol: 'high', p: [P('unidad', 8, true)] },
+  { id: 'barrita-proteina', name: 'Barrita de proteína', al: ['barrita proteica', 'barrita de proteína', 'protein bar'], cat: 'protein', src: 'supplement', st: 'product', n: [360, 32, 25, 12, 8, 6, 2, 300], p: [P('unidad', 60, true)] },
+  { id: 'patatas-bolsa', name: 'Patatas fritas de bolsa', al: ['patatas de bolsa', 'patatas chips', 'chips'], cat: 'other', src: 'cereal', st: 'product', n: [535, 6, 50, 34, 4, 3.5, 0.5, 500], vol: 'low', p: [P('puñado', 30, true), P('bolsa', 150)] },
+  { id: 'palomitas', name: 'Palomitas', al: ['palomitas', 'popcorn'], cat: 'other', src: 'cereal', st: 'product', n: [480, 8, 50, 26, 9, 12, 1, 600], p: [P('bol', 40, true)] },
+  { id: 'crema-cacao', name: 'Crema de cacao con avellanas', al: ['nocilla', 'nutella', 'crema de cacao'], cat: 'other', st: 'product', n: [539, 6.3, 56, 31, 3.4, 10.6, 55, 40], vol: 'low', p: [P('cucharada', 15, true)] },
+
+  // Platos preparados y salsas
+  { id: 'pizza-margarita', name: 'Pizza margarita (horneada)', al: ['pizza', 'pizza margarita'], cat: 'carb', src: 'cereal', st: 'product', n: [250, 10, 30, 9, 2, 4, 3, 550], p: [P('pizza entera', 350, true), P('porción', 90)] },
+  { id: 'mostaza', name: 'Mostaza', al: ['mostaza'], cat: 'other', st: 'product', n: [66, 4, 5, 3, 3, 0.2, 1, 1100], p: [P('cucharadita', 5, true)] },
+  { id: 'vinagre-balsamico', name: 'Vinagre balsámico', al: ['vinagre balsámico', 'vinagre de módena', 'vinagre'], cat: 'other', st: 'product', unit: 'ml', n: [88, 0.5, 17, 0, 0, 0, 15, 23], p: [P('cucharada', 15, true)] },
+  { id: 'caldo-pollo', name: 'Caldo de pollo', al: ['caldo', 'caldo de pollo', 'consomé'], cat: 'other', st: 'product', unit: 'ml', n: [6, 0.8, 0.5, 0.2, 0, 0, 0.3, 320], vol: 'high', p: [P('taza', 250, true)] },
+
+  // Bebidas
+  { id: 'zumo-naranja', name: 'Zumo de naranja', al: ['zumo de naranja', 'zumo'], cat: 'drink', st: 'product', unit: 'ml', n: [45, 0.7, 8.9, 0.2, 0.2, 0, 8.3, 1], p: [P('vaso', 200, true)] },
+  { id: 'refresco-cola', name: 'Refresco de cola', al: ['coca cola', 'refresco', 'cola'], cat: 'drink', st: 'product', unit: 'ml', n: [42, 0, 10.6, 0, 0, 0, 10.6, 4], p: [P('lata', 330, true)] },
+  { id: 'refresco-zero', name: 'Refresco de cola zero', al: ['coca cola zero', 'refresco zero', 'refresco light'], cat: 'drink', st: 'product', unit: 'ml', n: [0.3, 0, 0, 0, 0, 0, 0, 10], p: [P('lata', 330, true)] },
+  { id: 'bebida-isotonica', name: 'Bebida isotónica', al: ['isotónica', 'aquarius', 'bebida deportiva'], cat: 'drink', st: 'product', unit: 'ml', n: [24, 0, 6, 0, 0, 0, 5, 40], p: [P('botella', 500, true)] },
+  // El alcohol aporta 7 kcal/g y no es ninguno de los macros, así que en estas
+  // dos la energía declarada no cuadra con proteína, hidratos y grasa. Es
+  // correcto: lo que falta es el alcohol.
+  { id: 'cerveza', name: 'Cerveza', al: ['cerveza', 'caña', 'tercio', 'birra'], cat: 'drink', st: 'product', unit: 'ml', n: [43, 0.5, 3.6, 0, 0, 0, 0.1, 4], p: [P('caña', 200, true), P('tercio', 330)] },
+  { id: 'vino-tinto', name: 'Vino tinto', al: ['vino', 'vino tinto', 'copa de vino'], cat: 'drink', st: 'product', unit: 'ml', n: [85, 0.1, 2.6, 0, 0, 0, 0.6, 4], p: [P('copa', 150, true)] },
 ];
 
 function toNutrients(n: Row['n']): Nutrients {
@@ -193,7 +289,8 @@ function toNutrients(n: Row['n']): Nutrients {
 
 function expand(row: Row): Food {
   const unit = row.unit ?? 'g';
-  const portions = row.p?.length ? row.p : [P(unit === 'ml' ? '100 ml' : '100 g', 100, true)];
+  const portions = row.p?.length ? row.p : [P(unit === 'ml' ? '100 ml' : '100 g', 100, true)
+];
   return {
     id: row.id,
     name: row.name,
@@ -215,4 +312,4 @@ function expand(row: Row): Food {
 export const SEED_FOODS: Food[] = ROWS.map(expand);
 
 /** Versión del seed: al subirla, la base se re-siembra sin tocar datos del usuario. */
-export const SEED_VERSION = 2;
+export const SEED_VERSION = 3;

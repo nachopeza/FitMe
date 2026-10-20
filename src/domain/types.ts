@@ -106,6 +106,12 @@ export interface Food {
   volumeIndex?: 'low' | 'medium' | 'high';
   /** true si lo creó el usuario (etiqueta escaneada, producto propio…). */
   custom?: boolean;
+  /**
+   * true si el usuario ha corregido un alimento del catálogo. Sirve para que
+   * una actualización del catálogo no le pise los cambios: sus datos mandan
+   * sobre los nuestros, que son valores de referencia y no su producto.
+   */
+  edited?: boolean;
   createdAt?: number;
 }
 

@@ -1392,3 +1392,146 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .live.iron .live-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
 .live.iron .live-time { color: var(--plate-yellow); font-size: 0.85rem; font-weight: 600; margin-top: 2px; }
 .live.iron:active { background: var(--iron-2); }
+
+/* Una ración: su nombre, sus gramos y el botón de quitarla. */
+.portion-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.portion-row > .chip { flex: 0 0 auto; }
+.portion-row > .input { flex: 1 1 auto; min-width: 0; }
+.portion-row .number { flex: 1 1 auto; min-width: 0; }
+
+/* ═════════════════════════ El anillo del día ═════════════════════════ */
+
+.ring { position: relative; margin: 0 auto; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
+.ring circle {
+  fill: none;
+  stroke-width: 11;
+  /* Sin remates redondos: con varios tramos seguidos se solapan y parecen
+     cuentas de un collar en vez de un trazo continuo. */
+  stroke-linecap: butt;
+}
+.ring-track { stroke: var(--paper-3); }
+.ring-arc {
+  transition: stroke-dasharray 0.6s cubic-bezier(0.22, 1, 0.36, 1),
+    stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.ring-protein { stroke: var(--m-protein); }
+.ring-carbs { stroke: var(--m-carbs); }
+.ring-fat { stroke: var(--m-fat); }
+
+.ring-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  padding: 0 18px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-arc { transition: none; }
+}
+
+/* El texto dentro del anillo. La cifra manda; el resto la acompaña. */
+.ring-label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--ink-3);
+  letter-spacing: 0.01em;
+}
+.ring-figure {
+  display: block;
+  font-family: var(--display);
+  font-size: 3.1rem;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 0.98;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+  margin: 2px 0 1px;
+}
+.ring-unit { display: block; font-size: 0.82rem; color: var(--ink-2); font-weight: 600; }
+.ring-second { display: block; font-size: 0.82rem; color: var(--ink-3); margin-top: 7px; }
+.ring-second b { color: var(--m-protein); font-weight: 700; }
+
+/* ═══════════════════ Acabado iOS: materiales y profundidad ═══════════════════
+   Lo que diferencia una app que parece web de una que parece del sistema no es
+   el color: es el material (cristal translúcido por el que pasa el contenido),
+   la profundidad por capas y que todo lo que se toca responda. */
+
+/* Barra superior de cristal. Aparece al desplazar y deja ver lo que pasa por
+   debajo, que es justo lo que hace que se lea como material y no como fondo. */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  padding: calc(env(safe-area-inset-top, 0px) + 9px) var(--pad) 11px;
+  /* Primero el sólido: si el navegador no entiende color-mix descarta esa
+     línea y se queda con un fondo opaco, no con uno transparente ilegible. */
+  background: var(--paper);
+  background: color-mix(in srgb, var(--paper) 72%, transparent);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  backdrop-filter: saturate(180%) blur(22px);
+  border-bottom: 0.5px solid var(--rule);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.topbar.is-visible { opacity: 1; transform: none; }
+.topbar span {
+  display: block;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 1.02rem;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+}
+/* Sin cristal disponible, fondo sólido: más vale opaco que ilegible. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .topbar { background: var(--paper); }
+}
+
+/* Título grande, como el de iOS: manda arriba del todo y se va al desplazar. */
+.head-date {
+  font-size: 1.95rem;
+  font-weight: 750;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+.head-note { font-size: 0.85rem; margin-top: 3px; }
+.head { align-items: flex-start; margin-bottom: 22px; }
+
+/* El anillo ya lleva el color del día: el borde de la tarjeta sobraba. */
+.hero {
+  border-top: 0;
+  padding: 24px 20px 20px;
+  box-shadow:
+    0 1px 1px rgba(20, 24, 29, 0.04),
+    0 8px 28px -10px rgba(20, 24, 29, 0.16);
+}
+
+/* Respuesta al tacto. Un muelle corto al pulsar es lo que convierte una web en
+   algo que se siente de la mano; se desactiva si se pide menos movimiento. */
+.quick-tile, .plan-item, .row, .btn, .chip, .nav-add, .add-tile {
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.16s ease;
+}
+.quick-tile:active, .plan-item:active, .add-tile:active { transform: scale(0.97); }
+.btn:active, .chip:active { transform: scale(0.98); }
+.nav-add:active { transform: scale(0.92); }
+@media (prefers-reduced-motion: reduce) {
+  .quick-tile, .plan-item, .row, .btn, .chip, .nav-add, .add-tile { transition: none; }
+  .quick-tile:active, .plan-item:active, .add-tile:active,
+  .btn:active, .chip:active, .nav-add:active { transform: none; }
+}
+
+/* Esquinas más generosas, al gusto de iOS, y sombras en capas en vez de bordes. */
+.quick-tile, .add-tile { border-radius: 18px; }
+.sheet { border-radius: 26px 26px 0 0; }
+
+/* Contenido de la casilla alineado arriba: así los iconos de una fila quedan a
+   la misma altura aunque un nombre ocupe dos líneas y otro una. */
+.quick-tile { justify-content: flex-start; gap: 4px; }
+.quick-tile .quick-ico { margin-bottom: 2px; }
