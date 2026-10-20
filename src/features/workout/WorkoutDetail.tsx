@@ -2,10 +2,11 @@ import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import { formatDayLabel } from '../../domain/dates';
 import type { Workout } from '../../domain/types';
 import {
-  averageRest, bestSet, describeSet, estimated1RM, exerciseVolume, musclesWorked,
-  personalBest, totalReps, totalSets, workingSets, workoutMinutes, workoutVolume,
+  averageRest, bestSet, describeSet, estimated1RM, exerciseVolume, muscleSets,
+  musclesWorked, personalBest, totalReps, totalSets, workingSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
 import { formatSeconds } from '../../domain/workout';
+import { BodyMap } from '../../ui/BodyMap';
 import { Sheet, g } from '../../ui/components';
 import { useApp } from '../store';
 import { photoUrl } from './ExerciseGuide';
@@ -59,7 +60,8 @@ export function WorkoutDetail({ workout, onClose }: { workout: Workout; onClose:
       {muscles.length > 0 && (
         <div className="field">
           <span className="field-label">Qué trabajaste</span>
-          <div className="muscles">
+          <BodyMap worked={muscleSets([workout])} />
+          <div className="muscles" style={{ marginTop: 14 }}>
             {muscles.map((m) => (
               <div className="muscle" key={m.muscle}>
                 <span className="muscle-name">{m.muscle}</span>

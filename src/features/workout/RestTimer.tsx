@@ -43,10 +43,14 @@ export function RestTimer({
 
   return (
     <div className="rest" role="timer" aria-live="off">
-      <span className="rest-time">{left > 0 ? formatSeconds(left) : '¡Vamos!'}</span>
+      {/* La barra marca cuánto queda sin tener que leer el número. */}
       <span className="rest-bar"><span style={{ width: `${pct}%` }} /></span>
-      <button onClick={() => onAdd(30)} aria-label="Añadir treinta segundos">+30</button>
-      <button onClick={onDismiss} aria-label="Saltar descanso">Saltar</button>
+      <span className="rest-time">{left > 0 ? formatSeconds(left) : '¡Vamos!'}</span>
+      <div className="rest-actions">
+        <button onClick={() => onAdd(-15)} aria-label="Quitar quince segundos">−15</button>
+        <button onClick={() => onAdd(15)} aria-label="Añadir quince segundos">+15</button>
+        <button className="rest-skip" onClick={onDismiss} aria-label="Omitir el descanso">Omitir</button>
+      </div>
     </div>
   );
 }

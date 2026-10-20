@@ -1,6 +1,6 @@
 import { EXERCISES_BY_ID } from '../data/exercises';
 import type {
-  Exercise, TrainingIntensity, TrainingSession, Workout, WorkoutExercise, WorkoutSet,
+  Exercise, MuscleGroup, TrainingIntensity, TrainingSession, Workout, WorkoutExercise, WorkoutSet,
 } from './types';
 import { MUSCLE_LABEL } from '../data/exercises';
 
@@ -121,6 +121,28 @@ export function personalBest(exerciseId: string, history: Workout[]): { set: Wor
     }
   }
   return best;
+}
+
+/**
+ * Series por grupo muscular, con las claves sin traducir.
+ *
+ * Los músculos secundarios cuentan a mitad: un press de banca trabaja tríceps,
+ * pero no como el pecho, y pintarlos igual en el mapa sería mentir.
+ */
+export function muscleSets(workouts: Workout[]): Map<MuscleGroup, number> {
+  const counts = new Map<MuscleGroup, number>();
+  const add = (m: MuscleGroup, n: number) => counts.set(m, (counts.get(m) ?? 0) + n);
+  for (const w of workouts) {
+    for (const ex of w.exercises) {
+      const def = EXERCISES_BY_ID.get(ex.exerciseId);
+      if (!def) continue;
+      const n = workingSets(ex).length;
+      if (!n) continue;
+      add(def.muscle, n);
+      for (const sec of def.secondary) add(sec, n / 2);
+    }
+  }
+  return counts;
 }
 
 /** Grupos musculares trabajados, de más series a menos. */

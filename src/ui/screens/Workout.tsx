@@ -3,11 +3,12 @@ import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import { formatDayLabel } from '../../domain/dates';
 import type { Exercise, Routine, Workout } from '../../domain/types';
 import {
-  musclesWorked, totalSets, workoutMinutes, workoutVolume,
+  muscleSets, musclesWorked, totalSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
 import { ActiveWorkout } from '../../features/workout/ActiveWorkout';
 import { WorkoutDetail } from '../../features/workout/WorkoutDetail';
 import { useApp } from '../../features/store';
+import { BodyMap } from '../BodyMap';
 import { Section, g } from '../components';
 import { Icon } from '../icons';
 import { useUI } from '../shell';
@@ -34,6 +35,7 @@ export function WorkoutScreen() {
       count: recent.length,
       sets: recent.reduce((a, w) => a + totalSets(w), 0),
       volume: recent.reduce((a, w) => a + workoutVolume(w), 0),
+      workouts: recent,
     };
   }, [app.workouts]);
 
@@ -147,6 +149,9 @@ export function WorkoutScreen() {
               <div className="iron-value">{g(thisWeek.volume)}</div>
             </div>
           </div>
+          {/* Lo trabajado en la semana: es lo que dice si se ha quedado coja de
+              pierna o de espalda, cosa que tres cifras no cuentan. */}
+          <BodyMap worked={muscleSets(thisWeek.workouts)} size={132} />
         </Section>
       )}
 

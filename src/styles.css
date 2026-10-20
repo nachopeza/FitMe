@@ -915,7 +915,10 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
 .sets th:first-child, .sets td:first-child { padding-left: 0; width: 26px; }
 .sets th:last-child, .sets td:last-child { padding-right: 0; width: 42px; text-align: center; }
 .sets td { padding: 4px 6px; vertical-align: middle; }
-.sets tr.done td { background: var(--accent-soft); }
+/* La serie hecha se tiñe de verde entera, no solo el check: a media sesión se
+   necesita ver de un vistazo por dónde vas sin contar marcas. */
+.sets tr.done td { background: var(--m-fat-soft); }
+.sets tr.done .set-n { color: var(--m-fat); font-weight: 700; }
 .sets tr.done td:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); }
 .sets tr.done td:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .set-n {
@@ -964,51 +967,70 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
   color: var(--accent-ink);
 }
 
-/* Temporizador de descanso: fijo sobre la barra, imposible de perder de vista. */
+/* ═══════════════ Descanso: barra inferior, no una pastilla ═══════════════
+   Es lo que se mira a un metro del banco, con el móvil en el suelo. Ocupa todo
+   el ancho, la cifra es enorme y los botones son los tres que de verdad se
+   usan: quitar quince, añadir quince y omitir. */
 .rest {
   position: fixed;
-  left: 12px;
-  right: 12px;
+  left: 10px;
+  right: 10px;
   bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 20px);
-  max-width: 536px;
+  max-width: 540px;
   margin: 0 auto;
-  z-index: 45;
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: var(--r);
-  padding: 11px 14px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  box-shadow: 0 6px 22px rgba(21, 24, 28, 0.22);
-}
-.rest-time {
-  font-family: var(--display);
-  font-size: 1.35rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-  min-width: 62px;
+  /* Por encima de la hoja de la sesión (51): el descanso se usa justo con la
+     sesión abierta y antes quedaba tapado, así que sus botones no se podían
+     pulsar. Por debajo del aviso (60), para no tapar un "Deshacer". */
+  z-index: 55;
+  background: var(--iron);
+  color: var(--iron-ink);
+  border-radius: var(--r-lg);
+  padding: 14px 16px 16px;
+  box-shadow: 0 10px 34px -8px rgba(20, 24, 29, 0.45);
+  overflow: hidden;
 }
 .rest-bar {
-  flex: 1;
+  display: block;
   height: 4px;
   border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--paper) 25%, transparent);
+  background: var(--iron-line);
+  margin-bottom: 10px;
   overflow: hidden;
-  min-width: 0;
 }
-.rest-bar span { display: block; height: 100%; background: var(--paper); border-radius: var(--r-pill); }
-.rest button {
-  background: color-mix(in srgb, var(--paper) 18%, transparent);
+.rest-bar span {
+  display: block;
+  height: 100%;
+  background: var(--plate-yellow);
+  border-radius: var(--r-pill);
+  transition: width 0.25s linear;
+}
+.rest-time {
+  display: block;
+  text-align: center;
+  font-family: var(--display);
+  font-size: 3.1rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  margin-bottom: 12px;
+}
+.rest-actions { display: grid; grid-template-columns: 1fr 1fr 1.2fr; gap: 8px; }
+.rest-actions button {
+  background: var(--iron-2);
   border: 0;
-  color: var(--paper);
-  border-radius: 8px;
-  padding: 7px 11px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  flex: 0 0 auto;
+  color: var(--iron-ink);
+  border-radius: var(--r-sm);
+  padding: 11px 8px;
+  font: inherit;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  min-height: 44px;
+  cursor: pointer;
 }
+.rest-actions button:active { background: var(--iron-line); }
+.rest-actions .rest-skip { background: var(--accent); color: var(--accent-ink); }
+@media (prefers-reduced-motion: reduce) { .rest-bar span { transition: none; } }
 
 /* Cabecera de la sesión activa. */
 .live {
@@ -1882,3 +1904,49 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .tool-name { font-weight: 650; letter-spacing: -0.01em; }
 .tool-sub { font-size: 0.78rem; color: var(--ink-3); }
 @media (prefers-reduced-motion: reduce) { .tool { transition: none; } .tool:active { transform: none; } }
+
+/* Chips de un ejercicio en la sesión: su descanso y su nota. */
+.ex-chips { display: flex; gap: 7px; margin-bottom: 11px; flex-wrap: wrap; }
+.ex-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--paper-2);
+  border: 0;
+  border-radius: var(--r-sm);
+  padding: 8px 11px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-2);
+  cursor: pointer;
+  min-height: 38px;
+}
+.ex-chip:active { background: var(--paper-3); }
+.ex-chip[aria-expanded='true'] { background: var(--accent-soft); color: var(--accent); }
+.rest-picker { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 11px; }
+.ex-note { margin-bottom: 11px; resize: vertical; }
+.ex-note-read { margin: -2px 0 11px; font-style: italic; }
+
+/* ═══════════ Mapa corporal ═══════════ */
+
+.body-map { display: flex; gap: 10px; align-items: flex-start; justify-content: center; flex-wrap: wrap; }
+.body-map figure { margin: 0; }
+.body-svg { width: var(--body-size, 150px); height: auto; display: block; }
+.body-base { fill: var(--paper-3); }
+/* Las piezas se dibujan con un hilo del color del papel entre ellas, para que
+   brazos y tronco se distingan en vez de fundirse en una mancha. */
+.body-base path { stroke: var(--paper); stroke-width: 1.4; }
+/* Tres niveles de intensidad con el azul de la proteína: más series, más
+   saturado. Siempre sobre la silueta, nunca sustituyéndola. */
+.body-on { fill: var(--m-protein); }
+.body-on.lvl-1 { opacity: 0.38; }
+.body-on.lvl-2 { opacity: 0.66; }
+.body-on.lvl-3 { opacity: 1; }
+.body-map figcaption {
+  text-align: center;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+.body-extra { flex: 1 0 100%; text-align: center; font-size: 0.78rem; color: var(--ink-3); margin: 6px 0 0; }

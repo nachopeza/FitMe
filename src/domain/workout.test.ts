@@ -3,7 +3,7 @@ import type { Workout, WorkoutExercise, WorkoutSet } from './types';
 import {
   bestSet, describeSet, estimated1RM, exerciseVolume, formatSeconds, musclesWorked,
   nextSetTemplate, personalBest, previousPerformance, toTrainingSession, totalReps,
-  totalSets, workingSets, workoutMinutes, workoutVolume,
+  muscleSets, totalSets, workingSets, workoutMinutes, workoutVolume,
 } from './workout';
 
 const set = (s: Partial<WorkoutSet>): WorkoutSet => ({ done: true, ...s });
@@ -216,5 +216,31 @@ describe('siguiente serie', () => {
 
   it('en un ejercicio recién añadido empieza en blanco', () => {
     expect(nextSetTemplate(ex('press-banca', []))).toEqual({ done: false });
+  });
+});
+
+describe('mapa de músculos', () => {
+  it('cuenta las series del músculo principal', () => {
+    const w = workout({ exercises: [ex('press-banca', [set({ kg: 60, reps: 8 }), set({ kg: 60, reps: 8 })])] });
+    expect(muscleSets([w]).get('chest')).toBe(2);
+  });
+
+  it('los secundarios cuentan a mitad', () => {
+    const w = workout({ exercises: [ex('press-banca', [set({ kg: 60, reps: 8 }), set({ kg: 60, reps: 8 })])] });
+    const m = muscleSets([w]);
+    // El press de banca lleva hombro y tríceps como secundarios.
+    expect(m.get('triceps')).toBe(1);
+    expect(m.get('shoulders')).toBe(1);
+  });
+
+  it('suma varias sesiones', () => {
+    const a = workout({ id: 'a', exercises: [ex('sentadilla', [set({ kg: 90, reps: 5 })])] });
+    const b = workout({ id: 'b', exercises: [ex('sentadilla', [set({ kg: 95, reps: 5 })])] });
+    expect(muscleSets([a, b]).get('quads')).toBe(2);
+  });
+
+  it('el calentamiento no cuenta', () => {
+    const w = workout({ exercises: [ex('press-banca', [set({ kg: 20, reps: 12, warmup: true })])] });
+    expect(muscleSets([w]).has('chest')).toBe(false);
   });
 });

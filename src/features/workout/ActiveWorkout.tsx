@@ -9,6 +9,7 @@ import { Sheet, g } from '../../ui/components';
 import { Icon } from '../../ui/icons';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
+import { photoUrl } from './ExerciseGuide';
 import { ExercisePicker } from './ExercisePicker';
 import { RestTimer } from './RestTimer';
 
@@ -201,7 +202,13 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
           endsAt={rest.endsAt}
           total={rest.total}
           onDismiss={() => setRest(null)}
-          onAdd={(s) => setRest((r) => (r ? { endsAt: r.endsAt + s * 1000, total: r.total + s } : r))}
+          onAdd={(s) => setRest((r) => {
+            if (!r) return r;
+            // Restar no puede dejar el descanso en negativo ni la barra sin
+            // referencia: el suelo es ahora mismo y un total de 15 s.
+            const endsAt = Math.max(Date.now(), r.endsAt + s * 1000);
+            return { endsAt, total: Math.max(15, r.total + s) };
+          })}
         />
       )}
     </>
@@ -221,6 +228,9 @@ function ExerciseBlock({
   const app = useApp();
   const def = EXERCISES_BY_ID.get(ex.exerciseId) ?? app.exercises.find((e) => e.id === ex.exerciseId);
   const kind = def?.kind ?? 'weightReps';
+  const thumb = photoUrl(ex.exerciseId, 0);
+  const [editingRest, setEditingRest] = useState(false);
+  const [editingNote, setEditingNote] = useState(false);
 
   const previous = useMemo(
     () => previousPerformance(ex.exerciseId, app.workouts, workoutId),
@@ -245,17 +255,55 @@ function ExerciseBlock({
   return (
     <div className="card" style={{ marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        {thumb && <img className="ex-thumb" src={thumb} alt="" loading="lazy" />}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'var(--display)', fontWeight: 650, letterSpacing: '-0.015em' }}>{ex.name}</div>
-          <div className="row-meta">
-            {def ? MUSCLE_LABEL[def.muscle] : 'Ejercicio'}
-            {ex.restSeconds > 0 && ` · descanso ${formatSeconds(ex.restSeconds)}`}
-          </div>
+          <div className="row-meta">{def ? MUSCLE_LABEL[def.muscle] : 'Ejercicio'}</div>
         </div>
         <button className="icon-btn" aria-label={`Quitar ${ex.name}`} onClick={onRemove}>
           <Icon name="trash" size={17} />
         </button>
       </div>
+
+      {/* El descanso de ESTE ejercicio, a la vista y tocable: cambiarlo a mitad
+          de sesión es normal y antes había que ir a la rutina. */}
+      <div className="ex-chips">
+        <button className="ex-chip" onClick={() => setEditingRest((v) => !v)} aria-expanded={editingRest}>
+          <Icon name="timer" size={15} />
+          Descanso: {ex.restSeconds > 0 ? formatSeconds(ex.restSeconds) : 'ninguno'}
+        </button>
+        <button className="ex-chip" onClick={() => setEditingNote((v) => !v)} aria-expanded={editingNote}>
+          <Icon name="pen" size={15} />
+          {ex.note ? 'Nota' : 'Añadir nota'}
+        </button>
+      </div>
+
+      {editingRest && (
+        <div className="rest-picker">
+          {[0, 60, 90, 120, 150, 180, 240].map((sec) => (
+            <button
+              key={sec}
+              className="chip"
+              aria-pressed={ex.restSeconds === sec}
+              onClick={() => { onPatch((e) => ({ ...e, restSeconds: sec })); setEditingRest(false); }}
+            >
+              {sec === 0 ? 'Sin descanso' : formatSeconds(sec)}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {editingNote && (
+        <textarea
+          className="input ex-note"
+          rows={2}
+          value={ex.note ?? ''}
+          aria-label={`Nota de ${ex.name}`}
+          placeholder="Sensaciones, agarre, altura del banco…"
+          onChange={(e) => onPatch((prev) => ({ ...prev, note: e.target.value || undefined }))}
+        />
+      )}
+      {!editingNote && ex.note && <p className="note tight ex-note-read">{ex.note}</p>}
 
       {previous && (
         <div className="note tight" style={{ marginBottom: 8 }}>
