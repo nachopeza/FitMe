@@ -200,21 +200,43 @@ export interface SavedMeal {
 export type Hunger = 'high' | 'normal' | 'low' | 'veryLow';
 export type Digestion = 'good' | 'bloated' | 'bad';
 
+/**
+ * Tipo de entrenamiento. Importa para la nutrición: una hora de series con
+ * descansos largos y una hora de intervalos no cuestan lo mismo, y tratarlas
+ * igual falsea el gasto del día.
+ */
+export type TrainingKind = 'strength' | 'cardio' | 'hiit' | 'mobility' | 'sport' | 'other';
+
+/** Intensidad percibida. Modula el coste estimado de la sesión. */
+export type TrainingIntensity = 'easy' | 'moderate' | 'hard';
+
 export interface TrainingSet {
   exercise: string;
+  /** Series. En cardio se usa 1. */
   sets: number;
+  /** Repeticiones, como texto: admite "10", "8-10", "al fallo". */
   reps: string;
   weightKg?: number;
+  /** Para cardio y deporte: distancia recorrida. */
+  distanceKm?: number;
+  note?: string;
 }
 
 export interface TrainingSession {
-  /** "Pecho", "Espalda", "Pierna"… libre. */
+  /**
+   * Opcional por compatibilidad: las sesiones guardadas antes de existir este
+   * campo se normalizan a 'strength' al leerlas.
+   */
+  kind?: TrainingKind;
+  /** Grupo muscular en fuerza, o modalidad en cardio ("correr", "bici"). */
   focus: string;
   minutes: number;
+  /** Opcional por compatibilidad; se normaliza a 'moderate'. */
+  intensity?: TrainingIntensity;
   exercises: TrainingSet[];
   /** Percepción de rendimiento 1–5: señal para el motor de tendencias. */
   performance?: number;
-  location?: 'home' | 'gym';
+  location?: 'home' | 'gym' | 'outdoor';
 }
 
 export interface DayLog {

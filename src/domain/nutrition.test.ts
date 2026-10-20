@@ -7,6 +7,15 @@ import {
 
 const byId = new Map(SEED_FOODS.map((f) => [f.id, f]));
 
+/** Sesión de fuerza típica del usuario, para los tests de clasificación. */
+const fuerza = () => ({
+  kind: 'strength' as const,
+  intensity: 'moderate' as const,
+  focus: 'Pecho',
+  minutes: 55,
+  exercises: [],
+});
+
 /** Perfil real del usuario: 66,5 kg, entrena fuerza 4 días, objetivo ganar músculo. */
 const ME = {
   sex: 'male' as const,
@@ -128,10 +137,17 @@ describe('macros dinámicos por tipo de día', () => {
   const base = computeTargets(ME);
 
   it('clasifica el día por entrenamiento y pasos', () => {
-    expect(classifyDay({ trained: true, steps: 3000, typicalSteps: 8000 })).toBe('training');
-    expect(classifyDay({ trained: false, steps: 14000, typicalSteps: 8000 })).toBe('highActivity');
-    expect(classifyDay({ trained: false, steps: 3000, typicalSteps: 8000 })).toBe('lowActivity');
-    expect(classifyDay({ trained: false, steps: 8000, typicalSteps: 8000 })).toBe('rest');
+    expect(classifyDay({ session: fuerza(), steps: 3000, typicalSteps: 8000 })).toBe('training');
+    expect(classifyDay({ steps: 14000, typicalSteps: 8000 })).toBe('highActivity');
+    expect(classifyDay({ steps: 3000, typicalSteps: 8000 })).toBe('lowActivity');
+    expect(classifyDay({ steps: 8000, typicalSteps: 8000 })).toBe('rest');
+  });
+
+  it('una sesión corta de movilidad NO convierte el día en día de entreno', () => {
+    const movilidad = { kind: 'mobility' as const, intensity: 'easy' as const, focus: 'Estiramientos', minutes: 20, exercises: [] };
+    expect(classifyDay({ session: movilidad, steps: 8000, typicalSteps: 8000 })).toBe('rest');
+    // Pero una sesión larga de movilidad sí cuenta.
+    expect(classifyDay({ session: { ...movilidad, minutes: 60 }, steps: 8000, typicalSteps: 8000 })).toBe('training');
   });
 
   it('sube energía en día de entreno y la baja en descanso', () => {

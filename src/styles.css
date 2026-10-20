@@ -588,3 +588,14 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* Celda de estadística con texto, no con una cifra: el tipo monoespaciado y el
+   tamaño de las cifras desbordaban la caja con etiquetas como
+   "Muy poco apetito" o "Fuerza · Cuerpo completo". */
+.stat-value.stat-text {
+  font-family: var(--ff);
+  font-size: 0.85rem;
+  font-weight: 650;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}

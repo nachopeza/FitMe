@@ -189,11 +189,11 @@ function RecipeEditor({ recipe, onClose }: { recipe: Recipe; onClose: () => void
       </Field>
       <div className="grid-2">
         <Field label="Raciones que salen">
-          <NumberInput value={r.servings} min={1} onChange={(v) => setR({ ...r, servings: v === '' ? 1 : v })} />
+          <NumberInput value={r.servings} min={1} onChange={(v) => setR({ ...r, servings: v })} />
         </Field>
         <Field label="Tiempo de preparación">
           <NumberInput value={r.prepMinutes} step={5} suffix="min"
-            onChange={(v) => setR({ ...r, prepMinutes: v === '' ? 0 : v })} />
+            onChange={(v) => setR({ ...r, prepMinutes: v })} />
         </Field>
       </div>
 

@@ -48,14 +48,14 @@ export function ProfileScreen() {
       <Card title="Tus datos">
         <Field label="Peso de referencia" hint="Se usa solo si aún no hay pesadas suficientes. Con datos, manda la media móvil.">
           <NumberInput value={p.startWeightKg} step={0.1} suffix="kg"
-            onChange={(v) => v !== '' && void patch({ startWeightKg: v })} />
+            onChange={(v) => void patch({ startWeightKg: v })} />
         </Field>
         <Field label="Altura">
-          <NumberInput value={p.heightCm} suffix="cm" onChange={(v) => v !== '' && void patch({ heightCm: v })} />
+          <NumberInput value={p.heightCm} suffix="cm" onChange={(v) => void patch({ heightCm: v })} />
         </Field>
         <Field label="Edad">
           <NumberInput value={profileAge(p)} suffix="años"
-            onChange={(v) => v !== '' && void patch({ birthYear: new Date().getFullYear() - v })} />
+            onChange={(v) => void patch({ birthYear: new Date().getFullYear() - v })} />
         </Field>
         <Field label="Sexo" hint="Solo se usa para estimar el metabolismo basal.">
           <Segmented<Sex> value={p.sex} onChange={(v) => void patch({ sex: v })}
@@ -71,11 +71,11 @@ export function ProfileScreen() {
         </Field>
         <Field label="Pasos habituales al día">
           <NumberInput value={p.typicalSteps} step={500} suffix="pasos"
-            onChange={(v) => v !== '' && void patch({ typicalSteps: v })} />
+            onChange={(v) => void patch({ typicalSteps: v })} />
         </Field>
         <Field label="Días de entrenamiento por semana">
           <NumberInput value={p.trainingDaysPerWeek} min={0} max={7} suffix="días"
-            onChange={(v) => v !== '' && void patch({ trainingDaysPerWeek: v })} />
+            onChange={(v) => void patch({ trainingDaysPerWeek: v })} />
         </Field>
         <Field label="Tipo de entrenamiento">
           <input className="input" value={p.trainingStyle} onChange={(e) => void patch({ trainingStyle: e.target.value })} />

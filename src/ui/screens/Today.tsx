@@ -4,6 +4,9 @@ import { entryNutrients, shareOfDay } from '../../features/logging';
 import { addDays, formatDayLabel, timeToMinutes, toIsoDate } from '../../domain/dates';
 import { DAY_TYPE_LABEL, MEAL_SLOTS, MEAL_SLOT_LABEL, type Hunger, type Digestion, type MealEntry, type MealSlot } from '../../domain/types';
 import { proteinDistribution } from '../../domain/trends';
+import {
+  TRAINING_INTENSITY_LABEL, describeSession, normalizeSession, sessionKcal,
+} from '../../domain/training';
 import { Card, KcalRing, MACRO_META, MacroBar, MacroPills, WhyButton, g } from '../components';
 import { useUI } from '../shell';
 
@@ -88,10 +91,15 @@ export function TodayScreen() {
         <div className="grid-2">
           <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'training' })}>
             <div className="stat-label">🏋️ Entrenamiento</div>
-            <div className="stat-value" style={{ fontSize: '0.92rem' }}>
-              {day?.training ? day.training.focus || 'Completado' : 'Sin registrar'}
+            <div className="stat-value stat-text">
+              {day?.training ? describeSession(day.training) : 'Sin registrar'}
             </div>
-            {day?.training && <div className="stat-sub">{day.training.minutes} min · {day.training.exercises.length} ejercicios</div>}
+            {day?.training && (
+              <div className="stat-sub">
+                {day.training.minutes} min · {TRAINING_INTENSITY_LABEL[normalizeSession(day.training).intensity].toLowerCase()}
+                {' · ~'}{g(sessionKcal(app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training))} kcal
+              </div>
+            )}
           </button>
           <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
             <div className="stat-label">🚶 Pasos</div>
@@ -104,13 +112,13 @@ export function TodayScreen() {
           </button>
           <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
             <div className="stat-label">😋 Hambre</div>
-            <div className="stat-value" style={{ fontSize: '0.92rem' }}>
+            <div className="stat-value stat-text">
               {day?.hunger ? HUNGER_LABEL[day.hunger] : 'Sin registrar'}
             </div>
           </button>
           <button className="stat" style={{ textAlign: 'left' }} onClick={() => ui.open({ k: 'dayState' })}>
             <div className="stat-label">🙂 Digestión</div>
-            <div className="stat-value" style={{ fontSize: '0.92rem' }}>
+            <div className="stat-value stat-text">
               {day?.digestion ? DIGESTION_LABEL[day.digestion] : 'Sin registrar'}
             </div>
           </button>

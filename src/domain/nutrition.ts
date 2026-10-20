@@ -1,3 +1,4 @@
+import { trainingDemand } from './training';
 import {
   EMPTY_NUTRIENTS,
   type ActivityLevel,
@@ -11,6 +12,7 @@ import {
   type Profile,
   type Sex,
   type TargetRange,
+  type TrainingSession,
 } from './types';
 
 // ───────────────────────────── Aritmética de nutrientes ─────────────────────────────
@@ -304,11 +306,16 @@ export function computeTargets(input: ComputeTargetsInput): MacroTargets {
 // ───────────────────────────── Tipo de día ─────────────────────────────
 
 export function classifyDay(opts: {
-  trained: boolean;
+  /** Sesión del día, si la hay. */
+  session?: TrainingSession | null;
   steps?: number;
   typicalSteps: number;
 }): DayType {
-  const { trained, steps, typicalSteps } = opts;
+  const { session, steps, typicalSteps } = opts;
+  // Una sesión de movilidad corta no convierte el día en día de entrenamiento:
+  // antes cualquier registro, aunque fueran quince minutos de estiramientos,
+  // sumaba un 8% de energía al objetivo.
+  const trained = !!session && trainingDemand(session) !== 'negligible';
   if (trained) return 'training';
   if (steps != null) {
     if (steps >= Math.max(12000, typicalSteps * 1.4)) return 'highActivity';
@@ -334,9 +341,18 @@ const DAY_SHIFT: Record<DayType, number> = {
  * estructural, no energética); la grasa se mueve poco; el ajuste recae sobre
  * los carbohidratos, que es donde tiene sentido fisiológico.
  */
-export function targetsForDay(base: MacroTargets, dayType: DayType): MacroTargets {
+export function targetsForDay(
+  base: MacroTargets,
+  dayType: DayType,
+  /**
+   * Energía extra (o de menos) por una sesión que se sale de la habitual, ya
+   * amortiguada por `sessionExtraKcal`. El objetivo base ya incluye el promedio
+   * de las sesiones del usuario, así que aquí solo entra la diferencia.
+   */
+  extraKcal = 0,
+): MacroTargets {
   const shift = DAY_SHIFT[dayType];
-  const kcalTarget = Math.round(base.kcal.target * (1 + shift));
+  const kcalTarget = Math.round(base.kcal.target * (1 + shift) + extraKcal);
   const deltaKcal = kcalTarget - base.kcal.target;
   // 80% del desplazamiento va a carbohidratos, 20% a grasa.
   const carbsTarget = Math.max(0, Math.round(base.carbs.target + (deltaKcal * 0.8) / 4));
@@ -346,11 +362,17 @@ export function targetsForDay(base: MacroTargets, dayType: DayType): MacroTarget
   );
 
   const label =
-    shift > 0
+    deltaKcal > 0
       ? `Hoy sumamos ~${deltaKcal} kcal, sobre todo en carbohidratos, porque es un día de más demanda.`
-      : shift < 0
+      : deltaKcal < 0
         ? `Hoy restamos ~${Math.abs(deltaKcal)} kcal en carbohidratos. La proteína no baja.`
         : 'Hoy mantenemos los objetivos medios.';
+  const extraLabel =
+    extraKcal > 0
+      ? `De esas, ~${extraKcal} kcal son por una sesión más exigente que tu sesión media.`
+      : extraKcal < 0
+        ? `Se descuentan ~${Math.abs(extraKcal)} kcal porque la sesión de hoy ha sido más suave que la habitual.`
+        : null;
 
   return {
     kcal: range(kcalTarget, 0.93, 1.07, 10),
@@ -359,7 +381,7 @@ export function targetsForDay(base: MacroTargets, dayType: DayType): MacroTarget
     fat: range(fatTarget, 0.8, 1.2),
     fiber: base.fiber,
     origin: base.origin,
-    rationale: [label, ...base.rationale],
+    rationale: extraLabel ? [label, extraLabel, ...base.rationale] : [label, ...base.rationale],
   };
 }
 

@@ -214,29 +214,91 @@ export function Segmented<T extends string>({ value, options, onChange, label }:
   );
 }
 
-export function NumberInput({
-  value, onChange, suffix, step = 1, min = 0, max, placeholder,
-}: {
+interface NumberInputProps {
   value: number | '';
-  onChange: (v: number | '') => void;
+  /** Se llama con el valor confirmado. Nunca con una cadena vacía. */
+  onChange: (v: number) => void;
   suffix?: string;
   step?: number;
   min?: number;
   max?: number;
   placeholder?: string;
-}) {
+  label?: string;
+  /**
+   * `blur` confirma al salir del campo o al pulsar Enter; `change` confirma en
+   * cada pulsación válida.
+   *
+   * Por defecto es `blur`, y es importante: cuando se confirmaba en cada
+   * pulsación, cada tecla guardaba en la base de datos y el valor recién
+   * guardado volvía a pintarse encima de lo que se estaba escribiendo. Borrar
+   * el campo para teclear otro número era imposible: se rellenaba solo con el
+   * valor anterior. Es lo que hacía que los días de entrenamiento no se
+   * pudieran cambiar.
+   */
+  commitOn?: 'blur' | 'change';
+}
+
+export function NumberInput({
+  value, onChange, suffix, step = 1, min, max, placeholder, label, commitOn = 'blur',
+}: NumberInputProps) {
+  const [text, setText] = useState(value === '' ? '' : String(value));
+  const [editing, setEditing] = useState(false);
+
+  // El valor de fuera solo se copia al campo cuando no se está escribiendo.
+  useEffect(() => {
+    if (!editing) setText(value === '' ? '' : String(value));
+  }, [value, editing]);
+
+  const parse = (raw: string): number | null => {
+    // Se acepta la coma decimal: en un móvil español es lo que sale del teclado.
+    const n = Number(raw.replace(',', '.'));
+    if (raw.trim() === '' || !Number.isFinite(n)) return null;
+    if (min != null && n < min) return min;
+    if (max != null && n > max) return max;
+    return n;
+  };
+
+  const commit = () => {
+    const n = parse(text);
+    if (n == null) {
+      // Campo vacío o ilegible: se recupera el último valor válido.
+      setText(value === '' ? '' : String(value));
+      return;
+    }
+    setText(String(n));
+    onChange(n);
+  };
+
   return (
     <div className="input-row">
       <input
         className="input"
-        type="number"
+        type="text"
         inputMode="decimal"
-        value={value}
+        value={text}
         step={step}
-        min={min}
-        max={max}
         placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value === '' ? '' : Number(e.target.value))}
+        aria-label={label}
+        onFocus={() => setEditing(true)}
+        onChange={(e) => {
+          const raw = e.target.value;
+          // Solo dígitos, una coma o punto y un signo menos inicial.
+          if (!/^-?[0-9]*[.,]?[0-9]*$/.test(raw)) return;
+          setText(raw);
+          if (commitOn === 'change') {
+            const n = parse(raw);
+            if (n != null) onChange(n);
+          }
+        }}
+        onBlur={() => {
+          setEditing(false);
+          commit();
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.currentTarget.blur();
+          }
+        }}
       />
       {suffix && <span className="suffix">{suffix}</span>}
     </div>

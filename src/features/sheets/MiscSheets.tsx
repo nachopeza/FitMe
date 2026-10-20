@@ -3,6 +3,7 @@ import { deleteAllData } from '../../data/db';
 import { formatDayLabel, lastNDays } from '../../domain/dates';
 import { computeTargets, profileAge } from '../../domain/nutrition';
 import { nutrientsForEntries, groupEntriesByDate } from '../../domain/trends';
+import { describeSession } from '../../domain/training';
 import { MACRO_KEYS, MEAL_SLOT_LABEL, type MacroKey, type MacroTargets } from '../../domain/types';
 import { Card, EstimateNotice, Field, MACRO_META, MacroPills, NumberInput, Sheet, g } from '../../ui/components';
 import { useUI } from '../../ui/shell';
@@ -180,8 +181,10 @@ export function TargetsSheet({ onClose }: { onClose: () => void }) {
         <div className="btn-row">
           <button className="btn ghost" onClick={async () => {
             // Vuelve al cálculo automático descartando el ajuste manual.
+            // `force` es necesario porque los objetivos están marcados como
+            // manuales y el recálculo normal los respeta.
             await app.actions.saveProfile({ ...p, manualKcalOffset: 0 });
-            await app.actions.recomputeTargets({ ...p, manualKcalOffset: 0 });
+            await app.actions.recomputeTargets({ ...p, manualKcalOffset: 0 }, true);
             ui.notify('Objetivos recalculados a partir de tus datos.');
             onClose();
           }}>Recalcular</button>
@@ -267,7 +270,7 @@ export function HistorySheet({ onClose }: { onClose: () => void }) {
                 <div className="row-title" style={{ fontSize: '0.88rem' }}>{formatDayLabel(d)}</div>
                 <div className="row-sub">
                   {entries.length ? `${entries.length} comidas` : 'sin registro'}
-                  {day?.training ? ` · 🏋️ ${day.training.focus}` : ''}
+                  {day?.training ? ` · 🏋️ ${describeSession(day.training)}` : ''}
                   {day?.steps != null ? ` · 🚶 ${g(day.steps)}` : ''}
                 </div>
               </div>

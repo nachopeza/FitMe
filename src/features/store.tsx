@@ -7,16 +7,33 @@ import {
   makeDefaultProfile, markRecipeUsed, markSavedMealUsed, newId, saveProfile, saveSettings,
   seedIfNeeded, upsertDay, upsertFood, upsertRecipe, upsertSavedMeal,
 } from '../data/db';
+import { bootPhase } from './bootState';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
 } from '../domain/nutrition';
 import { buildIndex, type FoodIndex } from '../domain/parser';
+import { sessionExtraKcal } from '../domain/training';
 import { groupEntriesByDate, nutrientsForEntries } from '../domain/trends';
 import type {
   AppSettings, DayLog, DayType, Food, IsoDate, MacroTargets, MealEntry, MealSlot, Nutrients,
   Profile, Recipe, RemainingMacros, SavedMeal, WeightEntry,
 } from '../domain/types';
+
+/**
+ * Solicita almacenamiento persistente. Sin esto, tanto iOS como Android pueden
+ * desalojar IndexedDB bajo presión de espacio, y el usuario perdería su
+ * histórico sin haber hecho nada.
+ */
+async function requestPersistentStorage(): Promise<boolean> {
+  try {
+    if (!navigator.storage?.persist) return false;
+    if (await navigator.storage.persisted()) return true;
+    return await navigator.storage.persist();
+  } catch {
+    return false;
+  }
+}
 
 /** Días de histórico que se mantienen en memoria para las vistas de progreso. */
 const HISTORY_DAYS = 120;
@@ -52,7 +69,7 @@ interface AppContextValue {
 
   actions: {
     saveProfile: (p: Profile) => Promise<void>;
-    recomputeTargets: (p?: Profile) => Promise<void>;
+    recomputeTargets: (p?: Profile, force?: boolean) => Promise<void>;
     setSettings: (s: Partial<AppSettings>) => Promise<void>;
     addEntry: (e: Omit<MealEntry, 'id' | 'createdAt'>) => Promise<string>;
     deleteEntry: (id: string) => Promise<void>;
@@ -70,17 +87,22 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null);
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [seeded, setSeeded] = useState(false);
   const [date, setDate] = useState<IsoDate>(() => toIsoDate());
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       await seedIfNeeded();
-      if (!cancelled) setReady(true);
+      // Pide al navegador que no desaloje la base de datos. En un móvil sin
+      // esto, el sistema puede borrar el almacenamiento del sitio para liberar
+      // espacio. Se concede casi siempre si la app está instalada en la
+      // pantalla de inicio; si no se concede, no pasa nada más.
+      await requestPersistentStorage();
+      if (!cancelled) setSeeded(true);
     })().catch((err) => {
       console.error('No se ha podido abrir la base de datos local', err);
-      if (!cancelled) setReady(true);
+      if (!cancelled) setSeeded(true);
     });
     return () => {
       cancelled = true;
@@ -96,7 +118,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(tick);
   }, []);
 
-  const profile = useLiveQuery(() => db.profile.get('me'), [], undefined);
+  /**
+   * Devuelve `null` cuando el perfil NO existe y `undefined` mientras la
+   * consulta está en vuelo. La distinción es imprescindible: sin ella, en cada
+   * arranque había un instante con el perfil aún sin cargar en el que la app
+   * concluía que no había perfil y lanzaba el onboarding. Completarlo entonces
+   * sobrescribía el perfil real, y parecía que se hubieran borrado los datos.
+   */
+  const profile = useLiveQuery(async () => (await db.profile.get('me')) ?? null, [], undefined);
   const settings = useLiveQuery(() => getSettings(), [], DEFAULT_SETTINGS) ?? DEFAULT_SETTINGS;
   const foods = useLiveQuery(() => allFoods(), [], [] as Food[]) ?? [];
   const recipes = useLiveQuery(() => db.recipes.toArray(), [], [] as Recipe[]) ?? [];
@@ -143,20 +172,42 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const dayType = useMemo<DayType>(
     () =>
       classifyDay({
-        trained: !!day?.training,
+        session: day?.training,
         steps: day?.steps,
         typicalSteps: profile?.typicalSteps ?? 8000,
       }),
     [day, profile],
   );
 
-  const targets = useMemo(() => targetsForDay(baseTargets, dayType), [baseTargets, dayType]);
+  /**
+   * Energía extra por una sesión que se sale de la habitual. El objetivo base ya
+   * incluye el promedio de las sesiones del usuario, así que aquí solo entra la
+   * diferencia, amortiguada.
+   */
+  const sessionExtra = useMemo(() => {
+    if (!day?.training) return 0;
+    const kg = weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70;
+    return sessionExtraKcal(kg, day.training);
+  }, [day, weights, profile]);
+
+  const targets = useMemo(
+    () => targetsForDay(baseTargets, dayType, sessionExtra),
+    [baseTargets, dayType, sessionExtra],
+  );
   const consumed = useMemo(() => nutrientsForEntries(entries), [entries]);
   const remaining = useMemo(() => remainingFor(consumed, targets), [consumed, targets]);
 
-  const doRecompute = useCallback(async (next?: Profile) => {
+  /**
+   * Recalcula los objetivos a partir del perfil.
+   *
+   * Si el usuario ha fijado los objetivos a mano, NO se tocan: cambiar el peso
+   * o los pasos no debe descartar en silencio unos números que ha puesto él.
+   * Solo el botón «Recalcular» pasa `force`.
+   */
+  const doRecompute = useCallback(async (next?: Profile, force = false) => {
     const p = next ?? (await db.profile.get('me'));
     if (!p) return;
+    if (p.targets.origin === 'manual' && !force) return;
     // El peso de referencia es la media móvil reciente si existe, no la pesada
     // de hoy: los objetivos no deben bailar con el agua corporal.
     const recent = await db.weights.toArray();
@@ -223,9 +274,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [date, doRecompute],
   );
 
+  const phase = bootPhase({ seeded, profile, foodCount: foods.length });
+
   const value: AppContextValue = {
-    ready: ready && foods.length > 0,
-    needsOnboarding: ready && !profile,
+    // Nada se decide hasta que han respondido el seed, el perfil y los
+    // alimentos. La regla vive en `bootPhase`, que está cubierta por tests.
+    ready: phase === 'app',
+    needsOnboarding: phase === 'onboarding',
     profile: profile ?? null,
     settings,
     foods,

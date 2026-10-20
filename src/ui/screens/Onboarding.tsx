@@ -101,14 +101,14 @@ export function Onboarding() {
       {step === 0 && (
         <Card title="Tus datos básicos">
           <Field label="Peso actual" hint="Aproximado está bien. Lo iremos afinando con tus pesadas.">
-            <NumberInput value={p.startWeightKg} step={0.1} suffix="kg" onChange={(v) => v !== '' && set('startWeightKg', v)} />
+            <NumberInput value={p.startWeightKg} step={0.1} suffix="kg" onChange={(v) => set('startWeightKg', v)} />
           </Field>
           <Field label="Altura">
-            <NumberInput value={p.heightCm} suffix="cm" onChange={(v) => v !== '' && set('heightCm', v)} />
+            <NumberInput value={p.heightCm} suffix="cm" onChange={(v) => set('heightCm', v)} />
           </Field>
           <Field label="Edad">
             <NumberInput value={profileAge(p)} suffix="años"
-              onChange={(v) => v !== '' && set('birthYear', new Date().getFullYear() - v)} />
+              onChange={(v) => set('birthYear', new Date().getFullYear() - v)} />
           </Field>
           <Field label="Sexo" hint="Solo interviene en la estimación del metabolismo basal.">
             <Segmented<Sex> value={p.sex} onChange={(v) => set('sex', v)}
@@ -134,7 +134,7 @@ export function Onboarding() {
             </div>
           </Field>
           <Field label="Pasos aproximados al día" hint="Si no lo sabes, 8.000 es una cifra típica. Se puede cambiar después.">
-            <NumberInput value={p.typicalSteps} step={500} suffix="pasos" onChange={(v) => v !== '' && set('typicalSteps', v)} />
+            <NumberInput value={p.typicalSteps} step={500} suffix="pasos" onChange={(v) => set('typicalSteps', v)} />
           </Field>
         </Card>
       )}
@@ -143,7 +143,7 @@ export function Onboarding() {
         <Card title="Tu entrenamiento">
           <Field label="Días de entrenamiento por semana">
             <NumberInput value={p.trainingDaysPerWeek} min={0} max={7} suffix="días"
-              onChange={(v) => v !== '' && set('trainingDaysPerWeek', v)} />
+              onChange={(v) => set('trainingDaysPerWeek', v)} />
           </Field>
           <Field label="Tipo de entrenamiento">
             <input className="input" value={p.trainingStyle} onChange={(e) => set('trainingStyle', e.target.value)}
