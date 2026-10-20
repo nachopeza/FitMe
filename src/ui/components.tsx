@@ -124,13 +124,15 @@ export function MacroPills({
 // ───────────────────────────── Hoja inferior ─────────────────────────────
 
 export function Sheet({
-  title, subtitle, onClose, children, footer,
+  title, subtitle, onClose, children, footer, accent,
 }: {
   title: string;
   subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   footer?: ReactNode;
+  /** 'iron' viste la cabecera del material del entreno. */
+  accent?: 'iron';
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -151,7 +153,8 @@ export function Sheet({
   return (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
-      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} ref={ref} tabIndex={-1}>
+      <div className={`sheet${accent ? ` sheet-${accent}` : ''}`} role="dialog" aria-modal="true"
+        aria-label={title} ref={ref} tabIndex={-1}>
         <div className="sheet-grab" />
         <div className="sheet-head">
           <div style={{ minWidth: 0 }}>

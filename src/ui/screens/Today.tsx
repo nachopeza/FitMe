@@ -1,10 +1,12 @@
 import { useMemo } from 'react';
 import { addDays, formatDayLabel, nowTime, toIsoDate } from '../../domain/dates';
+import { behindMacro, closeTheGap, loggingStreak } from '../../domain/motivation';
+import { scaleNutrients } from '../../domain/nutrition';
 import { describeSession, sessionKcal } from '../../domain/training';
 import { proteinDistribution } from '../../domain/trends';
 import { MEAL_SLOTS, MEAL_SLOT_LABEL, type MealEntry, type MealSlot } from '../../domain/types';
-import { entryNutrients } from '../../features/logging';
-import { quickAddItems, slotFromHour } from '../../features/quickAdd';
+import { entryNutrients, itemsNutrients } from '../../features/logging';
+import { iconForText, quickAddItems, slotFromHour } from '../../features/quickAdd';
 import { useApp } from '../../features/store';
 import { Figure, MacroBar, Section, g } from '../components';
 import { Icon } from '../icons';
@@ -24,19 +26,35 @@ export function TodayScreen() {
 
   const slot: MealSlot = slotFromHour(nowTime());
 
+  /** Sus básicos, ya resueltos a la ración por defecto de cada alimento. */
+  const basicFoods = useMemo(
+    () => (profile?.basicFoodIds ?? []).flatMap((id) => {
+      const food = app.foodsById.get(id);
+      if (!food) return [];
+      const portion = food.portions.find((p) => p.isDefault) ?? food.portions[0];
+      const grams = portion?.grams ?? 100;
+      return [{
+        id: food.id,
+        name: food.name,
+        icon: iconForText(food.name),
+        portionLabel: portion?.label ?? '100 g',
+        nutrients: scaleNutrients(food.per100g, grams),
+        useCount: 0,
+      }];
+    }),
+    [profile?.basicFoodIds, app.foodsById],
+  );
+
   const quick = useMemo(
     () =>
       quickAddItems({
         savedMeals: app.savedMeals,
-        macrosOf: (meal) =>
-          meal.items.reduce(
-            (a, i) => ({ kcal: a.kcal + i.nutrients.kcal, protein: a.protein + i.nutrients.protein }),
-            { kcal: 0, protein: 0 },
-          ),
+        macrosOf: (meal) => itemsNutrients(meal.items),
         slot,
         limit: 6,
+        basics: basicFoods,
       }),
-    [app.savedMeals, slot],
+    [app.savedMeals, slot, basicFoods],
   );
 
   const bySlot = useMemo(() => {
@@ -58,10 +76,66 @@ export function TodayScreen() {
   const proteinLeft = Math.max(0, Math.round(remaining.protein));
   const done = kcalLeft <= 60 && proteinLeft <= 5;
   const fuelPct = Math.min(100, (consumed.kcal / Math.max(1, targets.kcal.target)) * 100);
+  /** Porcentaje del objetivo que ocupa una parte de la energía comida. */
+  const pct = (kcal: number) => Math.min(100, (kcal / Math.max(1, targets.kcal.target)) * 100);
+
+  const behind = behindMacro(consumed, {
+    protein: targets.protein.target, carbs: targets.carbs.target, fat: targets.fat.target,
+  });
+
+  const streak = useMemo(
+    () => loggingStreak(app.daysWithFood, app.date),
+    [app.daysWithFood, app.date],
+  );
+
+  /**
+   * El hueco traducido a comida suya. Solo entra lo que él ya come: sus básicos
+   * y sus comidas guardadas. Nunca algo del catálogo que no haya elegido.
+   */
+  const plan = useMemo(() => {
+    if (done) return [];
+    const candidates = [
+      ...basicFoods.map((b) => ({
+        id: `basic:${b.id}`, name: b.name, kcal: Math.round(b.nutrients.kcal), protein: b.nutrients.protein,
+      })),
+      ...app.savedMeals.map((m) => {
+        const n = itemsNutrients(m.items);
+        return { id: `saved:${m.id}`, name: m.name, kcal: Math.round(n.kcal), protein: n.protein };
+      }),
+    ];
+    // Se propone UNA comida, no el día entero: a media mañana, ver lo que falta
+    // por comer hasta la noche en una sola propuesta abruma en vez de empujar.
+    const chunk = Math.round(targets.kcal.target * 0.4);
+    return closeTheGap(Math.min(kcalLeft, chunk), proteinLeft, candidates, { maxEach: 2 });
+  }, [app.savedMeals, basicFoods, kcalLeft, proteinLeft, done, targets.kcal.target]);
+
+  /** Registra una propuesta tal cual, repetida las veces que diga. */
+  const addPlan = async (key: string, count: number, name: string) => {
+    const [kind, id] = key.split(':');
+    const ids: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const entryId = kind === 'basic'
+        ? await app.actions.logBasicFood(id)
+        : await app.actions.logSavedMeal(id);
+      if (entryId) ids.push(entryId);
+    }
+    if (ids.length) {
+      ui.notify(`${count > 1 ? `${count} × ` : ''}${name}`, async () => {
+        for (const entryId of ids) await app.actions.deleteEntry(entryId);
+      });
+    }
+  };
 
   const addQuick = async (item: (typeof quick)[number]) => {
     if (item.kind === 'composition') {
       ui.open({ k: 'composition', id: item.id });
+      return;
+    }
+    if (item.kind === 'basic') {
+      const entryId = await app.actions.logBasicFood(item.id);
+      if (entryId) {
+        ui.notify(`${item.name} · ${g(item.kcal)} kcal`, () => app.actions.deleteEntry(entryId));
+      }
       return;
     }
     const entryId = await app.actions.logSavedMeal(item.id);
@@ -93,8 +167,10 @@ export function TodayScreen() {
         </div>
       </header>
 
-      {/* ── El hueco: lo único grande de la pantalla ── */}
-      <div className="gap">
+      {/* ── El hueco: lo único grande de la pantalla ──
+          El borde superior lleva el color del macro más atrasado, así que la
+          tarjeta ya dice de qué va el día antes de leer un número. */}
+      <div className="hero" style={{ ['--behind' as string]: `var(--m-${behind})` }}>
         {done ? (
           <>
             <div className="gap-label">Hoy ya has comido lo que necesitabas</div>
@@ -114,13 +190,42 @@ export function TodayScreen() {
           </>
         )}
 
-        <div className="fuel">
-          <span className="fuel-fill" style={{ width: `${fuelPct}%` }} />
+        {/* La barra se carga como una barra de discos: cada color, su macro. */}
+        <div className="load" role="img" aria-label={`${Math.round(fuelPct)}% del objetivo de hoy`}>
+          <span className="s-protein" style={{ width: `${pct(consumed.protein * 4)}%` }} />
+          <span className="s-carbs" style={{ width: `${pct(consumed.carbs * 4)}%` }} />
+          <span className="s-fat" style={{ width: `${pct(consumed.fat * 9)}%` }} />
         </div>
-        <div className="fuel-foot">
+        <div className="load-legend">
+          <span><i style={{ background: 'var(--m-protein)' }} />{g(consumed.protein)} g prot</span>
+          <span><i style={{ background: 'var(--m-carbs)' }} />{g(consumed.carbs)} g carb</span>
+          <span><i style={{ background: 'var(--m-fat)' }} />{g(consumed.fat)} g gras</span>
+        </div>
+        <div className="fuel-foot" style={{ marginTop: 8 }}>
           <span>{g(consumed.kcal)} de {g(targets.kcal.target)} kcal</span>
-          <span>{Math.round(fuelPct)}%</span>
+          {streak > 1 && (
+            <span className="streak">
+              <Icon name="flame" size={14} />{streak} días seguidos
+            </span>
+          )}
         </div>
+
+        {/* Lo que de verdad mueve: el hueco traducido a comida suya, y tocable. */}
+        {plan.length > 0 && (
+          <div className="in-food">
+            {kcalLeft > targets.kcal.target * 0.45
+              ? 'Con lo que sueles comer, una comida para ir cerrándolo:'
+              : 'Con lo que sueles comer, esto lo cierra:'}
+            <div className="plan">
+              {plan.map((p) => (
+                <button className="plan-item" key={p.id} onClick={() => void addPlan(p.id, p.count, p.name)}>
+                  <b>{p.count > 1 ? `${p.count} × ` : ''}{p.name}</b>
+                  <span>{g(p.kcal * p.count)} kcal</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Añadir de un toque: la razón de ser de esta pantalla ── */}
@@ -132,23 +237,27 @@ export function TodayScreen() {
       >
         <div className="quick">
           {quick.map((item) => (
-            <button className="quick-tile" key={item.key} onClick={() => void addQuick(item)}>
-              <span style={{ color: 'var(--accent)', display: 'grid' }}>
-                <Icon name={item.icon} size={19} />
-              </span>
+            <button
+              className="quick-tile"
+              key={item.key}
+              data-macro={item.macro ?? undefined}
+              onClick={() => void addQuick(item)}
+            >
+              <span className="quick-ico"><Icon name={item.icon} size={19} /></span>
               <span className="quick-name">{item.name}</span>
               <span className="quick-macros">
                 {item.instant
-                  ? `${g(item.kcal)} kcal · ${g(item.protein)} g prot`
+                  ? <>{g(item.kcal)} kcal · <b>{g(item.protein)} g prot</b></>
                   : item.note ?? 'Elegir y añadir'}
               </span>
             </button>
           ))}
         </div>
-        {app.savedMeals.length === 0 && (
+        {app.savedMeals.length === 0 && basicFoods.length === 0 && (
           <p className="note tight" style={{ marginTop: 12 }}>
-            Según vayas registrando, aquí aparecerá lo que comes de verdad y bastará un toque. Empieza por tu
-            café: se queda guardado tal y como lo tomas.
+            Estas son genéricas todavía. Dile cuáles son <b>tus</b> básicos —tu plátano, tus frutos secos— y
+            saldrán aquí para añadirlos de un toque.{' '}
+            <button className="link" onClick={() => ui.open({ k: 'basics' })}>Elegir mis básicos</button>
           </p>
         )}
       </Section>

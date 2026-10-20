@@ -55,6 +55,14 @@ export class FitMeDB extends Dexie {
       routines: 'id, name, useCount',
       exercises: 'id, name, muscle, equipment, custom',
     });
+
+    // v3 no cambia índices: solo rellena el campo nuevo en los perfiles que ya
+    // existen, para que la app no tenga que ir comprobando si está o no.
+    this.version(3).stores({}).upgrade(async (tx) => {
+      await tx.table('profile').toCollection().modify((p: { basicFoodIds?: string[] }) => {
+        if (!Array.isArray(p.basicFoodIds)) p.basicFoodIds = [];
+      });
+    });
   }
 }
 
@@ -139,6 +147,8 @@ export function makeDefaultProfile(): Profile {
     trainingLocation: 'home',
     mealTimes: { breakfast: '11:00', lunch: '14:30', snack: '18:00', dinner: '21:30' },
     pantryFoodIds: [],
+  // Arranca con sus propios básicos vacíos: se eligen, no se imponen.
+  basicFoodIds: [],
     restrictions: [],
     dislikes: [],
     appetite: 'normal',

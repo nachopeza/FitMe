@@ -13,6 +13,7 @@ import { Onboarding } from './screens/Onboarding';
 import { ProfileScreen, applyTheme } from './screens/ProfileScreen';
 import { TodayScreen } from './screens/Today';
 import { WorkoutScreen } from './screens/Workout';
+import { MyBasics } from '../features/sheets/MyBasics';
 import { Icon, type IconName } from './icons';
 import { useUI, type Tab } from './shell';
 
@@ -146,6 +147,7 @@ function SheetRouter() {
     case 'voice': return <VoiceLog onClose={close} />;
     case 'composition': return <CompositionSheet id={s.id} onClose={close} />;
     case 'photo': return <PhotoAnalyze onClose={close} />;
+    case 'basics': return <MyBasics onClose={close} />;
     case 'barcode': return <BarcodeScan onClose={close} />;
     case 'label': return <LabelScan onClose={close} />;
     case 'saved': return <SavedMealsSheet onClose={close} />;
@@ -193,6 +195,7 @@ function AddMenu() {
   const tiles: { sheet: Parameters<typeof ui.replace>[0]; icon: IconName; label: string; sub: string }[] = [
     { sheet: { k: 'voice' }, icon: 'mic', label: 'Voz', sub: 'Dilo y ya' },
     { sheet: { k: 'saved' }, icon: 'star', label: 'Guardado', sub: 'Tus habituales' },
+    { sheet: { k: 'basics' }, icon: 'bowl', label: 'Mis básicos', sub: 'Elegir los tuyos' },
     { sheet: { k: 'manual' }, icon: 'pen', label: 'Buscar', sub: 'Alimento a alimento' },
     { sheet: { k: 'photo' }, icon: 'camera', label: 'Foto', sub: aiReady ? 'Analizar un plato' : 'Sin activar' },
     { sheet: { k: 'barcode' }, icon: 'barcode', label: 'Código', sub: 'De un envase' },
@@ -201,9 +204,9 @@ function AddMenu() {
 
   return (
     <Sheet title="Añadir" onClose={ui.close}>
-      {/* Los básicos del día, primero: es lo que más veces se registra. */}
+      {/* Lo componible va primero: es lo que más veces se registra. */}
       <div className="field">
-        <span className="field-label">Básicos</span>
+        <span className="field-label">Montar al momento</span>
         <div className="quick">
           {COMPOSITIONS.map((c) => (
             <button className="quick-tile" key={c.id} onClick={() => ui.replace({ k: 'composition', id: c.id })}>

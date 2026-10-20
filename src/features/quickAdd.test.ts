@@ -13,7 +13,7 @@ function meal(over: Partial<SavedMeal> & { name: string }): SavedMeal {
   };
 }
 
-const macrosOf = () => ({ kcal: 400, protein: 30 });
+const macrosOf = () => ({ kcal: 400, protein: 30, carbs: 40, fat: 11, fiber: 3 });
 
 function run(savedMeals: SavedMeal[], slot: MealSlot = 'lunch', limit = 6) {
   return quickAddItems({ savedMeals, macrosOf, slot, limit });

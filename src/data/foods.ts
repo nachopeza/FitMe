@@ -156,6 +156,10 @@ const ROWS: Row[] = [
   { id: 'aceite-oliva', name: 'Aceite de oliva virgen extra', al: ['aceite', 'aceite de oliva', 'aove'], cat: 'fat', st: 'product', unit: 'ml', n: [884, 0, 0, 100, 0, 14, 0, 2], vol: 'low', p: [P('cucharada', 10, true), P('chorro', 15)] },
   { id: 'mantequilla', name: 'Mantequilla', al: ['mantequilla'], cat: 'fat', st: 'product', n: [717, 0.9, 0.1, 81, 0, 51, 0.1, 11], p: [P('porción', 10, true)] },
   { id: 'mayonesa', name: 'Mayonesa', al: ['mayonesa'], cat: 'fat', st: 'product', n: [680, 1, 1.5, 75, 0, 6, 1.5, 600], p: [P('cucharada', 15, true)] },
+  // Mezcla genérica: es lo que se dice de verdad ("un puñado de frutos secos")
+  // cuando el bote de casa lleva almendras, nueces y anacardos mezclados. Los
+  // valores son la media de esos tres, no los de ninguno en concreto.
+  { id: 'frutos-secos', name: 'Frutos secos variados', al: ['frutos secos', 'frutos secos variados', 'mezcla de frutos secos', 'mix de frutos secos'], cat: 'fat', st: 'asIs', n: [607, 18.5, 8.5, 54, 8.5, 5.5, 4, 3], vol: 'low', p: [P('puñado', 30, true), P('puñado generoso', 45)] },
   { id: 'almendras', name: 'Almendras', al: ['almendras'], cat: 'fat', st: 'asIs', n: [579, 21, 4.6, 50, 12.5, 3.8, 4.4, 1], vol: 'low', p: [P('puñado', 30, true)] },
   { id: 'nueces', name: 'Nueces', al: ['nueces', 'nuez'], cat: 'fat', st: 'asIs', n: [663, 15.2, 3.3, 65, 6.7, 6.1, 2.6, 2], vol: 'low', p: [P('puñado', 30, true)] },
   { id: 'cacahuetes', name: 'Cacahuetes', al: ['cacahuetes'], cat: 'fat', st: 'asIs', n: [567, 26, 7.5, 49, 8.5, 6.3, 4, 18], vol: 'low', p: [P('puñado', 30, true)] },

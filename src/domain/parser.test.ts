@@ -140,3 +140,48 @@ describe('buscador manual', () => {
     expect(searchFoods('xyzqw', SEED_FOODS)).toHaveLength(0);
   });
 });
+
+describe('tamaños en lenguaje humano', () => {
+  const grams = (t: string) => parse(t).items.map((i) => [i.foodName, i.grams] as const);
+
+  it('el desayuno de verdad se registra entero', () => {
+    const r = parse('un plátano pequeño, un puñado de frutos secos y un café');
+    expect(r.unmatched).toEqual([]);
+    expect(r.items.map((i) => i.foodName)).toEqual([
+      'Plátano', 'Frutos secos variados', 'Café solo',
+    ]);
+  });
+
+  it('pequeño y grande cambian la ración en vez de ignorarse', () => {
+    const [[, normal]] = grams('un plátano');
+    const [[, peque]] = grams('un plátano pequeño');
+    const [[, grande]] = grams('un plátano grande');
+    expect(peque).toBeLessThan(normal);
+    expect(grande).toBeGreaterThan(normal);
+    expect(peque / normal).toBeCloseTo(0.75, 1);
+  });
+
+  it('el adjetivo no se confunde con el alimento', () => {
+    expect(grams('dos huevos grandes')[0][0]).toContain('Huevo');
+    expect(parse('un yogur natural grande').unmatched).toEqual([]);
+  });
+
+  it('un tamaño a ojo nunca se marca como exacto', () => {
+    expect(parse('dos huevos').items[0].confidence).toBe('exact');
+    expect(parse('dos huevos grandes').items[0].confidence).toBe('estimated');
+  });
+
+  it('un peso explícito manda sobre el adjetivo', () => {
+    // Si dice los gramos, el adjetivo no toca nada: el dato es mejor.
+    expect(grams('150 g de plátano grande')[0][1]).toBe(150);
+  });
+
+  it('hay frutos secos genéricos, que es como se habla', () => {
+    expect(grams('un puñado de frutos secos')).toEqual([['Frutos secos variados', 30]]);
+    expect(grams('dos puñados de frutos secos')).toEqual([['Frutos secos variados', 60]]);
+  });
+
+  it('la ración lleva el tamaño en la etiqueta', () => {
+    expect(parse('un plátano pequeño').items[0].portionLabel).toContain('pequeño');
+  });
+});

@@ -45,6 +45,9 @@ export interface Composition {
   icon: IconName;
   /** Frase corta que explica para qué sirve. */
   tagline: string;
+  /** De qué va, para teñir su casilla. Se declara porque hasta que no se
+      concreta no hay macros de los que deducirlo. */
+  macro?: 'protein' | 'carbs' | 'fat' | null;
   slots: CompositionSlot[];
   slotHint?: MealSlot;
   prepMinutes: number;
@@ -125,6 +128,7 @@ export const COMPOSITIONS: Composition[] = [
     name: 'Tostada',
     icon: 'bread',
     tagline: 'Pan y lo que le pongas',
+    macro: 'carbs',
     slotHint: 'breakfast',
     prepMinutes: 4,
     slots: [
@@ -168,6 +172,7 @@ export const COMPOSITIONS: Composition[] = [
     name: 'Yogur',
     icon: 'bowl',
     tagline: 'Con lo que le eches',
+    macro: 'protein',
     slotHint: 'snack',
     prepMinutes: 2,
     slots: [
@@ -212,6 +217,7 @@ export const COMPOSITIONS: Composition[] = [
     name: 'Bocadillo',
     icon: 'sandwich',
     tagline: 'Rápido y denso',
+    macro: 'carbs',
     slotHint: 'snack',
     prepMinutes: 5,
     slots: [
@@ -264,6 +270,7 @@ export const COMPOSITIONS: Composition[] = [
     name: 'Batido',
     icon: 'shake',
     tagline: 'Calorías sin tener que masticar',
+    macro: 'protein',
     slotHint: 'snack',
     prepMinutes: 3,
     slots: [

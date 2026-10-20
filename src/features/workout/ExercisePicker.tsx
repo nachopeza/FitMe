@@ -3,7 +3,9 @@ import { EQUIPMENT_LABEL, MUSCLE_LABEL, MUSCLE_ORDER } from '../../data/exercise
 import { normalize } from '../../domain/parser';
 import type { Exercise, MuscleGroup } from '../../domain/types';
 import { Sheet } from '../../ui/components';
+import { Icon } from '../../ui/icons';
 import { useApp } from '../store';
+import { ExerciseGuide, photoUrl } from './ExerciseGuide';
 
 /**
  * Buscador de ejercicios.
@@ -21,6 +23,7 @@ export function ExercisePicker({
   const app = useApp();
   const [query, setQuery] = useState('');
   const [muscle, setMuscle] = useState<MuscleGroup | 'all'>('all');
+  const [guide, setGuide] = useState<Exercise | null>(null);
 
   const results = useMemo(() => {
     const q = normalize(query);
@@ -35,6 +38,8 @@ export function ExercisePicker({
       return d !== 0 ? d : a.name.localeCompare(b.name, 'es');
     });
   }, [app.exercises, query, muscle]);
+
+  if (guide) return <ExerciseGuide exercise={guide} onClose={() => setGuide(null)} />;
 
   return (
     <Sheet title={title} subtitle={`${app.exercises.length} ejercicios`} onClose={onClose}>
@@ -57,17 +62,33 @@ export function ExercisePicker({
       </div>
 
       <div className="rows" style={{ marginTop: 16 }}>
-        {results.map((e) => (
-          <button className="row" key={e.id} onClick={() => onPick(e)}>
-            <div className="row-body">
-              <div className="row-name">{e.name}</div>
-              <div className="row-meta">
-                {MUSCLE_LABEL[e.muscle]} · {EQUIPMENT_LABEL[e.equipment]}
-              </div>
+        {results.map((e) => {
+          const thumb = photoUrl(e.id, 0);
+          return (
+            <div className="row" key={e.id}>
+              {/* La foto se toca para ver cómo se hace; el nombre, para añadirlo.
+                  Son dos intenciones distintas y conviene no mezclarlas. */}
+              <button
+                className="thumb-btn"
+                onClick={() => setGuide(e)}
+                aria-label={`Cómo se hace ${e.name}`}
+              >
+                {thumb ? (
+                  <img className="ex-thumb" src={thumb} alt="" loading="lazy" />
+                ) : (
+                  <span className="ex-thumb empty-thumb"><Icon name="dumbbell" size={20} /></span>
+                )}
+              </button>
+              <button className="row-body" onClick={() => onPick(e)}>
+                <div className="row-name">{e.name}</div>
+                <div className="row-meta">
+                  {MUSCLE_LABEL[e.muscle]} · {EQUIPMENT_LABEL[e.equipment]}
+                  {e.rest > 0 ? ` · ${Math.round(e.rest / 60)} min` : ' · continuo'}
+                </div>
+              </button>
             </div>
-            <span className="tag">{e.rest > 0 ? `${Math.round(e.rest / 60)} min` : 'cardio'}</span>
-          </button>
-        ))}
+          );
+        })}
       </div>
 
       {results.length === 0 && (

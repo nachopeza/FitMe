@@ -1,6 +1,7 @@
 import { COMPOSITIONS, type Composition } from '../data/compositions';
 import { timeToMinutes } from '../domain/dates';
-import type { MealSlot, SavedMeal } from '../domain/types';
+import { dominantMacro } from '../domain/motivation';
+import type { MealSlot, Nutrients, SavedMeal } from '../domain/types';
 import type { IconName } from '../ui/icons';
 
 /**
@@ -18,7 +19,7 @@ import type { IconName } from '../ui/icons';
 
 export interface QuickItem {
   key: string;
-  kind: 'saved' | 'composition';
+  kind: 'saved' | 'composition' | 'basic';
   /** Id de la comida guardada o de la composición. */
   id: string;
   name: string;
@@ -31,6 +32,8 @@ export interface QuickItem {
   instant: boolean;
   /** Qué decir bajo el nombre cuando todavía no hay macros que enseñar. */
   note?: string;
+  /** Macro que domina el aporte, para teñir la casilla. null = repartido. */
+  macro: 'protein' | 'carbs' | 'fat' | null;
 }
 
 const COMPOSITION_SLOT: Record<string, MealSlot | undefined> = Object.fromEntries(
@@ -46,21 +49,50 @@ export function slotFromHour(time: string): MealSlot {
   return 'dinner';
 }
 
+/** Un básico suyo, ya resuelto a una ración concreta. */
+export interface BasicFood {
+  id: string;
+  name: string;
+  icon: IconName;
+  portionLabel: string;
+  nutrients: Nutrients;
+  useCount: number;
+}
+
 export interface QuickAddInput {
   savedMeals: SavedMeal[];
   /** Macros ya calculados de cada comida guardada. */
-  macrosOf: (meal: SavedMeal) => { kcal: number; protein: number };
+  macrosOf: (meal: SavedMeal) => Nutrients;
   /** Franja actual, para empujar lo que encaja. */
   slot: MealSlot;
   limit?: number;
   /** Composiciones a ofrecer. Inyectable para poder probarlo. */
   compositions?: Composition[];
+  /** Sus básicos elegidos a mano, con la ración por defecto ya resuelta. */
+  basics?: BasicFood[];
 }
 
 export function quickAddItems(input: QuickAddInput): QuickItem[] {
   const { savedMeals, macrosOf, slot } = input;
   const compositions = input.compositions ?? COMPOSITIONS;
+  const basicFoods = input.basics ?? [];
   const limit = input.limit ?? 6;
+
+  // Los básicos que él ha elegido van por delante de los componibles: son suyos.
+  const basics: (QuickItem & { score: number })[] = basicFoods.map((b) => ({
+    key: `basic-${b.id}`,
+    kind: 'basic',
+    id: b.id,
+    name: b.name,
+    icon: b.icon,
+    kcal: b.nutrients.kcal,
+    protein: b.nutrients.protein,
+    useCount: b.useCount,
+    instant: true,
+    note: b.portionLabel,
+    macro: dominantMacro(b.nutrients),
+    score: 80 + Math.min(30, b.useCount * 3),
+  }));
 
   const saved: (QuickItem & { score: number })[] = savedMeals.map((meal) => {
     const n = macrosOf(meal);
@@ -80,6 +112,7 @@ export function quickAddItems(input: QuickAddInput): QuickItem[] {
       protein: n.protein,
       useCount: meal.useCount,
       instant: true,
+      macro: dominantMacro(n),
       score,
     };
   });
@@ -96,6 +129,8 @@ export function quickAddItems(input: QuickAddInput): QuickItem[] {
     // Una composición hay que concretarla: abre el constructor.
     instant: false,
     note: comp.tagline,
+    // Una composición todavía no tiene macros, pero sí se sabe de qué va.
+    macro: comp.macro ?? null,
     score: (COMPOSITION_SLOT[comp.id] === slot ? 60 : 30),
   }));
 
@@ -106,7 +141,7 @@ export function quickAddItems(input: QuickAddInput): QuickItem[] {
     if ([...savedNames].some((n) => n.startsWith(c.name.toLowerCase()))) c.score -= 25;
   }
 
-  return [...saved, ...comps]
+  return [...saved, ...basics, ...comps]
     .sort((a, b) => b.score - a.score || b.useCount - a.useCount)
     .slice(0, limit)
     .map(({ score: _score, ...item }) => item);
@@ -114,10 +149,15 @@ export function quickAddItems(input: QuickAddInput): QuickItem[] {
 
 /** Icono por el contenido de la comida, para no dejarlas todas iguales. */
 function iconForSaved(meal: SavedMeal): IconName {
-  const text = `${meal.name} ${meal.items.map((i) => i.foodName).join(' ')}`.toLowerCase();
-  if (/caf[eé]|cortado|americano/.test(text)) return 'coffee';
-  if (/batido|prote[ií]na|whey|cacito/.test(text)) return 'shake';
-  if (/tostada|pan|bocadillo|sandwich|fajita|tortilla de trigo/.test(text)) return 'bread';
-  if (/yogur|queso batido|requesón|requeson|cereales|muesli/.test(text)) return 'bowl';
+  return iconForText(`${meal.name} ${meal.items.map((i) => i.foodName).join(' ')}`);
+}
+
+/** Icono a partir del nombre. Compartido por comidas guardadas y básicos. */
+export function iconForText(text: string): IconName {
+  const t = text.toLowerCase();
+  if (/caf[eé]|cortado|americano/.test(t)) return 'coffee';
+  if (/batido|prote[ií]na|whey|cacito/.test(t)) return 'shake';
+  if (/tostada|pan|bocadillo|sandwich|fajita|tortilla de trigo/.test(t)) return 'bread';
+  if (/yogur|queso batido|requesón|requeson|cereales|muesli/.test(t)) return 'bowl';
   return 'plate';
 }

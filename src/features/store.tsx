@@ -9,6 +9,7 @@ import {
   upsertFood, upsertRecipe, upsertRoutine, upsertSavedMeal, upsertWorkout,
 } from '../data/db';
 import { bootPhase, type BootPhase } from './bootState';
+import { makeItem } from './logging';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
@@ -72,6 +73,8 @@ interface AppContextValue {
   day: DayLog | null;
   weights: WeightEntry[];
   history: { entries: MealEntry[]; days: Map<IsoDate, DayLog> };
+  /** Días con alguna comida registrada, para contar la racha. */
+  daysWithFood: Set<IsoDate>;
 
   /** Objetivos medios del perfil, sin modular por tipo de día. */
   baseTargets: MacroTargets;
@@ -104,6 +107,10 @@ interface AppContextValue {
     ) => Promise<string>;
     /** Registra una comida guardada tal cual. Devuelve el id para poder deshacer. */
     logSavedMeal: (mealId: string) => Promise<string | null>;
+    /** Registra una ración por defecto de un alimento suelto, de un toque. */
+    logBasicFood: (foodId: string) => Promise<string | null>;
+    /** Marca o desmarca un alimento como básico suyo. */
+    toggleBasicFood: (foodId: string) => Promise<void>;
 
     // ── Entrenamiento ──
     /** Abre una sesión, opcionalmente desde una rutina. Devuelve su id. */
@@ -194,6 +201,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   ) ?? [];
 
   const entriesByDate = useMemo(() => groupEntriesByDate(historyEntries), [historyEntries]);
+  const daysWithFood = useMemo(
+    () => new Set([...entriesByDate.entries()].filter(([, list]) => list.length > 0).map(([d]) => d)),
+    [entriesByDate],
+  );
   const daysByDate = useMemo(
     () => new Map(historyDays.map((d) => [d.date, d] as const)),
     [historyDays],
@@ -408,6 +419,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await markSavedMealUsed(mealId);
         return entryId;
       },
+
+      logBasicFood: async (foodId) => {
+        const food = await db.foods.get(foodId);
+        if (!food) return null;
+        const portion = food.portions.find((p) => p.isDefault) ?? food.portions[0];
+        const time = nowTime();
+        const entryId = newId('e-');
+        await addEntry({
+          id: entryId,
+          date,
+          slot: slotForTime(time, profile?.mealTimes ?? {}),
+          time,
+          name: food.name,
+          items: [makeItem(food, 1, 'portion', {
+            portionLabel: portion?.label,
+            // Una ración por defecto es una estimación razonable, no una pesada.
+            confidence: 'estimated',
+          })],
+          method: 'saved',
+          createdAt: Date.now(),
+        });
+        return entryId;
+      },
+
+      toggleBasicFood: async (foodId) => {
+        const p = await db.profile.get('me');
+        if (!p) return;
+        const current = p.basicFoodIds ?? [];
+        const next = current.includes(foodId)
+          ? current.filter((id) => id !== foodId)
+          : [...current, foodId];
+        await db.profile.put({ ...p, basicFoodIds: next });
+      },
     }),
     [date, doRecompute, profile],
   );
@@ -434,6 +478,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     day,
     weights,
     history: { entries: historyEntries, days: daysByDate },
+    daysWithFood,
     baseTargets,
     targets,
     dayType,

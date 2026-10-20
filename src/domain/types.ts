@@ -325,6 +325,12 @@ export interface Profile {
   mealTimes: Partial<Record<MealSlot, string>>;
   /** Ids de alimentos habituales, marcados en el onboarding. */
   pantryFoodIds: string[];
+  /**
+   * Sus básicos: alimentos que él elige y que salen como casilla de un toque en
+   * HOY. Existe porque unos básicos predefinidos no son los de nadie: el café,
+   * el plátano y los frutos secos de uno no son los del siguiente.
+   */
+  basicFoodIds: string[];
   restrictions: string[];
   dislikes: string[];
   appetite: Hunger;

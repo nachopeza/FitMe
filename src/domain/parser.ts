@@ -136,6 +136,31 @@ const UNITS: [RegExp, UnitMatch][] = [
  * buscar el alimento: sin esto, la "g" de "100 g de arroz" hacía prefijo con
  * "garbanzos" y se colaba el alimento equivocado.
  */
+/**
+ * Tamaños en el lenguaje en que se habla de la comida.
+ *
+ * Nadie dice "120 gramos de plátano": dice "un plátano pequeño". El adjetivo
+ * escala la ración en lugar de ignorarse, y el resultado queda marcado como
+ * estimación, porque un plátano pequeño sigue sin ser una medida exacta.
+ */
+const SIZE_WORDS: [RegExp, { factor: number; label: string }][] = [
+  [/\b(pequen[oa]s?|peque|pequenit[oa]s?|chic[oa]s?|mini)\b/, { factor: 0.75, label: 'pequeño' }],
+  [/\b(grandes?|grandot[oa]s?|hermos[oa]s?|generos[oa]s?|XL)\b/, { factor: 1.3, label: 'grande' }],
+  [/\b(median[oa]s?|normales?|normal|regular)\b/, { factor: 1, label: 'mediano' }],
+];
+
+function detectSize(seg: string): { factor: number; label: string } | null {
+  for (const [re, size] of SIZE_WORDS) if (re.test(seg)) return size;
+  return null;
+}
+
+const SIZE_TOKENS = new Set(
+  ('pequeno pequena pequenos pequenas peque pequenito pequenita chico chica chicos chicas mini '
+    + 'grande grandes grandote grandota hermoso hermosa generoso generosa generosos generosas '
+    + 'mediano mediana medianos medianas '
+    + 'normal normales regular').split(' '),
+);
+
 const UNIT_WORDS = new Set(
   (
     'kilo kilos kg kilogramo kilogramos gramo gramos gr grs g litro litros l mililitro ' +
@@ -334,7 +359,7 @@ export function parsePhrase(input: string, index: FoodIndex): ParseResult {
       .split(' ')
       .map((t) => t.replace(/[.,]/g, ''))
       .filter((t) => t && !/^\d+(\.\d+)?$/.test(t))
-      .filter((t) => !UNIT_WORDS.has(t))
+      .filter((t) => !UNIT_WORDS.has(t) && !SIZE_TOKENS.has(t))
       .map(stem)
       .filter((t) => !STOPWORDS.has(t) && !UNIT_WORDS.has(t));
 
@@ -357,7 +382,7 @@ export function parsePhrase(input: string, index: FoodIndex): ParseResult {
       continue;
     }
 
-    items.push(buildItem(food, amount, unitMatch, hedged, seg));
+    items.push(buildItem(food, amount, unitMatch, hedged, seg, detectSize(seg)));
   }
 
   return { items: mergeDuplicates(items), unmatched, slot, transcript: input.trim() };
@@ -369,6 +394,7 @@ function buildItem(
   unitMatch: UnitMatch | null,
   hedged: boolean,
   source: string,
+  size: { factor: number; label: string } | null = null,
 ): ParsedItem {
   const base = { foodId: food.id, foodName: food.name, source };
 
@@ -389,16 +415,16 @@ function buildItem(
   if (unitMatch?.kind === 'portion' && unitMatch.portionKey) {
     const portion = findPortion(food, unitMatch.portionKey) ?? defaultPortion(food);
     const qty = amount ?? 1;
-    const grams = qty * (portion?.grams ?? 100);
+    const grams = Math.round(qty * (portion?.grams ?? 100) * (size?.factor ?? 1));
     // "un plato de arroz" no es un dato exacto: se etiqueta como estimación.
     const isVague = /plato|punado|chorro|trozo|racion/.test(unitMatch.portionKey);
     return {
       ...base,
       quantity: qty,
       unit: 'portion',
-      portionLabel: portion?.label,
+      portionLabel: size ? `${portion?.label} ${size.label}` : portion?.label,
       grams,
-      confidence: isVague || hedged ? 'estimated' : 'exact',
+      confidence: isVague || hedged || size ? 'estimated' : 'exact',
       options: portionOptions(grams),
     };
   }
@@ -406,7 +432,7 @@ function buildItem(
   // Caso C: número suelto ("dos huevos", "tres mandarinas").
   const portion = defaultPortion(food);
   if (amount != null) {
-    const grams = amount * (portion?.grams ?? 100);
+    const grams = Math.round(amount * (portion?.grams ?? 100) * (size?.factor ?? 1));
     // Contar unidades discretas sí es exacto; contar "2 arroces" no lo es.
     const countable = /unidad|loncha|filete|clara|bola|onza|cacito|rebanada|tarrina|lata/.test(
       normalize(portion?.label ?? ''),
@@ -415,20 +441,22 @@ function buildItem(
       ...base,
       quantity: amount,
       unit: 'portion',
-      portionLabel: portion?.label,
+      portionLabel: size ? `${portion?.label} ${size.label}` : portion?.label,
       grams,
-      confidence: countable && !hedged ? 'exact' : 'estimated',
+      // Un tamaño dicho a ojo nunca es exacto, aunque la pieza sea contable.
+      confidence: countable && !hedged && !size ? 'exact' : 'estimated',
       options: portionOptions(grams),
     };
   }
 
   // Caso D: sin cantidad alguna → ración por defecto, confianza baja y explícita.
-  const grams = portion?.grams ?? 100;
+  // "plátano grande" sin número sigue escalando: el adjetivo es el único dato.
+  const grams = Math.round((portion?.grams ?? 100) * (size?.factor ?? 1));
   return {
     ...base,
     quantity: 1,
     unit: 'portion',
-    portionLabel: portion?.label,
+    portionLabel: size ? `${portion?.label} ${size.label}` : portion?.label,
     grams,
     confidence: 'rough',
     options: portionOptions(grams),

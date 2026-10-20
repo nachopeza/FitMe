@@ -15,6 +15,7 @@ export type SheetSpec =
   | { k: 'manual'; slot?: MealSlot; prefill?: ParsedItem[]; sourceNote?: string; method?: MealEntry['method'] }
   | { k: 'voice' }
   | { k: 'photo' }
+  | { k: 'basics' }
   | { k: 'barcode' }
   | { k: 'label' }
   | { k: 'saved' }

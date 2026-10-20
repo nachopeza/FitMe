@@ -40,9 +40,20 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // El módulo de IA no se precarga: es opcional y además inútil sin red.
-        globIgnores: ['**/ai-*.js'],
+        // Las fotos de ejercicios tampoco: son 3 MB y solo hacen falta las de
+        // los ejercicios que se usan, así que se cachean al verlas.
+        globIgnores: ['**/ai-*.js', 'ex/**'],
         maximumFileSizeToCacheInBytes: 3_000_000,
         runtimeCaching: [
+          {
+            // Las fotos de ejercicios son inmutables: una vez vistas, offline.
+            urlPattern: /\/ex\/.*\.webp$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'fotos-ejercicios',
+              expiration: { maxEntries: 200, maxAgeSeconds: 60 * 60 * 24 * 365 },
+            },
+          },
           {
             urlPattern: /^https:\/\/world\.openfoodfacts\.org\/.*/i,
             handler: 'NetworkFirst',

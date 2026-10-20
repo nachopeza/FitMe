@@ -7,7 +7,7 @@ import {
 } from '../../domain/workout';
 import { ActiveWorkout } from '../../features/workout/ActiveWorkout';
 import { useApp } from '../../features/store';
-import { Figure, Section, g } from '../components';
+import { Section, g } from '../components';
 import { Icon } from '../icons';
 import { useUI } from '../shell';
 
@@ -55,14 +55,14 @@ export function WorkoutScreen() {
 
       {/* ── Sesión abierta ── */}
       {live ? (
-        <button className="live" style={{ width: '100%', textAlign: 'left' }} onClick={() => setOpen(true)}>
+        <button className="live iron" onClick={() => setOpen(true)}>
           <div style={{ minWidth: 0 }}>
             <div className="live-title">{live.name}</div>
             <div className="live-time">
               En marcha · {workoutMinutes(live)} min · {totalSets(live)} series
             </div>
           </div>
-          <span style={{ color: 'var(--accent)', flex: '0 0 auto', display: 'grid' }}>
+          <span style={{ flex: '0 0 auto', display: 'grid' }}>
             <Icon name="chevron" size={20} />
           </span>
         </button>
@@ -116,10 +116,19 @@ export function WorkoutScreen() {
       {/* ── Resumen de la semana ── */}
       {thisWeek.count > 0 && (
         <Section title="Esta semana">
-          <div className="figures">
-            <Figure label="Sesiones" value={String(thisWeek.count)} />
-            <Figure label="Series" value={String(thisWeek.sets)} />
-            <Figure label="Volumen" value={`${g(thisWeek.volume)}`} sub="kg movidos" />
+          <div className="iron-figures">
+            <div>
+              <div className="iron-label">Sesiones</div>
+              <div className="iron-value">{thisWeek.count}</div>
+            </div>
+            <div>
+              <div className="iron-label">Series</div>
+              <div className="iron-value">{thisWeek.sets}</div>
+            </div>
+            <div>
+              <div className="iron-label">Kilos movidos</div>
+              <div className="iron-value">{g(thisWeek.volume)}</div>
+            </div>
           </div>
         </Section>
       )}

@@ -2,19 +2,24 @@
    FitMe — sistema de diseño
 
    El problema real de esta app no es contar: es que registrar da pereza y su
-   dueño come menos de lo que necesita. Así que el diseño tiene un solo trabajo:
-   enseñar lo que falta y dejar añadirlo de un toque.
+   dueño come menos de lo que necesita. El diseño tiene un trabajo: enseñar lo
+   que falta, dejar añadirlo de un toque y dar ganas de volver mañana.
 
-   Tres decisiones que lo gobiernan todo:
+   Cuatro decisiones que lo gobiernan todo:
 
-   1. UN SOLO ACENTO. Antes había cinco colores compitiendo (uno por macro).
-      Ahora el verde marca lo que importa —energía y proteína— y el resto va en
-      grises. Menos color, más jerarquía.
-   2. SECCIONES, NO CAJAS. El contenido se separa con aire y una línea fina. Las
-      cajas se reservan para lo que se puede tocar. De paso desaparecen los
-      desbordes: donde no hay caja, nada se sale de ella.
-   3. NUNCA ALARMAR. Pasarse de un rango se dice en un tono apagado. El rojo
-      vivo no aparece en ninguna parte de la interfaz nutricional.
+   1. LOS COLORES SON LOS DE LOS DISCOS. Rojo 25 kg, azul 20, amarillo 15,
+      verde 10, blanco 5. Son los colores que ya ve en cada sesión, así que
+      cada macro lleva el de su disco: la energía es roja, la proteína azul,
+      los carbohidratos amarillos, la grasa verde. El color informa, no decora.
+      Mirando una casilla sabe qué hueco tapa sin leer un número.
+   2. DOS MUNDOS, UNA PALETA. La comida es papel claro, aire y esquinas
+      redondas. El entreno es hierro: oscuro, denso, esquinas cortas. Se nota
+      en qué mitad de la app estás sin mirar la pestaña.
+   3. EL COLOR SIEMPRE SIGNIFICA ALGO. Un borde de color marca qué macro va
+      más atrasado; una casilla tintada dice qué aporta ese alimento. Si no
+      hay nada que decir, va en gris.
+   4. NUNCA ALARMAR. Pasarse de un rango se dice en un tono apagado, nunca en
+      el rojo de la energía: ese rojo es identidad, no advertencia.
    ═══════════════════════════════════════════════════════════════════════ */
 
 /* ───────────────────────── Tipografías propias ─────────────────────────
@@ -40,41 +45,65 @@
 :root {
   color-scheme: light;
 
-  /* Papel. Casi blanco, con un punto cálido; nada de crema. */
-  --paper: #fbfbfa;
-  --paper-2: #f4f4f2;
-  --paper-3: #ecedea;
+  /* Papel frío, como tiza sobre acero. Nada de crema. */
+  --paper: #f5f7f8;
+  --paper-2: #eceff2;
+  --paper-3: #e1e6ea;
   --card: #ffffff;
 
-  --ink: #15181c;
-  --ink-2: #565c64;
-  --ink-3: #8b9199;
-  --rule: #e4e5e1;
-  --rule-strong: #d2d4cf;
+  --ink: #14181d;
+  --ink-2: #51585f;
+  --ink-3: #828b94;
+  --rule: #e2e7eb;
+  --rule-strong: #cdd4da;
 
-  /* El acento es verde profundo: dice "adelante" sin el neón de las apps de
-     gimnasio, y contrasta de sobra sobre papel. */
-  --accent: #126e49;
+  /* ── Los discos ──────────────────────────────────────────────────
+     Rojo 25 · azul 20 · amarillo 15 · verde 10 · blanco 5. */
+  --plate-red: #c8102e;
+  --plate-blue: #0b4da2;
+  --plate-yellow: #d99000;
+  --plate-green: #00843d;
+  --plate-white: #9aa3ab;
+
+  /* Cada macro, su disco. */
+  --m-kcal: var(--plate-red);
+  --m-protein: var(--plate-blue);
+  --m-carbs: var(--plate-yellow);
+  --m-fat: var(--plate-green);
+  --m-fiber: var(--plate-white);
+
+  /* Fondos tenues de cada disco, para tintar casillas sin gritar. */
+  --m-kcal-soft: #fdeced;
+  --m-protein-soft: #e8eff9;
+  --m-carbs-soft: #fdf2dc;
+  --m-fat-soft: #e4f2e9;
+  --m-fiber-soft: #edf0f2;
+
+  /* El acento de la interfaz —botones, enlaces, lo que se toca— es el azul
+     de la proteína: en hipertrofia es el macro que manda, y así el color de
+     "adelante" y el del objetivo son el mismo. */
+  --accent: #0b4da2;
   --accent-ink: #ffffff;
-  --accent-soft: #e6efe9;
-  --accent-line: #b9d3c4;
+  --accent-soft: #e8eff9;
+  --accent-line: #b4caea;
 
-  /* Semánticos, deliberadamente apagados: informan, no asustan. */
-  --over: #9c4a22;
-  --over-soft: #f6ece6;
+  /* ── Hierro: la mitad de entreno ── */
+  --iron: #1d2227;
+  --iron-2: #2a3138;
+  --iron-ink: #f2f5f7;
+  --iron-ink-2: #9aa5af;
+  --iron-line: #39424b;
+
+  /* Semánticos, deliberadamente apagados: informan, no asustan. Nunca usan el
+     rojo de la energía, para que ese rojo no signifique nunca "mal". */
+  --over: #8a5a1e;
+  --over-soft: #f8f0e3;
   --warn: #7f6113;
-
-  /* Macros: la energía y la proteína llevan el acento porque son lo que
-     condiciona el objetivo. El resto, grises graduados. */
-  --m-kcal: #126e49;
-  --m-protein: #126e49;
-  --m-carbs: #7b828b;
-  --m-fat: #a4aab1;
-  --m-fiber: #c2c7cc;
 
   --r-sm: 10px;
   --r: 16px;
   --r-lg: 22px;
+  --r-iron: 8px;
   --r-pill: 999px;
 
   --pad: 20px;
@@ -83,62 +112,86 @@
   --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --ui: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --shadow-tap: 0 1px 2px rgba(21, 24, 28, 0.05), 0 2px 8px rgba(21, 24, 28, 0.04);
+  --shadow-tap: 0 1px 2px rgba(20, 24, 29, 0.05), 0 2px 8px rgba(20, 24, 29, 0.04);
+  --shadow-card: 0 1px 2px rgba(20, 24, 29, 0.04), 0 6px 20px rgba(20, 24, 29, 0.06);
 }
 
-/* Modo oscuro, para quien lo prefiera. El claro es el predeterminado porque es
-   lo que se pidió, pero el oscuro se mantiene completo, no a medias. */
+/* Modo oscuro. El claro es el predeterminado porque es lo que se pidió, pero
+   el oscuro se mantiene completo: los discos suben de luminosidad para
+   sostener el contraste sobre fondo oscuro, sin dejar de ser reconocibles. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --paper: #121416;
-    --paper-2: #1a1d20;
-    --paper-3: #23262a;
-    --card: #1a1d20;
-    --ink: #eef0ee;
-    --ink-2: #a4aaae;
-    --ink-3: #757b80;
-    --rule: #2a2e32;
-    --rule-strong: #3a3f44;
-    --accent: #4cc48c;
-    --accent-ink: #0a1a12;
-    --accent-soft: #19271f;
-    --accent-line: #2d4a3a;
-    --over: #d98a63;
-    --over-soft: #2a1f19;
+    --paper: #111417;
+    --paper-2: #181c20;
+    --paper-3: #222730;
+    --card: #181c20;
+    --ink: #eef1f3;
+    --ink-2: #a3acb4;
+    --ink-3: #747d85;
+    --rule: #272c32;
+    --rule-strong: #394047;
+    --plate-red: #ff5c6e;
+    --plate-blue: #5f9bf0;
+    --plate-yellow: #f0b43c;
+    --plate-green: #44b877;
+    --plate-white: #8d969e;
+    --m-kcal-soft: #2a1a1d;
+    --m-protein-soft: #16202e;
+    --m-carbs-soft: #2a2317;
+    --m-fat-soft: #16261d;
+    --m-fiber-soft: #202528;
+    --accent: #5f9bf0;
+    --accent-ink: #0a1726;
+    --accent-soft: #16202e;
+    --accent-line: #2b4467;
+    --iron: #0c0f12;
+    --iron-2: #171c21;
+    --iron-ink: #eef1f3;
+    --iron-ink-2: #8d969e;
+    --iron-line: #262c33;
+    --over: #d4a05e;
+    --over-soft: #241c12;
     --warn: #c9a227;
-    --m-kcal: #4cc48c;
-    --m-protein: #4cc48c;
-    --m-carbs: #8d949b;
-    --m-fat: #6b7177;
-    --m-fiber: #4e5459;
     --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
   }
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --paper: #121416;
-  --paper-2: #1a1d20;
-  --paper-3: #23262a;
-  --card: #1a1d20;
-  --ink: #eef0ee;
-  --ink-2: #a4aaae;
-  --ink-3: #757b80;
-  --rule: #2a2e32;
-  --rule-strong: #3a3f44;
-  --accent: #4cc48c;
-  --accent-ink: #0a1a12;
-  --accent-soft: #19271f;
-  --accent-line: #2d4a3a;
-  --over: #d98a63;
-  --over-soft: #2a1f19;
+  --paper: #111417;
+  --paper-2: #181c20;
+  --paper-3: #222730;
+  --card: #181c20;
+  --ink: #eef1f3;
+  --ink-2: #a3acb4;
+  --ink-3: #747d85;
+  --rule: #272c32;
+  --rule-strong: #394047;
+  --plate-red: #ff5c6e;
+  --plate-blue: #5f9bf0;
+  --plate-yellow: #f0b43c;
+  --plate-green: #44b877;
+  --plate-white: #8d969e;
+  --m-kcal-soft: #2a1a1d;
+  --m-protein-soft: #16202e;
+  --m-carbs-soft: #2a2317;
+  --m-fat-soft: #16261d;
+  --m-fiber-soft: #202528;
+  --accent: #5f9bf0;
+  --accent-ink: #0a1726;
+  --accent-soft: #16202e;
+  --accent-line: #2b4467;
+  --iron: #0c0f12;
+  --iron-2: #171c21;
+  --iron-ink: #eef1f3;
+  --iron-ink-2: #8d969e;
+  --iron-line: #262c33;
+  --over: #d4a05e;
+  --over-soft: #241c12;
   --warn: #c9a227;
-  --m-kcal: #4cc48c;
-  --m-protein: #4cc48c;
-  --m-carbs: #8d949b;
-  --m-fat: #6b7177;
-  --m-fiber: #4e5459;
   --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -646,6 +699,9 @@ select.input { appearance: none; background-image: none; }
    vecina tenía dos líneas la de al lado bajaba y la fila quedaba descuadrada. */
 button.figure {
   display: block;
+  /* Un botón centra su contenido cuando la rejilla lo estira más alto que su
+     texto, así que su etiqueta bajaba unos píxeles respecto a las vecinas. */
+  align-self: start;
   text-align: left;
   background: none;
   border: 0;
@@ -1029,3 +1085,310 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+
+/* ═══════════════════ Identidad: color con significado ═══════════════════ */
+
+/* ── La barra del día ──────────────────────────────────────────────────
+   El protagonista de HOY. Se carga con los colores de los discos según va
+   comiendo: de un vistazo ve cuánto lleva y de qué. */
+.load {
+  display: flex;
+  height: 14px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--paper-3);
+  margin: 14px 0 8px;
+}
+.load span { display: block; height: 100%; transition: width 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.load .s-protein { background: var(--m-protein); }
+.load .s-carbs { background: var(--m-carbs); }
+.load .s-fat { background: var(--m-fat); }
+.load-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  font-size: 0.78rem;
+  color: var(--ink-2);
+}
+.load-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.load-legend i {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+/* ── La cifra que falta ── */
+.gap-figure .gap-unit { color: var(--ink-3); }
+/* La energía lleva el rojo del disco de 25: es identidad, no alarma. */
+.gap-figure { color: var(--m-kcal); }
+.gap-second b { color: var(--m-protein); }
+
+/* El equivalente en comida de verdad: lo que de verdad motiva, porque 940 kcal
+   no se imagina y «un batido y dos plátanos» sí. */
+.in-food {
+  margin-top: 12px;
+  padding: 12px 14px;
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+  border-left: 3px solid var(--m-protein);
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+.in-food b { color: var(--ink); font-weight: 650; }
+
+/* ── Tarjeta del día ───────────────────────────────────────────────────
+   Única tarjeta con sombra y borde superior de color: el color dice qué macro
+   va más atrasado, así que la decoración es información. */
+.hero {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  border-top: 4px solid var(--behind, var(--m-kcal));
+  margin-bottom: 26px;
+}
+
+/* ── Casillas de añadir, tintadas por lo que aportan ──────────────────── */
+.quick-tile[data-macro='protein'] { background: var(--m-protein-soft); border-color: transparent; }
+.quick-tile[data-macro='carbs'] { background: var(--m-carbs-soft); border-color: transparent; }
+.quick-tile[data-macro='fat'] { background: var(--m-fat-soft); border-color: transparent; }
+.quick-tile[data-macro='protein'] .quick-ico { color: var(--m-protein); }
+.quick-tile[data-macro='carbs'] .quick-ico { color: var(--m-carbs); }
+.quick-tile[data-macro='fat'] .quick-ico { color: var(--m-fat); }
+.quick-tile .quick-ico { display: grid; color: var(--ink-3); }
+/* La etiqueta de qué aporta: dos palabras, no un párrafo. */
+.quick-macros b { font-weight: 650; }
+
+/* ── Racha: motiva sin mentir ──────────────────────────────────────────
+   Cuenta días seguidos con registro. No es una nota ni un castigo: si se
+   rompe, no aparece en rojo, simplemente vuelve a empezar. */
+.streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 11px 5px 8px;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+/* ═══════════════════════════ Hierro: el entreno ═══════════════════════════
+   La otra mitad de la app. Mismo sistema, otro material: fondo oscuro,
+   esquinas cortas, tipografía más apretada. */
+.iron {
+  background: var(--iron);
+  color: var(--iron-ink);
+  border-radius: var(--r-iron);
+  padding: 16px;
+}
+.iron .iron-label {
+  font-size: 0.78rem;
+  color: var(--iron-ink-2);
+  margin-bottom: 3px;
+}
+.iron .iron-value {
+  font-family: var(--display);
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+.iron-figures {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--iron-line);
+  border-radius: var(--r-iron);
+  overflow: hidden;
+}
+.iron-figures > div { background: var(--iron); padding: 14px 12px; min-width: 0; }
+.iron-figures .iron-value { font-size: 1.25rem; }
+
+/* Discos sobre la barra: los colores en su contexto original. El peso de la
+   serie decide el color, igual que en el gimnasio. */
+.plate {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+
+/* ═════════════════════ Cómo se hace un ejercicio ═════════════════════ */
+
+.guide-photos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.guide-photos figure { margin: 0; }
+.guide-photos img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: var(--r-sm);
+  background: var(--paper-3);
+  display: block;
+}
+.guide-photos figcaption {
+  font-size: 0.75rem;
+  color: var(--ink-3);
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* Las claves van numeradas porque sí son una secuencia: primero colocarse,
+   después moverse. */
+.cues { margin: 0 0 16px; padding-left: 0; list-style: none; counter-reset: cue; }
+.cues li {
+  position: relative;
+  padding-left: 30px;
+  margin-bottom: 11px;
+  line-height: 1.45;
+  counter-increment: cue;
+}
+.cues li::before {
+  content: counter(cue);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 21px;
+  height: 21px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--display);
+}
+
+.watch-out {
+  background: var(--over-soft);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  color: var(--ink-2);
+  line-height: 1.45;
+  margin-bottom: 16px;
+}
+.watch-out-label {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--over);
+  margin-bottom: 3px;
+}
+
+.guide-facts {
+  display: grid;
+  gap: 1px;
+  background: var(--rule);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.fact {
+  background: var(--card);
+  padding: 11px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+.fact-label { font-size: 0.85rem; color: var(--ink-2); }
+.fact-value {
+  font-family: var(--display);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+/* Miniatura del ejercicio en el buscador: ver la foto es lo que hace que la
+   lista sirva para elegir en vez de solo para confirmar. */
+.ex-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+  background: var(--paper-3);
+  flex: 0 0 auto;
+}
+.ex-thumb.empty-thumb {
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+}
+
+/* Hoja con cabecera de hierro: se usa para lo que pertenece al entreno, de modo
+   que abrir un ejercicio desde la comida siga sintiéndose como otra sección.
+   Se oculta el tirador porque la cabecera ocupa ya el borde superior. */
+.sheet-iron .sheet-grab { display: none; }
+.sheet-iron .sheet-head {
+  background: var(--iron);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  padding-top: 20px;
+  padding-bottom: 16px;
+}
+.sheet-iron .sheet-head h2 { color: var(--iron-ink); }
+.sheet-iron .sheet-head .sheet-sub { color: var(--iron-ink-2); }
+.sheet-iron .sheet-head .icon-btn { color: var(--iron-ink); }
+.sheet-iron .sheet-head .icon-btn:active { background: var(--iron-2); }
+
+/* La miniatura es un botón propio dentro de la fila: abre la técnica, mientras
+   que tocar el nombre añade el ejercicio. */
+.thumb-btn { background: none; border: 0; padding: 0; flex: 0 0 auto; display: grid; cursor: pointer; }
+.row > button.row-body {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Las propuestas para cerrar el hueco: tocar una la registra tal cual. */
+.plan { display: grid; gap: 6px; margin-top: 10px; }
+.plan-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  min-height: 42px;
+}
+.plan-item:active { background: var(--paper-2); }
+.plan-item span { color: var(--ink-3); font-size: 0.85rem; flex: 0 0 auto; }
+
+/* La sesión en marcha es la pieza más "gimnasio" de la app: va en hierro, con
+   el cronómetro en el color de la proteína para que se lea de un vistazo. */
+.live.iron {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  cursor: pointer;
+  color: var(--iron-ink);
+}
+.live.iron .live-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
+.live.iron .live-time { color: var(--plate-yellow); font-size: 0.85rem; font-weight: 600; margin-top: 2px; }
+.live.iron:active { background: var(--iron-2); }

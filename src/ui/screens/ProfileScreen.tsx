@@ -171,6 +171,7 @@ export function ProfileScreen() {
           <button className="btn" onClick={() => ui.open({ k: 'compare' })}>Comparador</button>
         </div>
         <div className="btns">
+          <button className="btn" onClick={() => ui.open({ k: 'basics' })}>Mis básicos</button>
           <button className="btn" onClick={() => ui.open({ k: 'recipe' })}>Recetas</button>
           <button className="btn" onClick={() => ui.open({ k: 'shopping' })}>Lista de la compra</button>
         </div>
