@@ -89,7 +89,10 @@ export function App() {
         {ui.tab === 'progress' && <Loading><ProgressScreen /></Loading>}
         {ui.tab === 'profile' && <ProfileScreen />}
 
-        <nav className="nav" aria-label="Navegación principal">
+        <nav className="nav" aria-label="Navegación principal" data-tab={ui.tab}>
+          {/* La cápsula viaja hasta la pestaña activa en vez de encenderse de
+              golpe: el movimiento es lo que hace que la barra se sienta viva. */}
+          <span className="nav-pill" aria-hidden="true" />
           {NAV.map((item) =>
             item.tab === 'add' ? (
               <button key="add" className="nav-add" aria-label="Añadir" onClick={() => ui.open({ k: 'addMenu' })}>

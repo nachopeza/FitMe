@@ -42,7 +42,7 @@ export function RoutineSheet({ id, onClose }: { id?: string; onClose: () => void
                   onClick={() => setEditing(r)}>
                   <div className="row-name">{r.name}</div>
                   <div className="row-meta">
-                    {r.exercises.length} ejercicios · {r.exercises.reduce((a, e) => a + e.sets, 0)} series
+                    {r.exercises.length} {r.exercises.length === 1 ? 'ejercicio' : 'ejercicios'} · {r.exercises.reduce((a, e) => a + e.sets, 0)} series
                   </div>
                 </button>
                 <button className="icon-btn" aria-label={`Borrar ${r.name}`}

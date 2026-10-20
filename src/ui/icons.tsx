@@ -36,10 +36,22 @@ export function Icon({ name, size = 24, active = false }: IconProps) {
 
   switch (name) {
     case 'today':
+      if (active) {
+        return (
+          <svg {...p} strokeWidth={0} fill="currentColor">
+            <circle cx="4.6" cy="6.5" r="1.7" />
+            <circle cx="4.6" cy="12" r="1.7" />
+            <circle cx="4.6" cy="17.5" r="1.7" />
+            <rect x="8.4" y="5.3" width="12" height="2.4" rx="1.2" />
+            <rect x="8.4" y="10.8" width="12" height="2.4" rx="1.2" />
+            <rect x="8.4" y="16.3" width="8.4" height="2.4" rx="1.2" />
+          </svg>
+        );
+      }
       return (
         <svg {...p}>
           <path d="M9 6.5h11M9 12h11M9 17.5h7.5" />
-          <path d="M4.4 6.5h.01M4.4 12h.01M4.4 17.5h.01" strokeWidth={active ? 2.8 : 2.4} />
+          <path d="M4.4 6.5h.01M4.4 12h.01M4.4 17.5h.01" strokeWidth={2.4} />
         </svg>
       );
     case 'macros':
@@ -50,14 +62,31 @@ export function Icon({ name, size = 24, active = false }: IconProps) {
         </svg>
       );
     case 'progress':
+      if (active) {
+        return (
+          <svg {...p} strokeWidth={0} fill="currentColor">
+            <rect x="3.2" y="18.3" width="17.6" height="2.2" rx="1.1" />
+            <path d="M4.7 14.6a1.3 1.3 0 0 1 0-1.9l4-4.5a1.3 1.3 0 0 1 1.9-.05l2.3 2.2 4.9-5.9a1.3 1.3 0 1 1 2 1.7l-5.8 7a1.3 1.3 0 0 1-1.9.1l-2.3-2.2-3.1 3.5a1.3 1.3 0 0 1-1.9 0z" />
+            <path d="M15.3 5.7h3.2a1.3 1.3 0 0 1 1.3 1.3v3.2a1.3 1.3 0 0 1-2.6 0V8.3h-1.9a1.3 1.3 0 0 1 0-2.6z" />
+          </svg>
+        );
+      }
       return (
         <svg {...p}>
-          <path d="M3.5 19.5h17" opacity={active ? 1 : 0.5} />
+          <path d="M3.5 19.5h17" opacity={0.5} />
           <path d="M5.5 15.5l4-4.5 3.2 3 5.8-7" />
           <path d="M18.5 7h-3.2M18.5 7v3.2" />
         </svg>
       );
     case 'profile':
+      if (active) {
+        return (
+          <svg {...p} strokeWidth={0} fill="currentColor">
+            <circle cx="12" cy="8.2" r="4.4" />
+            <path d="M12 13.8c3.9 0 7.1 2.3 8.2 6.3a1.1 1.1 0 0 1-1.1 1.4H4.9a1.1 1.1 0 0 1-1.1-1.4c1.1-4 4.3-6.3 8.2-6.3z" />
+          </svg>
+        );
+      }
       return (
         <svg {...p}>
           <circle cx="12" cy="8.2" r="3.9" />
@@ -170,6 +199,17 @@ export function Icon({ name, size = 24, active = false }: IconProps) {
     case 'dumbbell':
       // Discos y barra. La versión anterior, a base de rayas verticales, se
       // leía como una "H" entre palotes.
+      if (active) {
+        return (
+          <svg {...p} strokeWidth={0} fill="currentColor">
+            <rect x="5.7" y="6.1" width="4.2" height="11.8" rx="1.6" />
+            <rect x="14.1" y="6.1" width="4.2" height="11.8" rx="1.6" />
+            <rect x="9.3" y="10.8" width="5.4" height="2.4" rx="1.2" />
+            <rect x="2.2" y="9.3" width="2.2" height="5.4" rx="1.1" />
+            <rect x="19.6" y="9.3" width="2.2" height="5.4" rx="1.1" />
+          </svg>
+        );
+      }
       return (
         <svg {...p}>
           <rect x="6" y="6.5" width="3.6" height="11" rx="1.4" />

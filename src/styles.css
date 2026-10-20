@@ -235,7 +235,7 @@ input, select, textarea { font: inherit; color: inherit; }
 
 .screen {
   padding: calc(env(safe-area-inset-top, 0px) + 14px) var(--pad)
-    calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 40px);
+    calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 52px);
 }
 
 /* Cabecera de pantalla: discreta. El protagonista está debajo. */
@@ -969,7 +969,7 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
   position: fixed;
   left: 12px;
   right: 12px;
-  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 20px);
   max-width: 536px;
   margin: 0 auto;
   z-index: 45;
@@ -1064,7 +1064,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .toast {
   position: fixed;
   left: 16px; right: 16px;
-  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 18px);
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 28px);
   max-width: 520px; margin: 0 auto;
   background: var(--ink);
   color: var(--paper);
@@ -1185,18 +1185,22 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   border-radius: var(--r-iron);
   padding: 16px;
 }
-.iron .iron-label {
+/* Sin anidar bajo .iron: estas etiquetas también se usan en .iron-figures, que
+   es otra superficie de hierro. Anidadas, allí heredaban la tinta oscura del
+   papel y quedaban negras sobre negro. */
+.iron-label {
   font-size: 0.78rem;
   color: var(--iron-ink-2);
   margin-bottom: 3px;
 }
-.iron .iron-value {
+.iron-value {
   font-family: var(--display);
   font-size: 1.5rem;
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
   line-height: 1.05;
+  color: var(--iron-ink);
 }
 .iron-figures {
   display: grid;
@@ -1535,3 +1539,147 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
    la misma altura aunque un nombre ocupe dos líneas y otro una. */
 .quick-tile { justify-content: flex-start; gap: 4px; }
 .quick-tile .quick-ico { margin-bottom: 2px; }
+
+/* ═══════════════════════ La barra de abajo, a la iOS ═══════════════════════
+   Flota sobre el contenido en vez de pegarse al borde, el cristal se nota por
+   los lados, y la pestaña activa la señala una cápsula que se desliza. */
+
+.nav {
+  left: 10px;
+  right: 10px;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 8px);
+  height: var(--nav-h);
+  padding-bottom: 0;
+  max-width: 540px;
+  border-radius: var(--r-pill);
+  border-top: 0;
+  box-shadow:
+    0 1px 1px rgba(20, 24, 29, 0.05),
+    0 10px 30px -8px rgba(20, 24, 29, 0.22);
+  overflow: visible;
+}
+/* Borde finísimo que simula el canto del cristal. */
+.nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 0.5px solid var(--rule-strong);
+  pointer-events: none;
+}
+
+/* La cápsula de la pestaña activa. Se mueve por columnas de la rejilla, que son
+   cinco; por eso los desplazamientos van de 20% en 20%. */
+.nav-pill {
+  position: absolute;
+  top: 7px;
+  bottom: 7px;
+  left: 0;
+  width: 20%;
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  transition: transform 0.34s cubic-bezier(0.34, 1.3, 0.5, 1);
+  pointer-events: none;
+}
+.nav[data-tab='today'] .nav-pill { transform: translateX(0); }
+.nav[data-tab='workout'] .nav-pill { transform: translateX(100%); }
+.nav[data-tab='progress'] .nav-pill { transform: translateX(300%); }
+.nav[data-tab='profile'] .nav-pill { transform: translateX(400%); }
+
+.nav-btn { position: relative; z-index: 1; gap: 3px; }
+/* El icono da un salto corto al seleccionarse. */
+.nav-btn[aria-current='page'] .ico { animation: nav-pop 0.34s cubic-bezier(0.34, 1.4, 0.5, 1); }
+@keyframes nav-pop {
+  0% { transform: scale(0.82); }
+  55% { transform: scale(1.14); }
+  100% { transform: scale(1); }
+}
+
+/* El botón de añadir sobresale y flota por encima de la cápsula. */
+.nav-add {
+  margin-top: -18px;
+  z-index: 2;
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill { transition: none; }
+  .nav-btn[aria-current='page'] .ico { animation: none; }
+}
+
+/* ═══════════════════ Cronómetros de la sesión ═══════════════════
+   Lo que se consulta de reojo entre serie y serie: cuánto llevas, cuántas
+   series, cuántos kilos y cuánto estás descansando de verdad. */
+
+.clocks {
+  background: var(--iron);
+  color: var(--iron-ink);
+  border-radius: var(--r);
+  padding: 16px 18px;
+  margin-bottom: 18px;
+}
+.clock-main { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.clock-time {
+  font-family: var(--display);
+  font-size: 2.3rem;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  color: var(--plate-yellow);
+}
+.clock-label {
+  font-size: 0.72rem;
+  color: var(--iron-ink-2);
+  display: block;
+}
+.clock-side {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--iron-line);
+}
+.clock-side > div { min-width: 0; }
+.clock-value {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  display: block;
+  margin-top: 1px;
+}
+
+/* ═══════════ Lo trabajado en una sesión ═══════════ */
+
+.muscles { display: grid; gap: 8px; }
+.muscle { display: grid; grid-template-columns: 84px 1fr 22px; align-items: center; gap: 10px; }
+.muscle-name { font-size: 0.85rem; color: var(--ink-2); overflow-wrap: anywhere; }
+.muscle-bar { height: 8px; border-radius: var(--r-pill); background: var(--paper-3); overflow: hidden; }
+.muscle-bar > span { display: block; height: 100%; background: var(--accent); border-radius: inherit; }
+.muscle-sets {
+  font-family: var(--display);
+  font-weight: 700;
+  font-size: 0.88rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.done-ex { padding: 12px 0; border-bottom: 1px solid var(--rule); }
+.done-ex:last-child { border-bottom: 0; }
+.done-head { display: flex; align-items: center; gap: 11px; }
+.done-sets { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+.done-set {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  background: var(--paper-2);
+  border-radius: var(--r-sm);
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+.done-set b { color: var(--ink-3); font-size: 0.72rem; font-weight: 700; }
+.tag.record { background: var(--m-carbs-soft); color: var(--m-carbs); font-weight: 700; }

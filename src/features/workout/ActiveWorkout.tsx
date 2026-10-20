@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../../domain/types';
 import {
-  describeSet, estimated1RM, formatSeconds, nextSetTemplate, previousPerformance,
+  averageRest, describeSet, estimated1RM, formatSeconds, nextSetTemplate, previousPerformance,
   totalSets, workingSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
 import { Sheet, g } from '../../ui/components';
@@ -38,6 +38,9 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
   // La misma cuenta que se guardará con la sesión, para que el resumen que se
   // confirma y el historial no digan dos números distintos.
   const minutes = workoutMinutes(workout, elapsed);
+  /** Cronómetro de la sesión, con segundos: es lo que se mira en el gimnasio. */
+  const clock = formatSeconds(Math.max(0, Math.round((elapsed - workout.startedAt) / 1000)));
+  const rested = averageRest(workout);
   const sets = totalSets(workout);
   const volume = workoutVolume(workout);
 
@@ -67,7 +70,10 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
     const nowDone = !set.done;
     patchExercise(ex.uid, (e) => ({
       ...e,
-      sets: e.sets.map((s, i) => (i === index ? { ...s, done: nowDone } : s)),
+      // Se guarda la hora de marcado: de ahí sale el descanso real de la sesión.
+      sets: e.sets.map((s, i) => (
+        i === index ? { ...s, done: nowDone, completedAt: nowDone ? Date.now() : undefined } : s
+      )),
     }));
     // Marcar una serie es la señal de que ha terminado: empieza el descanso.
     if (nowDone && ex.restSeconds > 0) {
@@ -84,7 +90,7 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
       return;
     }
     await app.actions.finishWorkout(workout);
-    ui.notify(`Sesión guardada · ${sets} series · ${g(volume)} kg de volumen`);
+    ui.notify(`Sesión guardada · ${sets} ${sets === 1 ? 'serie' : 'series'} · ${g(volume)} kg de volumen`);
     onClose();
   };
 
@@ -139,7 +145,8 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
     <>
       <Sheet
         title={workout.name}
-        subtitle={`${minutes} min · ${sets} series${volume > 0 ? ` · ${g(volume)} kg` : ''}`}
+        subtitle={undefined}
+        accent="iron"
         onClose={onClose}
         footer={
           <div className="btns">
@@ -148,6 +155,28 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
           </div>
         }
       >
+        {/* Los cronómetros, lo primero: es lo que se mira entre serie y serie. */}
+        <div className="clocks">
+          <div className="clock-main">
+            <span className="clock-label">En marcha</span>
+            <span className="clock-time">{clock}</span>
+          </div>
+          <div className="clock-side">
+            <div>
+              <span className="clock-label">Series</span>
+              <span className="clock-value">{sets}</span>
+            </div>
+            <div>
+              <span className="clock-label">Kilos</span>
+              <span className="clock-value">{g(volume)}</span>
+            </div>
+            <div>
+              <span className="clock-label">Descanso medio</span>
+              <span className="clock-value">{rested != null ? formatSeconds(rested) : '—'}</span>
+            </div>
+          </div>
+        </div>
+
         {workout.exercises.length === 0 ? (
           <div className="empty">
             <strong>Sesión vacía</strong>

@@ -179,6 +179,33 @@ export function toTrainingSession(w: Workout, now = Date.now()): TrainingSession
   };
 }
 
+/**
+ * Descanso real entre series, en segundos.
+ *
+ * Sale de cuándo se marcó cada serie, no del descanso sugerido. Los huecos
+ * enormes se descartan: si alguien deja la sesión abierta y vuelve media hora
+ * después, eso no fue un descanso entre series.
+ */
+export function restGaps(w: Workout, maxGapSeconds = 600): number[] {
+  const stamps = w.exercises
+    .flatMap((ex) => ex.sets.filter((s) => s.done && !s.warmup && s.completedAt))
+    .map((s) => s.completedAt as number)
+    .sort((a, b) => a - b);
+  const gaps: number[] = [];
+  for (let i = 1; i < stamps.length; i++) {
+    const gap = Math.round((stamps[i] - stamps[i - 1]) / 1000);
+    if (gap > 0 && gap <= maxGapSeconds) gaps.push(gap);
+  }
+  return gaps;
+}
+
+/** Descanso medio real, o null si todavía no hay dos series marcadas. */
+export function averageRest(w: Workout): number | null {
+  const gaps = restGaps(w);
+  if (!gaps.length) return null;
+  return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+}
+
 /** Siguiente serie sugerida, copiando la anterior: es lo que se repite. */
 export function nextSetTemplate(ex: WorkoutExercise): WorkoutSet {
   const last = [...ex.sets].reverse().find((s) => s.kg != null || s.reps != null || s.seconds != null);

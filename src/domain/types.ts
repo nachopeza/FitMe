@@ -498,6 +498,11 @@ export interface WorkoutSet {
   km?: number;
   /** Marcada como hecha. Es lo que dispara el descanso. */
   done: boolean;
+  /**
+   * Cuándo se marcó. Permite saber el descanso REAL entre series en vez del
+   * sugerido, que es lo que de verdad dice si la sesión fue densa o se alargó.
+   */
+  completedAt?: number;
   /** Serie de aproximación: no cuenta para el volumen ni para los récords. */
   warmup?: boolean;
 }

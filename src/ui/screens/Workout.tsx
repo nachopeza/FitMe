@@ -1,11 +1,12 @@
 import { useMemo, useState } from 'react';
 import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import { formatDayLabel } from '../../domain/dates';
-import type { Routine } from '../../domain/types';
+import type { Routine, Workout } from '../../domain/types';
 import {
   musclesWorked, totalSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
 import { ActiveWorkout } from '../../features/workout/ActiveWorkout';
+import { WorkoutDetail } from '../../features/workout/WorkoutDetail';
 import { useApp } from '../../features/store';
 import { Section, g } from '../components';
 import { Icon } from '../icons';
@@ -22,6 +23,7 @@ export function WorkoutScreen() {
   const app = useApp();
   const ui = useUI();
   const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<Workout | null>(null);
 
   const live = app.liveWorkout;
 
@@ -39,6 +41,8 @@ export function WorkoutScreen() {
     await app.actions.startWorkout(routineId ? { routineId } : undefined);
     setOpen(true);
   };
+
+  if (detail) return <WorkoutDetail workout={detail} onClose={() => setDetail(null)} />;
 
   return (
     <div className="screen">
@@ -59,7 +63,7 @@ export function WorkoutScreen() {
           <div style={{ minWidth: 0 }}>
             <div className="live-title">{live.name}</div>
             <div className="live-time">
-              En marcha · {workoutMinutes(live)} min · {totalSets(live)} series
+              En marcha · {workoutMinutes(live)} min · {totalSets(live)} {totalSets(live) === 1 ? 'serie' : 'series'}
             </div>
           </div>
           <span style={{ flex: '0 0 auto', display: 'grid' }}>
@@ -145,11 +149,11 @@ export function WorkoutScreen() {
             {app.workouts.slice(0, 20).map((w) => {
               const muscles = musclesWorked(w);
               return (
-                <div className="row" key={w.id}>
+                <button className="row" key={w.id} onClick={() => setDetail(w)}>
                   <div className="row-body">
                     <div className="row-name">{w.name}</div>
                     <div className="row-meta">
-                      {formatDayLabel(w.date)} · {workoutMinutes(w)} min · {totalSets(w)} series
+                      {formatDayLabel(w.date)} · {workoutMinutes(w)} min · {totalSets(w)} {totalSets(w) === 1 ? 'serie' : 'series'}
                       {muscles.length ? ` · ${muscles.slice(0, 2).map((m) => m.muscle).join(', ')}` : ''}
                     </div>
                   </div>
@@ -157,7 +161,7 @@ export function WorkoutScreen() {
                     {g(workoutVolume(w))}
                     <small>kg</small>
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
