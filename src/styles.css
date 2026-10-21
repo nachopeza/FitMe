@@ -2741,3 +2741,166 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .screen {
   padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 52px + var(--rest-h, 0px));
 }
+
+/* La acción de la cabecera de una hoja, pegada a la X. */
+.sheet-acts { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+
+/* ══════════════════ El catálogo de ejercicios ══════════════════
+   La estructura de la referencia: dos filtros que dicen qué tienen puesto, los
+   grupos con su título, y filas de miniatura redonda + nombre + músculo, con la
+   «i» de la técnica suelta a la derecha. */
+
+.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 4px; }
+.filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-width: 0;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.88rem;
+  padding: 11px 12px;
+  min-height: 44px;
+  cursor: pointer;
+  text-align: left;
+}
+.filter > :first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter svg { flex: 0 0 auto; transform: rotate(90deg); opacity: 0.55; }
+.filter[aria-expanded='true'] svg { transform: rotate(-90deg); }
+/* Con filtro puesto se nota, porque si no se busca un ejercicio que sí está y
+   parece que no existe. */
+.filter.on { border-color: var(--accent-line); background: var(--accent-soft); color: var(--accent-deep); }
+
+.ex-group { margin-top: 18px; }
+.ex-group-head {
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 0 0 8px;
+}
+.ex-list { display: grid; }
+.ex-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+.ex-row:last-child { border-bottom: 0; }
+.ex-row-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: 0;
+  padding: 10px 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ex-row-body:active { opacity: 0.6; }
+.ex-round {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: 0 0 auto;
+  background: var(--paper-2);
+}
+.ex-round.empty-thumb { display: grid; place-items: center; color: var(--ink-3); }
+.ex-row-text { display: grid; gap: 2px; min-width: 0; }
+.ex-row-name {
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.ex-row-muscle { font-size: 0.82rem; color: var(--ink-3); }
+/* Los suyos se marcan: entre los del catálogo, los propios se perderían. */
+.ex-mine {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-deep);
+  background: var(--accent-soft);
+  border-radius: var(--r-pill);
+  padding: 2px 7px;
+}
+.ex-info {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--rule-strong);
+  background: none;
+  color: var(--ink-3);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-style: italic;
+  line-height: 1;
+  cursor: pointer;
+}
+.ex-info:active { background: var(--paper-2); }
+
+/* Las dos siluetas dentro de la tira de datos de la sesión: pequeñas, sin pies
+   de foto y sin robarle sitio a los números. */
+.clock-row { display: flex; align-items: stretch; gap: 10px; }
+.clock-row .clock-side { flex: 1; min-width: 0; }
+/* Series y Kilos ocupan lo que necesitan y el hueco sobrante se lo lleva
+   «Descanso medio», que es la etiqueta larga: en tres columnas iguales partía
+   en dos líneas y descolocaba la cifra. */
+.clock-row .clock-side { grid-template-columns: auto auto 1fr; gap: 14px; }
+.clock-row .clock-side > div { align-content: start; }
+.clock-body { flex: 0 0 auto; display: grid; align-content: center; padding-top: 13px; }
+.body-map.bare { gap: 3px; margin: 0; display: flex; }
+.body-map.bare figure { margin: 0; }
+.body-map.bare .body-svg { display: block; }
+/* Sobre el hierro la silueta tiene que aclararse o no se ve: el gris de papel
+   desaparecería contra el fondo oscuro. */
+.clocks .body-fill { fill: var(--iron-line); }
+.clocks .body-limbs { stroke: var(--iron-line); }
+
+/* Carpetas de rutinas: cabecera plegable con su cuenta, como la referencia. */
+.folder + .folder { margin-top: 16px; }
+.folder-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 8px 0;
+  margin-bottom: 4px;
+  font: inherit;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+  text-align: left;
+}
+.folder-head svg { flex: 0 0 auto; transform: rotate(90deg); opacity: 0.5; transition: transform 0.16s ease; }
+.folder-head[aria-expanded='true'] svg { transform: rotate(-90deg); }
+.folder-head > span:first-of-type { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.folder-count {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--ink-3);
+  background: var(--paper-2);
+  border-radius: var(--r-pill);
+  padding: 2px 9px;
+}
+@media (prefers-reduced-motion: reduce) { .folder-head svg { transition: none; } }

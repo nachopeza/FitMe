@@ -69,6 +69,14 @@ function RoutineEditor({
   const [r, setR] = useState<Routine>(routine);
   const [picking, setPicking] = useState(false);
 
+  /** Las carpetas que ya existen, para sugerirlas y no duplicar nombres. */
+  const folders = useMemo(
+    () => [...new Set(app.routines.map((x) => x.folder).filter((f): f is string => !!f))].sort(
+      (a, b) => a.localeCompare(b, 'es'),
+    ),
+    [app.routines],
+  );
+
   const add = (exercise: Exercise) => {
     setR((prev) => ({
       ...prev,
@@ -116,6 +124,18 @@ function RoutineEditor({
         <span className="field-label">Nombre</span>
         <input className="input" value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })}
           placeholder="Pecho y tríceps" aria-label="Nombre de la rutina" />
+      </div>
+
+      {/* La carpeta se escribe, no se administra: con una lista de las que ya
+          existen para no tener dos escritas distinto. */}
+      <div className="field">
+        <span className="field-label">Carpeta</span>
+        <input className="input" list="carpetas-rutina" value={r.folder ?? ''}
+          onChange={(e) => setR({ ...r, folder: e.target.value.trim() || undefined })}
+          placeholder="Gym" aria-label="Carpeta de la rutina" />
+        <datalist id="carpetas-rutina">
+          {folders.map((f) => <option key={f} value={f} />)}
+        </datalist>
       </div>
 
       {r.exercises.map((re, i) => {

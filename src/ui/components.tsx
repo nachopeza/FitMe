@@ -127,7 +127,7 @@ export function MacroPills({
 // ───────────────────────────── Hoja inferior ─────────────────────────────
 
 export function Sheet({
-  title, subtitle, onClose, children, footer, accent,
+  title, subtitle, onClose, children, footer, accent, action,
 }: {
   title: string;
   subtitle?: string;
@@ -136,6 +136,10 @@ export function Sheet({
   footer?: ReactNode;
   /** 'iron' viste la cabecera del material del entreno. */
   accent?: 'iron';
+  /** Acción a la derecha del título, junto a la X: crear, cronometrar. Va en la
+   *  cabecera porque es la otra cosa que se puede hacer desde esta hoja, y así
+   *  no se lleva una franja del contenido. */
+  action?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
@@ -182,9 +186,12 @@ export function Sheet({
             <h2>{title}</h2>
             {subtitle && <div className="sheet-sub">{subtitle}</div>}
           </div>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
-            <Close />
-          </button>
+          <div className="sheet-acts">
+            {action}
+            <button className="icon-btn" onClick={onClose} aria-label="Cerrar">
+              <Close />
+            </button>
+          </div>
         </div>
         <div className="sheet-body">{children}</div>
         {footer && <div className="sheet-foot">{footer}</div>}

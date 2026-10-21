@@ -25,6 +25,9 @@ export function WorkoutScreen() {
   const ui = useUI();
   const [open, setOpen] = useState(false);
   const [detail, setDetail] = useState<Workout | null>(null);
+  /** Carpetas plegadas. Se guarda lo cerrado, no lo abierto, para que una
+   *  carpeta nueva nazca abierta. */
+  const [closed, setClosed] = useState<Set<string>>(new Set());
 
   const live = app.liveWorkout;
 
@@ -38,6 +41,28 @@ export function WorkoutScreen() {
       workouts: recent,
     };
   }, [app.workouts]);
+
+  /** Rutinas por carpeta: las más usadas primero dentro de cada una, y las
+   *  sueltas al final. */
+  const folders = useMemo(() => {
+    const byFolder = new Map<string | null, Routine[]>();
+    for (const r of app.routines) {
+      const key = r.folder?.trim() || null;
+      if (!byFolder.has(key)) byFolder.set(key, []);
+      byFolder.get(key)!.push(r);
+    }
+    const out = [...byFolder.entries()]
+      .map(([name, routines]) => ({
+        name,
+        routines: routines.sort((a, b) => b.useCount - a.useCount || b.createdAt - a.createdAt),
+      }))
+      .sort((a, b) => {
+        if (a.name === null) return 1;
+        if (b.name === null) return -1;
+        return a.name.localeCompare(b.name, 'es');
+      });
+    return out;
+  }, [app.routines]);
 
   const start = async (routineId?: string) => {
     await app.actions.startWorkout(routineId ? { routineId } : undefined);
@@ -91,34 +116,55 @@ export function WorkoutScreen() {
           title="Tus rutinas"
           action={<button className="link" onClick={() => ui.open({ k: 'routine' })}>Editar</button>}
         >
-          {/* Tarjeta por rutina: lo que lleva dentro se lee antes de empezarla,
-              y el botón de empezar ocupa todo el ancho porque es lo que se va a
-              tocar nueve de cada diez veces. */}
-          <div className="routines">
-            {[...app.routines]
-              .sort((a, b) => b.useCount - a.useCount || b.createdAt - a.createdAt)
-              .map((r) => (
-                <div className="routine" key={r.id}>
-                  <div className="routine-head">
-                    <div style={{ minWidth: 0 }}>
-                      <div className="routine-name">{r.name}</div>
-                      <div className="row-meta">{describeRoutine(r)}</div>
+          {/* Agrupadas por carpeta, con su cuenta y plegables: con tres o
+              cuatro rutinas sobra, pero en cuanto hay una tanda de volumen y
+              otra de definición la lista se hace ilegible. Las que no tienen
+              carpeta van al final, no al principio: lo organizado manda. */}
+          {folders.map(({ name, routines }) => (
+            <section className="folder" key={name ?? '(sueltas)'}>
+              {folders.length > 1 && (
+                <button
+                  className="folder-head"
+                  aria-expanded={!closed.has(name ?? '')}
+                  onClick={() => setClosed((prev) => {
+                    const next = new Set(prev);
+                    const key = name ?? '';
+                    if (next.has(key)) next.delete(key); else next.add(key);
+                    return next;
+                  })}
+                >
+                  <Icon name="chevron" size={15} />
+                  <span>{name ?? 'Sueltas'}</span>
+                  <span className="folder-count">{routines.length}</span>
+                </button>
+              )}
+              {!closed.has(name ?? '') && (
+                <div className="routines">
+                  {routines.map((r) => (
+                    <div className="routine" key={r.id}>
+                      <div className="routine-head">
+                        <div style={{ minWidth: 0 }}>
+                          <div className="routine-name">{r.name}</div>
+                          <div className="row-meta">{describeRoutine(r)}</div>
+                        </div>
+                        <button
+                          className="icon-btn"
+                          aria-label={`Editar ${r.name}`}
+                          onClick={() => ui.open({ k: 'routine', id: r.id })}
+                        >
+                          <Icon name="pen" size={17} />
+                        </button>
+                      </div>
+                      <p className="routine-list">{listExercises(r, app.exercises)}</p>
+                      <button className="btn primary" disabled={!!live} onClick={() => void start(r.id)}>
+                        Empezar rutina
+                      </button>
                     </div>
-                    <button
-                      className="icon-btn"
-                      aria-label={`Editar ${r.name}`}
-                      onClick={() => ui.open({ k: 'routine', id: r.id })}
-                    >
-                      <Icon name="pen" size={17} />
-                    </button>
-                  </div>
-                  <p className="routine-list">{listExercises(r, app.exercises)}</p>
-                  <button className="btn primary" disabled={!!live} onClick={() => void start(r.id)}>
-                    Empezar rutina
-                  </button>
+                  ))}
                 </div>
-              ))}
-          </div>
+              )}
+            </section>
+          ))}
         </Section>
       )}
 

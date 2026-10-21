@@ -562,4 +562,9 @@ export interface Routine {
   useCount: number;
   lastUsedAt?: number;
   createdAt: number;
+  /** Carpeta en la que se agrupa: «Gym», «Casa», «Volumen»… Sin carpeta va a
+   *  «Sueltas». Es solo un nombre, no una entidad aparte: una carpeta existe
+   *  mientras alguna rutina la nombre, y desaparece sola cuando ninguna lo
+   *  hace, que es como se comportan las etiquetas y evita carpetas huérfanas. */
+  folder?: string;
 }

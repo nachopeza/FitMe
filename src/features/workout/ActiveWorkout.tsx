@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../../domain/types';
 import {
-  averageRest, describeSet, estimated1RM, formatSeconds, nextSetTemplate, prefillNext, previousPerformance,
+  averageRest, describeSet, estimated1RM, formatSeconds, muscleSets, nextSetTemplate, prefillNext, previousPerformance,
   totalSets, workingSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
+import { BodyMap } from '../../ui/BodyMap';
 import { Sheet, g } from '../../ui/components';
 import { Icon } from '../../ui/icons';
 import { useUI } from '../../ui/shell';
@@ -46,6 +47,7 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
   /** Cronómetro de la sesión, con segundos: es lo que se mira en el gimnasio. */
   const clock = formatSeconds(Math.max(0, Math.round((elapsed - workout.startedAt) / 1000)));
   const rested = averageRest(workout);
+  const worked = useMemo(() => muscleSets([workout]), [workout]);
   const sets = totalSets(workout);
   const volume = workoutVolume(workout);
 
@@ -156,6 +158,15 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
         subtitle={undefined}
         accent="iron"
         onClose={onClose}
+        /* El temporizador, en la cabecera: es una herramienta de la sesión
+           entera, no un apartado del contenido, y abajo se llevaba una franja
+           de la tabla de series. */
+        action={
+          <button className="icon-btn" aria-label="Temporizador" aria-expanded={pickingTimer}
+            onClick={() => setPickingTimer((v) => !v)}>
+            <Icon name="timer" size={19} />
+          </button>
+        }
         footer={
           <div className="btns">
             <button className="btn" onClick={() => setPicking(true)}>Añadir ejercicio</button>
@@ -169,30 +180,30 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
             <span className="clock-label">En marcha</span>
             <span className="clock-time">{clock}</span>
           </div>
-          <div className="clock-side">
-            <div>
-              <span className="clock-label">Series</span>
-              <span className="clock-value">{sets}</span>
+          <div className="clock-row">
+            <div className="clock-side">
+              <div>
+                <span className="clock-label">Series</span>
+                <span className="clock-value">{sets}</span>
+              </div>
+              <div>
+                <span className="clock-label">Kilos</span>
+                <span className="clock-value">{g(volume)}</span>
+              </div>
+              <div>
+                <span className="clock-label">Descanso medio</span>
+                <span className="clock-value">{rested != null ? formatSeconds(rested) : '—'}</span>
+              </div>
             </div>
-            <div>
-              <span className="clock-label">Kilos</span>
-              <span className="clock-value">{g(volume)}</span>
-            </div>
-            <div>
-              <span className="clock-label">Descanso medio</span>
-              <span className="clock-value">{rested != null ? formatSeconds(rested) : '—'}</span>
+            {/* Lo trabajado, mientras se trabaja: dos siluetas que se van
+                encendiendo con las series marcadas. Es la respuesta a «¿qué
+                llevo hecho hoy?» sin leer la tabla entera. */}
+            <div className="clock-body">
+              <BodyMap worked={worked} size={40} bare />
             </div>
           </div>
         </div>
 
-        {/* Temporizador aparte del descanso: para una plancha, un isométrico o
-            cualquier cosa que haya que cronometrar sin estar descansando. */}
-        <div className="btns" style={{ marginBottom: 12 }}>
-          <button className="btn quiet sm" onClick={() => setPickingTimer((v) => !v)}
-            aria-expanded={pickingTimer}>
-            <Icon name="timer" size={16} /> Temporizador
-          </button>
-        </div>
         {pickingTimer && (
           <div className="rest-picker" role="group" aria-label="Duración del temporizador">
             {[20, 30, 45, 60, 90, 120, 180, 300].map((sec) => (

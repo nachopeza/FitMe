@@ -99,11 +99,14 @@ const SHAPES: Partial<Record<MuscleGroup, Shape[]>> = {
 const UNMAPPED: MuscleGroup[] = ['fullBody', 'cardio'];
 
 export function BodyMap({
-  worked, size = 150,
+  worked, size = 150, bare = false,
 }: {
   /** Series por grupo muscular. */
   worked: Map<MuscleGroup, number>;
   size?: number;
+  /** Sin pies de foto ni nota: para meterlo pequeño en una tira de datos, donde
+   *  las dos siluetas ya se entienden solas. */
+  bare?: boolean;
 }) {
   const max = Math.max(1, ...worked.values());
   // Tres niveles: más series, más saturado. Más escalones no se distinguirían.
@@ -144,16 +147,16 @@ export function BodyMap({
   const extra = UNMAPPED.filter((m) => worked.has(m));
 
   return (
-    <div className="body-map" style={{ ['--body-size' as string]: `${size}px` }}>
+    <div className={`body-map${bare ? ' bare' : ''}`} style={{ ['--body-size' as string]: `${size}px` }}>
       <figure>
         {silhouette('front')}
-        <figcaption>Frente</figcaption>
+        {!bare && <figcaption>Frente</figcaption>}
       </figure>
       <figure>
         {silhouette('back')}
-        <figcaption>Espalda</figcaption>
+        {!bare && <figcaption>Espalda</figcaption>}
       </figure>
-      {extra.length > 0 && (
+      {!bare && extra.length > 0 && (
         <p className="body-extra">
           {extra.includes('cardio') && 'Cardio'}
           {extra.length === 2 && ' y '}
