@@ -6,7 +6,7 @@ import { useApp } from '../../features/store';
 import { addDays, formatShortDate, lastNDays, toIsoDate, weekStart } from '../../domain/dates';
 import {
   dailyWeights, movingAverage, nutrientsForEntries, groupEntriesByDate, readTrend,
-  suggestAdjustment, weeklySummary,
+  gainVerdict, suggestAdjustment, weeklySummary, type GainVerdict,
 } from '../../domain/trends';
 import { MACRO_KEYS, type IsoDate, type MacroKey } from '../../domain/types';
 import { Section, MACRO_META, WhyButton, g } from '../components';
@@ -24,6 +24,15 @@ export function ProgressScreen() {
   const byDate = useMemo(() => groupEntriesByDate(app.history.entries), [app.history.entries]);
   const daily = useMemo(() => dailyWeights(app.weights), [app.weights]);
   const trend = useMemo(() => readTrend(app.weights, today), [app.weights, today]);
+
+  /** El veredicto del ritmo, sobre el peso más reciente que se conozca. */
+  const verdict = useMemo(
+    () => gainVerdict(
+      trend.weeklyChangeKg,
+      trend.weightMa7 ?? app.weights.at(-1)?.kg ?? app.profile?.startWeightKg ?? 70,
+    ),
+    [trend, app.weights, app.profile?.startWeightKg],
+  );
 
   /** Serie diaria de macros y peso, con la media móvil del peso de 7 días. */
   const series = useMemo(() => {
@@ -79,7 +88,6 @@ export function ProgressScreen() {
   );
 
   const current = weeks[0];
-  const previous = weeks[1];
   const weightPoints = series.filter((s) => s.weight != null || s.weightMa != null);
 
   return (
@@ -92,7 +100,46 @@ export function ProgressScreen() {
         <button className="btn sm auto ghost" onClick={() => ui.open({ k: 'weight' })}>+ Peso</button>
       </header>
 
-      {/* ── Semana ── */}
+      {/* ── La pregunta de esta pantalla ──
+          Igual que HOY abre con lo que falta por comer, PROGRESO abre con lo
+          único que decide si el plan funciona: a qué ritmo sube el peso. Nueve
+          cifras en rejilla no respondían a eso; había que buscarlas. */}
+      <div className="hero" style={{ ['--behind' as string]: 'var(--m-protein)' }}>
+        <div className="gap-label">Ritmo de las últimas semanas</div>
+        <div className={`rate rate-${verdict.state}`}>
+          <span className="rate-figure">
+            {trend.weeklyChangeKg != null
+              ? `${trend.weeklyChangeKg >= 0 ? '+' : ''}${trend.weeklyChangeKg.toFixed(2)}`
+              : '—'}
+          </span>
+          <span className="rate-unit">kg por semana</span>
+        </div>
+
+        {/* La franja dice dónde cae su ritmo dentro de lo recomendable. */}
+        <div className="rate-band" role="img"
+          aria-label={`Rango recomendado entre ${verdict.min} y ${verdict.max} kg por semana`}>
+          <span className="rate-ok" />
+          {trend.weeklyChangeKg != null && (
+            <span className="rate-pin" style={{ left: `${pinAt(trend.weeklyChangeKg, verdict)}%` }} />
+          )}
+        </div>
+        <div className="rate-scale">
+          <span>perder</span>
+          <span>{verdict.min}–{verdict.max} kg</span>
+          <span>de más</span>
+        </div>
+
+        <p className="rate-msg">{verdict.message}</p>
+
+        <div className="hero-foot">
+          <span className="note tight" style={{ margin: 0 }}>
+            Media de 7 días: <b>{trend.weightMa7 != null ? `${trend.weightMa7.toFixed(1)} kg` : '—'}</b>
+            {' · '}{trend.weighInDays} pesadas en 14 días
+          </span>
+        </div>
+      </div>
+
+      {/* ── La semana, en dos cifras y una línea ── */}
       <Section title="Esta semana">
         {current.daysLogged > 0 && current.daysLogged < 3 && (
           <p className="note" style={{ marginTop: -2, marginBottom: 10 }}>
@@ -100,24 +147,44 @@ export function ProgressScreen() {
             todavía no significan gran cosa. A partir de 4 o 5 días empiezan a ser útiles.
           </p>
         )}
-        <div className="figures">
-          <Stat label="kcal/día" value={current.daysLogged ? g(current.avgKcal) : '—'} sub={`objetivo ${g(app.baseTargets.kcal.target)}`} />
-          <Stat label="Prot/día" value={current.daysLogged ? `${g(current.avgProtein)} g` : '—'} sub={`objetivo ${g(app.baseTargets.protein.target)} g`} />
-          <Stat label="Carb/día" value={current.daysLogged ? `${g(current.avgCarbs)} g` : '—'} sub={`objetivo ${g(app.baseTargets.carbs.target)} g`} />
-          <Stat label="Gras/día" value={current.daysLogged ? `${g(current.avgFat)} g` : '—'} sub={`objetivo ${g(app.baseTargets.fat.target)} g`} />
-          <Stat label="Fibra/día" value={current.daysLogged ? `${g(current.avgFiber)} g` : '—'} sub={`objetivo ${g(app.baseTargets.fiber.target)} g`} />
-          <Stat label="Peso medio" value={current.avgWeightKg != null ? `${current.avgWeightKg} kg` : '—'} sub={previous?.avgWeightKg != null && current.avgWeightKg != null ? `${current.avgWeightKg - previous.avgWeightKg >= 0 ? '+' : ''}${(current.avgWeightKg - previous.avgWeightKg).toFixed(1)} kg vs semana anterior` : 'sin comparación aún'} />
-          <Stat label="Entrenos" value={`${current.trainings}`} sub={`previstos ${app.profile?.trainingDaysPerWeek ?? 4}`} />
-          <Stat label="Pasos/día" value={current.avgSteps ? g(current.avgSteps) : '—'} />
-          <Stat label="Días con registro" value={`${current.daysLogged}/7`} />
+
+        {/* Energía y proteína con su objetivo: son las dos que mueven la aguja.
+            Las demás van en una línea, que es el peso que les corresponde. */}
+        <div className="macro-mini">
+          {([
+            ['kcal', 'Energía al día', current.avgKcal, app.baseTargets.kcal.target, 'kcal'],
+            ['protein', 'Proteína al día', current.avgProtein, app.baseTargets.protein.target, 'g'],
+          ] as const).map(([key, label, value, target, unit]) => (
+            <div className="macro-mini-item" key={key}>
+              <span className="macro-mini-name">{label}</span>
+              <span className="macro-mini-bar">
+                <span style={{
+                  width: `${Math.min(100, (value / Math.max(1, target)) * 100)}%`,
+                  background: `var(--m-${key})`,
+                }} />
+              </span>
+              <span className="macro-mini-read">
+                <b>{current.daysLogged ? g(value) : '—'}</b> / {g(target)} {unit}
+              </span>
+            </div>
+          ))}
         </div>
+
+        <p className="note tight" style={{ marginTop: 12 }}>
+          {current.daysLogged
+            ? <>Carbohidratos <b>{g(current.avgCarbs)} g</b>, grasas <b>{g(current.avgFat)} g</b>,
+              fibra <b>{g(current.avgFiber)} g</b>. {current.trainings} {current.trainings === 1 ? 'entreno' : 'entrenos'} de
+              los {app.profile?.trainingDaysPerWeek ?? 4} previstos{current.avgSteps ? `, ${g(current.avgSteps)} pasos al día` : ''}.</>
+            : 'Todavía no hay días registrados esta semana.'}
+        </p>
+
         <div className="divider" />
         <div className="macro-top">
           <span className="macro-name">Consistencia</span>
           <span className="macro-read"><b>{current.consistency.value}</b> <span>/ 100 · {current.consistency.label}</span></span>
         </div>
         <div className="track">
-          <span className="track-fill" style={{ width: `${current.consistency.value}%`, background: 'var(--fiber)' }} />
+          <span className="track-fill" style={{ width: `${current.consistency.value}%`, background: 'var(--m-fiber)' }} />
         </div>
         <p className="note" style={{ marginTop: 8, marginBottom: 0 }}>
           No es una nota. Mide si hay suficiente regularidad —proteína, registro, entrenamiento— para poder
@@ -305,4 +372,18 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       {sub && <div className="figure-sub">{sub}</div>}
     </div>
   );
+}
+
+/**
+ * Dónde cae su ritmo en la franja, de 0 a 100.
+ *
+ * El rango recomendable ocupa el tercio central a propósito: así se ve de un
+ * vistazo si se queda corto o se pasa, sin que la escala real —que puede ir de
+ * -0,5 a +1 kg— aplaste la zona que importa.
+ */
+function pinAt(weekly: number, v: GainVerdict): number {
+  if (weekly <= 0) return Math.max(2, 33 * (1 + Math.max(-1, weekly / 0.5)));
+  if (weekly < v.min) return 33 * (weekly / Math.max(0.01, v.min));
+  if (weekly <= v.max) return 33 + 34 * ((weekly - v.min) / Math.max(0.01, v.max - v.min));
+  return Math.min(98, 67 + 33 * ((weekly - v.max) / Math.max(0.01, v.max)));
 }

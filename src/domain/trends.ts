@@ -377,3 +377,46 @@ export function proteinDistribution(entries: MealEntry[], totalTarget: number): 
 
   return { bySlot, concentration, effectiveDoses, message, suggestion };
 }
+
+/**
+ * ¿Va al ritmo que toca para ganar músculo sin grasa de más?
+ *
+ * La referencia habitual para una ganancia controlada en alguien ya entrenado
+ * es entre el 0,25 % y el 0,5 % del peso corporal por semana. Por debajo se
+ * está dejando crecimiento sobre la mesa; por encima, buena parte de lo que
+ * sube es grasa. Para 66,5 kg son unos 170-330 g por semana.
+ *
+ * Se devuelve el rango junto al veredicto porque un número sin su referencia no
+ * permite decidir nada.
+ */
+export interface GainVerdict {
+  state: 'losing' | 'slow' | 'good' | 'fast' | 'unknown';
+  /** Rango semanal recomendado, en kg. */
+  min: number;
+  max: number;
+  message: string;
+}
+
+export function gainVerdict(
+  weeklyChangeKg: number | null | undefined,
+  bodyWeightKg: number,
+): GainVerdict {
+  const min = Math.round(bodyWeightKg * 0.0025 * 100) / 100;
+  const max = Math.round(bodyWeightKg * 0.005 * 100) / 100;
+
+  if (weeklyChangeKg == null || !Number.isFinite(weeklyChangeKg)) {
+    return { state: 'unknown', min, max, message: 'Faltan pesadas para saber el ritmo.' };
+  }
+  // Un margen pequeño alrededor de cero: media docena de pesadas no distinguen
+  // entre perder 20 g y no moverse.
+  if (weeklyChangeKg < -0.05) {
+    return { state: 'losing', min, max, message: 'Estás perdiendo peso. Para ganar músculo hace falta comer más.' };
+  }
+  if (weeklyChangeKg < min) {
+    return { state: 'slow', min, max, message: 'Vas por debajo del ritmo: te está faltando comida.' };
+  }
+  if (weeklyChangeKg > max) {
+    return { state: 'fast', min, max, message: 'Vas rápido. A este ritmo buena parte de lo que sube es grasa.' };
+  }
+  return { state: 'good', min, max, message: 'Vas al ritmo correcto para ganar músculo sin grasa de más.' };
+}

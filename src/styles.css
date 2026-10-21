@@ -1970,3 +1970,285 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   max-height: 220px;
   overflow-y: auto;
 }
+
+/* ═══════════════════════ El día, en una espina ═══════════════════════
+   Un raíl vertical con los momentos del día en orden. Es lo que convierte la
+   pantalla en un día y no en tres formularios seguidos: se ve dónde vas, qué
+   queda por delante y dónde te has quedado corto, sin leer ningún rótulo. */
+
+.tl { list-style: none; margin: 0; padding: 0; }
+
+.tl-node {
+  display: grid;
+  /* 48 y no 40: la marca lleva un halo de 4 px por fuera del anillo y con la
+     columna justa se salía de su caja. */
+  grid-template-columns: 48px 1fr;
+  gap: 12px;
+  position: relative;
+  padding-bottom: 22px;
+}
+/* El raíl pasa por detrás de las marcas y se corta en el último nodo. */
+.tl-node::before {
+  content: '';
+  position: absolute;
+  left: 23px;
+  top: 42px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--rule);
+}
+.tl-node:last-child::before { display: none; }
+.tl-node:last-child { padding-bottom: 4px; }
+
+.tl-mark { position: relative; z-index: 1; display: grid; place-items: center; }
+/* La marca lleva un halo del color del papel para que el raíl no la cruce. Va
+   POR DENTRO de la caja: sobresaliendo, la propia marca desbordaba. */
+.tl-mark::before {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+.tl-mark > * { position: relative; }
+
+.tl-body { min-width: 0; }
+.tl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.tl-title {
+  font-family: var(--display);
+  font-weight: 650;
+  font-size: 1rem;
+  letter-spacing: -0.015em;
+}
+.tl-time { font-size: 0.78rem; color: var(--ink-3); font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.tl-read {
+  font-size: 0.84rem;
+  color: var(--ink-3);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+.tl-read b { color: var(--ink); font-weight: 650; }
+.tl-prot { white-space: nowrap; }
+
+/* Lo comido en esa franja, como fichas compactas y no como filas de tabla. */
+.tl-items { display: grid; gap: 5px; margin-top: 9px; }
+.tl-item {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-sm);
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 0.86rem;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  min-height: 40px;
+}
+.tl-item:active { background: var(--paper-2); }
+.tl-item-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-item-kcal { color: var(--ink-3); font-size: 0.8rem; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
+.tl-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 9px;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  min-height: 34px;
+}
+
+/* ── Estados ──
+   El color lo da el estado, no la decoración. Lo que ya pasó y quedó corto se
+   señala; lo cubierto se apaga; lo que aún no toca se atenúa en vez de pedir. */
+.tl-node.is-ahead { opacity: 0.55; }
+.tl-node.is-ahead .tl-add { color: var(--ink-3); }
+.tl-node.is-behind .tl-add { color: var(--m-carbs); }
+.tl-node.is-now .tl-title::after {
+  content: 'ahora';
+  margin-left: 8px;
+  font-family: var(--ui);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: var(--r-pill);
+  padding: 2px 7px;
+  vertical-align: middle;
+}
+
+/* Los momentos que no son comida: entreno y pesada. */
+.tl-dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--iron);
+  color: var(--iron-ink);
+}
+.tl-event {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+.tl-node.is-event { align-items: center; padding-bottom: 22px; }
+
+/* ═══════════════ Carril horizontal de añadir ═══════════════
+   Cambia la dirección de lectura: la pantalla deja de ser una columna de
+   bloques apilados, y cuatro atajos dejan de ocupar una pantalla entera. */
+
+.rail {
+  display: flex;
+  gap: 9px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Sin sangrado hasta el borde: haría que la sección contenedora desbordara
+     siempre, y la tercera tarjeta cortada ya dice que el carril sigue. */
+  padding: 2px 0 6px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.rail::-webkit-scrollbar { display: none; }
+
+.rail-card {
+  scroll-snap-align: start;
+  flex: 0 0 auto;
+  width: 132px;
+  min-height: 104px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: 18px;
+  padding: 13px 13px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  box-shadow: var(--shadow-tap);
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rail-card:active { transform: scale(0.96); }
+.rail-card .quick-ico { margin-bottom: 6px; color: var(--ink-3); }
+.rail-name {
+  font-weight: 650;
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.rail-meta { font-size: 0.78rem; color: var(--ink-3); margin-top: auto; }
+
+/* Tintado por lo que aporta, igual que antes. */
+.rail-card[data-macro='protein'] { background: var(--m-protein-soft); border-color: transparent; }
+.rail-card[data-macro='carbs'] { background: var(--m-carbs-soft); border-color: transparent; }
+.rail-card[data-macro='fat'] { background: var(--m-fat-soft); border-color: transparent; }
+.rail-card[data-macro='protein'] .quick-ico { color: var(--m-protein); }
+.rail-card[data-macro='carbs'] .quick-ico { color: var(--m-carbs); }
+.rail-card[data-macro='fat'] .quick-ico { color: var(--m-fat); }
+.rail-card.is-ask { background: var(--iron); color: var(--iron-ink); border-color: transparent; }
+.rail-card.is-ask .quick-ico, .rail-card.is-ask .rail-meta { color: var(--iron-ink-2); }
+
+@media (prefers-reduced-motion: reduce) {
+  .rail-card { transition: none; }
+  .rail-card:active { transform: none; }
+}
+
+/* El raíl de la espina, un punto más marcado: era casi invisible. */
+.tl-node::before { background: var(--rule-strong); }
+
+/* Pie del héroe: una sola línea en vez de tres apiladas. */
+.hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 13px;
+  border-top: 1px solid var(--rule);
+}
+/* El anillo ya dice cuánto llevas: la tarjeta puede respirar menos arriba. */
+.hero { padding-top: 18px; }
+.ring { margin-bottom: 4px; }
+
+/* El carril sangra hasta el borde a propósito, así que la pantalla se recorta
+   en horizontal: pase lo que pase, la página no puede desplazarse de lado.
+   `clip` y no `hidden` para no crear un contenedor de desplazamiento que
+   rompería los elementos fijos de dentro. */
+.screen { overflow-x: clip; }
+
+/* ═══════════════ Ritmo de ganancia ═══════════════
+   El héroe de PROGRESO. La cifra sola no dice nada —¿0,2 kg es mucho?—, así
+   que va con la franja de lo recomendable y un marcador de dónde cae. */
+
+.rate { display: flex; align-items: baseline; gap: 9px; margin: 2px 0 16px; }
+.rate-figure {
+  font-family: var(--display);
+  font-size: 3rem;
+  font-weight: 750;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.rate-unit { color: var(--ink-3); font-size: 0.9rem; }
+.rate-good .rate-figure { color: var(--m-fat); }
+.rate-slow .rate-figure, .rate-losing .rate-figure { color: var(--m-carbs); }
+.rate-fast .rate-figure { color: var(--over); }
+.rate-unknown .rate-figure { color: var(--ink-3); }
+
+.rate-band {
+  position: relative;
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--paper-3);
+  overflow: hidden;
+}
+/* El tercio central es el rango recomendable. */
+.rate-ok {
+  position: absolute;
+  left: 33%;
+  width: 34%;
+  top: 0;
+  bottom: 0;
+  background: var(--m-fat);
+  opacity: 0.35;
+}
+.rate-pin {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 16px;
+  border-radius: var(--r-pill);
+  background: var(--ink);
+  transform: translateX(-2px);
+  transition: left 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.rate-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+.rate-msg { font-size: 0.9rem; color: var(--ink-2); line-height: 1.45; margin: 12px 0 0; }
+@media (prefers-reduced-motion: reduce) { .rate-pin { transition: none; } }

@@ -4,14 +4,15 @@ import { behindMacro, closeTheGap, loggingStreak } from '../../domain/motivation
 import { scaleNutrients } from '../../domain/nutrition';
 import { describeSession, sessionKcal } from '../../domain/training';
 import { proteinDistribution } from '../../domain/trends';
-import { eatenBySlot, mealBehind, mealTargets } from '../../domain/meals';
-import { MEAL_SLOTS, MEAL_SLOT_LABEL, type MealEntry, type MealSlot } from '../../domain/types';
+import { eatenBySlot, mealTargets } from '../../domain/meals';
+import { MEAL_SLOTS, type MealEntry, type MealSlot } from '../../domain/types';
 import { entryNutrients, itemsNutrients } from '../../features/logging';
 import { iconForText, quickAddItems, slotFromHour } from '../../features/quickAdd';
 import { useApp } from '../../features/store';
-import { Figure, Section, g } from '../components';
+import { Section, g } from '../components';
 import { Icon } from '../icons';
-import { MiniRing, Ring } from '../Ring';
+import { DayTimeline, type DayNode } from './DayTimeline';
+import { Ring } from '../Ring';
 import { useUI } from '../shell';
 
 /**
@@ -86,10 +87,72 @@ export function TodayScreen() {
     [entries],
   );
 
-  const behindSlot = useMemo(
-    () => mealBehind(slotTargets, eaten, profile?.mealTimes ?? {}, nowTime()),
-    [slotTargets, eaten, profile?.mealTimes],
-  );
+  /**
+   * Los momentos del día, en orden de reloj.
+   *
+   * Las comidas con su objetivo y lo que llevan dentro, más el entreno y la
+   * pesada en su sitio. El estado de cada comida sale de la hora: lo que ya
+   * pasó puede quedarse corto, lo que no ha llegado solo se atenúa.
+   */
+  const dayNodes = useMemo<DayNode[]>(() => {
+    const now = nowTime();
+    const times = profile?.mealTimes ?? {};
+    const nodes: DayNode[] = [];
+
+    for (const t of slotTargets) {
+      const got = eaten.get(t.slot);
+      const kcal = Math.round(got?.kcal ?? 0);
+      const time = times[t.slot] ?? '--:--';
+      const covered = t.kcal > 0 && kcal / t.kcal >= 0.85;
+      const past = time <= now;
+      // "Ahora" es la franja en curso: ya ha empezado y la siguiente no.
+      const nextTime = slotTargets
+        .map((x) => times[x.slot] ?? '23:59')
+        .filter((x) => x > time)
+        .sort()[0] ?? '23:59';
+      const current = past && now < nextTime;
+      nodes.push({
+        type: 'meal',
+        slot: t.slot,
+        time,
+        target: t,
+        kcal,
+        protein: Math.round(got?.protein ?? 0),
+        entries: bySlot.get(t.slot) ?? [],
+        state: covered ? 'done' : current ? 'now' : past ? 'behind' : 'ahead',
+      });
+    }
+
+    if (day?.training) {
+      nodes.push({
+        type: 'event',
+        key: 'training',
+        time: profile?.trainingTime ?? '--:--',
+        icon: 'dumbbell',
+        title: describeSession(day.training),
+        detail: `${day.training.minutes} min · ~${g(sessionKcal(
+          app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training,
+        ))} kcal`,
+        onOpen: () => ui.open({ k: 'workout' }),
+      });
+    }
+
+    const weighIn = app.weights.find((w) => w.date === app.date);
+    if (weighIn) {
+      nodes.push({
+        type: 'event',
+        key: 'weight',
+        time: weighIn.time ?? '--:--',
+        icon: 'weight',
+        title: `${weighIn.kg} kg`,
+        detail: weighIn.conditions,
+        onOpen: () => ui.open({ k: 'weight' }),
+      });
+    }
+
+    return nodes.sort((a, b) => a.time.localeCompare(b.time));
+  }, [slotTargets, eaten, bySlot, profile, day, app.weights, app.date, ui]);
+
 
   const kcalLeft = Math.max(0, Math.round(remaining.kcal));
   const proteinLeft = Math.max(0, Math.round(remaining.protein));
@@ -236,16 +299,12 @@ export function TodayScreen() {
               </span>
             </div>
           ))}
-          <button className="link" style={{ justifySelf: 'start', marginTop: 2 }}
-            onClick={() => ui.open({ k: 'macros' })}>
-            Ver rangos y fibra
-          </button>
         </div>
-        <div className="fuel-foot" style={{ marginTop: 10 }}>
-          <span>{g(consumed.kcal)} de {g(targets.kcal.target)} kcal</span>
+        <div className="hero-foot">
+          <button className="link" onClick={() => ui.open({ k: 'macros' })}>Rangos y fibra</button>
           {streak > 1 && (
             <span className="streak">
-              <Icon name="flame" size={14} />{streak} días seguidos
+              <Icon name="flame" size={14} />{streak} días
             </span>
           )}
         </div>
@@ -268,30 +327,39 @@ export function TodayScreen() {
         )}
       </div>
 
-      {/* ── Añadir de un toque: la razón de ser de esta pantalla ── */}
+      {/* ── Añadir de un toque ──
+          En carril horizontal, no en rejilla: una rejilla de cinco casillas se
+          comía una pantalla entera para algo que son cuatro atajos. De paso, la
+          dirección cambia y la pantalla deja de ser una columna de bloques. */}
       <Section
         title="Añadir"
-        action={
-          <button className="link" onClick={() => ui.open({ k: 'addMenu' })}>Otra cosa</button>
-        }
+        action={<button className="link" onClick={() => ui.open({ k: 'addMenu' })}>Otra cosa</button>}
       >
-        <div className="quick">
+        <div className="rail">
           {quick.map((item) => (
             <button
-              className="quick-tile"
+              className="rail-card"
               key={item.key}
               data-macro={item.macro ?? undefined}
               onClick={() => void addQuick(item)}
             >
-              <span className="quick-ico"><Icon name={item.icon} size={19} /></span>
-              <span className="quick-name">{item.name}</span>
-              <span className="quick-macros">
-                {item.instant
-                  ? <>{g(item.kcal)} kcal · <b>{g(item.protein)} g prot</b></>
-                  : item.note ?? 'Elegir y añadir'}
+              <span className="quick-ico"><Icon name={item.icon} size={20} /></span>
+              <span className="rail-name">{item.name}</span>
+              <span className="rail-meta">
+                {item.instant ? `${g(item.kcal)} kcal` : item.note ?? 'Elegir'}
               </span>
             </button>
           ))}
+          {/* El último del carril no es un alimento: es la salida para cuando no
+              sabe qué comer, que antes era una sección suelta con dos botones. */}
+          <button
+            className="rail-card is-ask"
+            onClick={() => ui.open({ k: 'suggest', mode: 'normal', title: '¿Qué como ahora?' })}
+          >
+            <span className="quick-ico"><Icon name="search" size={20} /></span>
+            <span className="rail-name">No sé qué comer</span>
+            <span className="rail-meta">Que te diga</span>
+          </button>
         </div>
         {app.savedMeals.length === 0 && basicFoods.length === 0 && (
           <p className="note tight" style={{ marginTop: 12 }}>
@@ -302,127 +370,27 @@ export function TodayScreen() {
         )}
       </Section>
 
-      {/* ── Qué comer, cuando no sabe qué ponerse ── */}
-      <Section title="Si no sabes qué comer">
-        <div className="btns">
-          <button className="btn primary" onClick={() => ui.open({ k: 'suggest', mode: 'normal' })}>
-            Dime qué comer
-          </button>
-          <button className="btn" onClick={() => ui.open({ k: 'suggest', mode: 'quick', title: 'Cena rápida' })}>
-            Algo rápido
-          </button>
-        </div>
-      </Section>
-
-      {/* ── Las comidas del día ──
-          Un objetivo por comida convierte "te faltan 2000 kcal" en algo
-          accionable: señala en qué comida se está quedando corto. */}
-      <Section title="Las comidas de hoy">
-        <div className="meals">
-          {slotTargets.map((t) => {
-            const got = eaten.get(t.slot) ?? null;
-            const kcal = Math.round(got?.kcal ?? 0);
-            const pct = t.kcal > 0 ? kcal / t.kcal : 0;
-            const what = (bySlot.get(t.slot) ?? []).map((e) => e.name).filter(Boolean).join(', ');
-            const isBehind = behindSlot === t.slot;
-            return (
-              <button
-                className={`meal${isBehind ? ' is-behind' : ''}`}
-                key={t.slot}
-                onClick={() => ui.open({ k: 'manual', slot: t.slot })}
-              >
-                <MiniRing
-                  value={kcal}
-                  target={t.kcal}
-                  tone={pct >= 0.85 ? 'done' : isBehind ? 'behind' : 'accent'}
-                  label={`${MEAL_SLOT_LABEL[t.slot]}: ${kcal} de ${t.kcal} kcal`}
-                />
-                <div className="meal-body">
-                  <div className="meal-name">{MEAL_SLOT_LABEL[t.slot]}</div>
-                  <div className="meal-read">
-                    <b>{g(kcal)}</b> / {g(t.kcal)} kcal · {g(Math.round(got?.protein ?? 0))} / {t.protein} g prot
-                  </div>
-                  {what && <div className="meal-what">{what}</div>}
-                </div>
-                <span className="meal-add" aria-hidden="true"><Icon name="plus" size={16} /></span>
-              </button>
-            );
-          })}
-        </div>
-        {behindSlot && (
-          <p className="note tight" style={{ marginTop: 11 }}>
-            Vas corto en <b>{MEAL_SLOT_LABEL[behindSlot].toLowerCase()}</b>. No hace falta recuperarlo
-            de golpe: reparte lo que falta en lo que queda de día.
-          </p>
-        )}
-      </Section>
-
-      {/* ── Lo registrado ── */}
+      {/* ── El día, en una espina ──
+          Antes aquí había tres secciones: las comidas con su objetivo, el
+          registro de lo comido y el contexto del día. Las dos primeras
+          enseñaban lo mismo dos veces. */}
       <Section
-        title="Hoy has comido"
-        aside={entries.length ? `${entries.length} ${entries.length === 1 ? 'comida' : 'comidas'}` : undefined}
+        title="Tu día"
+        action={<button className="link" onClick={() => ui.open({ k: 'dayState' })}>Editar</button>}
       >
-        {entries.length === 0 ? (
-          <div className="empty">
-            <strong>Nada registrado todavía</strong>
-            Toca cualquier cosa de arriba, o cuéntaselo por voz desde el botón de añadir.
-          </div>
-        ) : (
-          MEAL_SLOTS.filter((s) => bySlot.has(s)).map((mealSlot) => {
-            const list = bySlot.get(mealSlot)!;
-            const slotKcal = list.reduce((a, e) => a + entryNutrients(e).kcal, 0);
-            return (
-              <div key={mealSlot} style={{ marginBottom: 18 }}>
-                <div className="section-head" style={{ marginBottom: 8, paddingBottom: 6 }}>
-                  <span className="section-title" style={{ fontSize: '0.85rem' }}>{MEAL_SLOT_LABEL[mealSlot]}</span>
-                  <span className="section-aside">{g(slotKcal)} kcal</span>
-                </div>
-                <div className="rows">
-                  {list.map((e) => {
-                    const n = entryNutrients(e);
-                    return (
-                      <button className="row" key={e.id} onClick={() => ui.open({ k: 'entry', id: e.id })}>
-                        <span className="row-time">{e.time}</span>
-                        <div className="row-body">
-                          <div className="row-name">
-                            {e.name || e.items.map((i) => i.foodName.replace(/\([^)]*\)/g, '').trim()).join(' + ')}
-                          </div>
-                          <div className="row-meta">{g(n.protein)} g de proteína</div>
-                        </div>
-                        <div className="row-num">{g(n.kcal)}<small>kcal</small></div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </Section>
-
-      {/* ── Contexto del día, al final: informa, no manda ── */}
-      <Section title="El día" action={<button className="link" onClick={() => ui.open({ k: 'dayState' })}>Editar</button>}>
-        <div className="figures">
-          <button className="figure" onClick={() => ui.open({ k: 'workout' })}>
-            <div className="figure-label">Entreno</div>
-            <div className="figure-value text">
-              {day?.training ? `${day.training.minutes} min` : 'Añadir'}
-            </div>
-            {day?.training && (
-              <div className="figure-sub">
-                ~{g(sessionKcal(app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training))} kcal
-              </div>
-            )}
-          </button>
-          <Figure label="Pasos" value={day?.steps != null ? g(day.steps) : '—'} />
-          <Figure label="Peso" value={app.weights.at(-1)?.kg ? `${app.weights.at(-1)!.kg} kg` : '—'}
-            sub={app.weights.at(-1)?.date === app.date ? 'hoy' : 'última pesada'} />
-        </div>
+        <DayTimeline
+          nodes={dayNodes}
+          onAdd={(slot) => ui.open({ k: 'manual', slot })}
+          onOpenEntry={(id) => ui.open({ k: 'entry', id })}
+        />
         {day?.deviceKcal != null && (
-          <p className="note tight" style={{ marginTop: 12 }}>
+          <p className="note tight" style={{ marginTop: 14 }}>
             Tu reloj marca {g(day.deviceKcal)} kcal. Se guarda como una señal más, no se suma al objetivo: esas
             estimaciones se equivocan con facilidad en un 20 o 30%.
           </p>
+        )}
+        {day?.steps != null && (
+          <p className="note tight">Hoy llevas {g(day.steps)} pasos.</p>
         )}
       </Section>
 

@@ -3,7 +3,7 @@ import { addDays, toIsoDate, weekStart } from './dates';
 import { computeTargets } from './nutrition';
 import {
   consistencyScore, dailyWeights, movingAverage, proteinDistribution, readTrend,
-  suggestAdjustment, weeklySummary, weightSlopePerWeek,
+  suggestAdjustment, weeklySummary, weightSlopePerWeek, gainVerdict,
 } from './trends';
 import { EMPTY_NUTRIENTS, type DayLog, type IsoDate, type MealEntry, type WeeklySummary, type WeightEntry } from './types';
 
@@ -213,5 +213,47 @@ describe('fechas', () => {
   it('la fecha local no se desplaza por la zona horaria', () => {
     const d = new Date(2026, 2, 15, 23, 30);
     expect(toIsoDate(d)).toBe('2026-03-15');
+  });
+});
+
+describe('ritmo de ganancia', () => {
+  const peso = 66.5;
+
+  it('calcula el rango como 0,25-0,5 % del peso', () => {
+    const v = gainVerdict(0.2, peso);
+    expect(v.min).toBeCloseTo(0.17, 2);
+    expect(v.max).toBeCloseTo(0.33, 2);
+  });
+
+  it('dentro del rango, va bien', () => {
+    expect(gainVerdict(0.25, peso).state).toBe('good');
+    expect(gainVerdict(0.17, peso).state).toBe('good');
+    expect(gainVerdict(0.33, peso).state).toBe('good');
+  });
+
+  it('por debajo del rango, le falta comida', () => {
+    expect(gainVerdict(0.05, peso).state).toBe('slow');
+  });
+
+  it('por encima, está ganando grasa', () => {
+    expect(gainVerdict(0.6, peso).state).toBe('fast');
+  });
+
+  it('perder peso se dice tal cual', () => {
+    expect(gainVerdict(-0.3, peso).state).toBe('losing');
+  });
+
+  it('un cambio mínimo no se llama pérdida', () => {
+    // Media docena de pesadas no distinguen 20 g de no moverse.
+    expect(gainVerdict(-0.02, peso).state).toBe('slow');
+  });
+
+  it('sin tendencia no se inventa un veredicto', () => {
+    expect(gainVerdict(null, peso).state).toBe('unknown');
+    expect(gainVerdict(Number.NaN, peso).state).toBe('unknown');
+  });
+
+  it('el rango escala con el peso', () => {
+    expect(gainVerdict(0.3, 90).max).toBeGreaterThan(gainVerdict(0.3, 60).max);
   });
 });
