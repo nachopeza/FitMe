@@ -729,14 +729,19 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
 
 /* ───────────────────────────── Hoja inferior ───────────────────────────── */
 
+/* Velo plano, sin desenfoque.
+   Tenía un backdrop-filter: blur(2px), y con una hoja que ocupa casi toda la
+   pantalla lo único que quedaba a la vista era una franja estrecha de app
+   emborronada; sumada al halo de la hoja, se leía como un manchón sucio, no
+   como profundidad. Un velo liso deja un margen oscuro limpio y el borde de la
+   hoja nítido, que es como se ven las hojas de iOS. De paso, el desenfoque de
+   pantalla completa es de lo más caro que puede pedir un móvil. */
 .sheet-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(21, 24, 28, 0.32);
+  background: rgba(11, 18, 32, 0.46);
   z-index: 50;
   animation: fade 0.16s ease;
-  -webkit-backdrop-filter: blur(2px);
-  backdrop-filter: blur(2px);
 }
 .sheet {
   position: fixed;
@@ -753,7 +758,10 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
   flex-direction: column;
   animation: rise 0.24s cubic-bezier(0.2, 0.9, 0.3, 1);
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  box-shadow: 0 -8px 40px rgba(21, 24, 28, 0.14);
+  /* Sombra corta y con desplazamiento negativo: marca el canto sin derramar un
+     halo hacia arriba. La anterior, de 40 px de difuminado, salía disparada
+     sobre el velo y era la mitad del manchón. */
+  box-shadow: 0 -12px 24px -16px rgba(11, 18, 32, 0.55);
 }
 .sheet-grab { width: 36px; height: 4px; border-radius: var(--r-pill); background: var(--rule-strong); margin: 10px auto 0; flex: 0 0 auto; }
 .sheet-head {
