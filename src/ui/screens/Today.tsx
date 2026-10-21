@@ -1,18 +1,21 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { addDays, formatDayLabel, nowTime, toIsoDate } from '../../domain/dates';
-import { behindMacro, closeTheGap, loggingStreak } from '../../domain/motivation';
+import { closeTheGap, loggingStreak } from '../../domain/motivation';
 import { scaleNutrients } from '../../domain/nutrition';
 import { describeSession, sessionKcal } from '../../domain/training';
 import { proteinDistribution } from '../../domain/trends';
 import { eatenBySlot, mealTargets } from '../../domain/meals';
-import { MEAL_SLOTS, type MealEntry, type MealSlot } from '../../domain/types';
+import { MEAL_SLOTS, type FoodCategory, type MealEntry, type MealSlot } from '../../domain/types';
 import { entryNutrients, itemsNutrients } from '../../features/logging';
 import { iconForText, quickAddItems, slotFromHour } from '../../features/quickAdd';
 import { useApp } from '../../features/store';
 import { Section, g } from '../components';
 import { Icon } from '../icons';
 import { DayTimeline, type DayNode } from './DayTimeline';
-import { Ring } from '../Ring';
+import { FoodArt, TrendArt } from '../FoodArt';
+
+/** Qué icono lleva el chip de cada macro, como en la referencia. */
+const MACRO_ICON = { protein: 'dumbbell', carbs: 'wheat', fat: 'drop' } as const;
 import { useUI } from '../shell';
 
 /**
@@ -158,9 +161,6 @@ export function TodayScreen() {
   const proteinLeft = Math.max(0, Math.round(remaining.protein));
   const done = kcalLeft <= 60 && proteinLeft <= 5;
 
-  const behind = behindMacro(consumed, {
-    protein: targets.protein.target, carbs: targets.carbs.target, fat: targets.fat.target,
-  });
 
   const streak = useMemo(
     () => loggingStreak(app.daysWithFood, app.date),
@@ -188,22 +188,19 @@ export function TodayScreen() {
     return closeTheGap(Math.min(kcalLeft, chunk), proteinLeft, candidates, { maxEach: 2 });
   }, [app.savedMeals, basicFoods, kcalLeft, proteinLeft, done, targets.kcal.target]);
 
-  /** Registra una propuesta tal cual, repetida las veces que diga. */
-  const addPlan = async (key: string, count: number, name: string) => {
-    const [kind, id] = key.split(':');
-    const ids: string[] = [];
-    for (let i = 0; i < count; i++) {
-      const entryId = kind === 'basic'
-        ? await app.actions.logBasicFood(id)
-        : await app.actions.logSavedMeal(id);
-      if (entryId) ids.push(entryId);
+  /**
+   * El dibujo que le toca a una comida: la categoría del alimento que más
+   * calorías aporta. Es lo que mejor la representa de un vistazo.
+   */
+  const artOf = useCallback((entry: MealEntry) => {
+    let best: { cat: FoodCategory; kcal: number } | null = null;
+    for (const item of entry.items) {
+      const food = app.foodsById.get(item.foodId);
+      if (!food) continue;
+      if (!best || item.nutrients.kcal > best.kcal) best = { cat: food.category, kcal: item.nutrients.kcal };
     }
-    if (ids.length) {
-      ui.notify(`${count > 1 ? `${count} × ` : ''}${name}`, async () => {
-        for (const entryId of ids) await app.actions.deleteEntry(entryId);
-      });
-    }
-  };
+    return <FoodArt category={best?.cat ?? 'other'} size={44} />;
+  }, [app.foodsById]);
 
   const addQuick = async (item: (typeof quick)[number]) => {
     if (item.kind === 'composition') {
@@ -225,117 +222,95 @@ export function TodayScreen() {
 
   return (
     <div className="screen">
-      <header className="head">
+      <header className="top rise">
         <div style={{ minWidth: 0 }}>
-          <div className="head-date">{formatDayLabel(app.date)}</div>
-          <div className="head-note">
-            {day?.training ? describeSession(day.training) : 'Sin entrenamiento registrado'}
-          </div>
+          <h1 className="screen-title">{app.isToday ? 'Hoy' : formatDayLabel(app.date)}</h1>
+          <p className="screen-sub">
+            {day?.training ? describeSession(day.training) : 'Registra tu día, paso a paso'}
+          </p>
         </div>
-        <div style={{ display: 'flex', gap: 2, flex: '0 0 auto' }}>
-          <button className="icon-btn" aria-label="Día anterior" onClick={() => app.setDate(addDays(app.date, -1))}>
-            <span style={{ transform: 'rotate(180deg)', display: 'grid' }}><Icon name="chevron" size={18} /></span>
-          </button>
-          {!app.isToday ? (
-            <button className="btn sm auto quiet" onClick={() => app.setDate(toIsoDate())}>Hoy</button>
-          ) : null}
-          <button className="icon-btn" aria-label="Día siguiente" disabled={app.date >= toIsoDate()}
-            onClick={() => app.setDate(addDays(app.date, 1))}>
-            <Icon name="chevron" size={18} />
+        <div style={{ display: 'flex', gap: 6, flex: '0 0 auto' }}>
+          {!app.isToday && (
+            <button className="top-round" aria-label="Volver a hoy" onClick={() => app.setDate(toIsoDate())}>
+              <Icon name="today" size={19} />
+            </button>
+          )}
+          <button className="top-round" aria-label="Abrir el calendario" onClick={() => ui.open({ k: 'calendar' })}>
+            <Icon name="calendar" size={19} />
           </button>
         </div>
       </header>
 
+      {/* Los días se cambian deslizando con estas flechas, no con la cabecera. */}
+      <div className="daynav rise">
+        <button className="top-round sm" aria-label="Día anterior" onClick={() => app.setDate(addDays(app.date, -1))}>
+          <span style={{ transform: 'rotate(180deg)', display: 'grid' }}><Icon name="chevron" size={16} /></span>
+        </button>
+        <span>{formatDayLabel(app.date)}</span>
+        <button className="top-round sm" aria-label="Día siguiente" disabled={app.date >= toIsoDate()}
+          onClick={() => app.setDate(addDays(app.date, 1))}>
+          <Icon name="chevron" size={16} />
+        </button>
+      </div>
+
       {/* ── El hueco: lo único grande de la pantalla ──
           El borde superior lleva el color del macro más atrasado, así que la
           tarjeta ya dice de qué va el día antes de leer un número. */}
-      <div className="hero" style={{ ['--behind' as string]: `var(--m-${behind})` }}>
-        <Ring
-          target={targets.kcal.target}
-          segments={[
-            { key: 'protein', kcal: consumed.protein * 4 },
-            { key: 'carbs', kcal: consumed.carbs * 4 },
-            { key: 'fat', kcal: consumed.fat * 9 },
-          ]}
-        >
-          {done ? (
-            <>
-              <span className="ring-label">Hoy ya has comido</span>
-              <span className="ring-figure">{g(consumed.kcal)}</span>
-              <span className="ring-unit">kcal · listo</span>
-            </>
-          ) : (
-            <>
-              <span className="ring-label">Te falta</span>
-              <span className="ring-figure">{g(kcalLeft)}</span>
-              <span className="ring-unit">kcal por comer</span>
-              {proteinLeft > 0 && (
-                <span className="ring-second">y <b>{g(proteinLeft)} g</b> de proteína</span>
-              )}
-            </>
-          )}
-        </Ring>
-
-        {/* Macros bajo el anillo: cuánto de cada uno y cuánto queda, con su
-            color de disco. El anillo dice cuánto llevas; esto, de qué. */}
-        <div className="macro-mini">
-          {([
-            ['protein', 'Proteína', consumed.protein, targets.protein.target],
-            ['carbs', 'Carbohidratos', consumed.carbs, targets.carbs.target],
-            ['fat', 'Grasas', consumed.fat, targets.fat.target],
-          ] as const).map(([key, label, value, target]) => (
-            <div className="macro-mini-item" key={key}>
-              <span className="macro-mini-name">{label}</span>
-              <span className="macro-mini-bar">
-                <span
-                  style={{
-                    width: `${Math.min(100, (value / Math.max(1, target)) * 100)}%`,
-                    background: `var(--m-${key})`,
-                  }}
-                />
-              </span>
-              <span className="macro-mini-read">
-                <b>{g(value)}</b> / {g(target)} g
-              </span>
-            </div>
-          ))}
+      {/* ── Objetivo del día ──
+          La tarjeta tintada de la referencia: lo que toca hoy, lo que queda y
+          una barra gruesa. Es el primer golpe de vista. */}
+      <div className="panel tint-mint rise objective">
+        <span className="chip-ico c-kcal"><Icon name="target" size={21} /></span>
+        <div className="objective-body">
+          <div className="objective-label">Objetivo del día</div>
+          <div className="objective-figure">{g(targets.kcal.target)} <span>kcal</span></div>
         </div>
-        <div className="hero-foot">
-          <button className="link" onClick={() => ui.open({ k: 'macros' })}>Rangos y fibra</button>
-          {streak > 1 && (
-            <span className="streak">
-              <Icon name="flame" size={14} />{streak} días
-            </span>
-          )}
+        <div className="objective-left">
+          <span>{done ? 'Completado' : 'Restan'}</span>
+          <b>{done ? '¡Listo! 🎉' : `${g(kcalLeft)} kcal`}</b>
         </div>
-
-        {/* Lo que de verdad mueve: el hueco traducido a comida suya, y tocable. */}
-        {plan.length > 0 && (
-          <div className="in-food">
-            {kcalLeft > targets.kcal.target * 0.45
-              ? 'Con lo que sueles comer, una comida para ir cerrándolo:'
-              : 'Con lo que sueles comer, esto lo cierra:'}
-            <div className="plan">
-              {plan.map((p) => (
-                <button className="plan-item" key={p.id} onClick={() => void addPlan(p.id, p.count, p.name)}>
-                  <b>{p.count > 1 ? `${p.count} × ` : ''}{p.name}</b>
-                  <span>{g(p.kcal * p.count)} kcal</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <div className="meter" style={{ gridColumn: '1 / -1', marginTop: 14 }}>
+          <span style={{ width: `${Math.min(100, (consumed.kcal / Math.max(1, targets.kcal.target)) * 100)}%` }} />
+        </div>
       </div>
 
-      {/* ── Añadir de un toque ──
-          En carril horizontal, no en rejilla: una rejilla de cinco casillas se
-          comía una pantalla entera para algo que son cuatro atajos. De paso, la
-          dirección cambia y la pantalla deja de ser una columna de bloques. */}
-      <Section
-        title="Añadir"
-        action={<button className="link" onClick={() => ui.open({ k: 'addMenu' })}>Otra cosa</button>}
-      >
-        <div className="rail">
+      {/* ── Macros, en chips de color ── */}
+      <div className="panel rise">
+        <div className="macro-chips">
+          {([
+            ['protein', 'Proteína', consumed.protein, targets.protein.target, 'g'],
+            ['carbs', 'Carbohidratos', consumed.carbs, targets.carbs.target, 'g'],
+            ['fat', 'Grasas', consumed.fat, targets.fat.target, 'g'],
+          ] as const).map(([key, label, value, target, unit]) => (
+            <button className="macro-chip" key={key} onClick={() => ui.open({ k: 'macros' })}>
+              <span className={`chip-ico sm c-${key}`}><Icon name={MACRO_ICON[key]} size={17} /></span>
+              <span className="macro-chip-body">
+                <span className="macro-chip-name">{label}</span>
+                <span className="macro-chip-value">{g(value)} <small>/ {g(target)} {unit}</small></span>
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Comidas ── */}
+      <div className="panel rise">
+        <div className="panel-head">
+          <span className="chip-ico sm c-kcal"><Icon name="plate" size={17} /></span>
+          <h3>Comidas</h3>
+          <button className="panel-link" onClick={() => ui.open({ k: 'addMenu' })}>
+            Ver todo <Icon name="chevron" size={15} />
+          </button>
+        </div>
+
+        <DayTimeline
+          nodes={dayNodes}
+          onAdd={(slot) => ui.open({ k: 'manual', slot })}
+          onOpenEntry={(id) => ui.open({ k: 'entry', id })}
+          artOf={artOf}
+        />
+
+        <div className="rail" style={{ marginTop: 14 }}>
           {quick.map((item) => (
             <button
               className="rail-card"
@@ -350,8 +325,6 @@ export function TodayScreen() {
               </span>
             </button>
           ))}
-          {/* El último del carril no es un alimento: es la salida para cuando no
-              sabe qué comer, que antes era una sección suelta con dos botones. */}
           <button
             className="rail-card is-ask"
             onClick={() => ui.open({ k: 'suggest', mode: 'normal', title: '¿Qué como ahora?' })}
@@ -361,38 +334,55 @@ export function TodayScreen() {
             <span className="rail-meta">Que te diga</span>
           </button>
         </div>
-        {app.savedMeals.length === 0 && basicFoods.length === 0 && (
-          <p className="note tight" style={{ marginTop: 12 }}>
-            Estas son genéricas todavía. Dile cuáles son <b>tus</b> básicos —tu plátano, tus frutos secos— y
-            saldrán aquí para añadirlos de un toque.{' '}
-            <button className="link" onClick={() => ui.open({ k: 'basics' })}>Elegir mis básicos</button>
-          </p>
-        )}
-      </Section>
 
-      {/* ── El día, en una espina ──
-          Antes aquí había tres secciones: las comidas con su objetivo, el
-          registro de lo comido y el contexto del día. Las dos primeras
-          enseñaban lo mismo dos veces. */}
-      <Section
-        title="Tu día"
-        action={<button className="link" onClick={() => ui.open({ k: 'dayState' })}>Editar</button>}
-      >
-        <DayTimeline
-          nodes={dayNodes}
-          onAdd={(slot) => ui.open({ k: 'manual', slot })}
-          onOpenEntry={(id) => ui.open({ k: 'entry', id })}
-        />
-        {day?.deviceKcal != null && (
-          <p className="note tight" style={{ marginTop: 14 }}>
-            Tu reloj marca {g(day.deviceKcal)} kcal. Se guarda como una señal más, no se suma al objetivo: esas
-            estimaciones se equivocan con facilidad en un 20 o 30%.
+        <button className="btn-outline" onClick={() => ui.open({ k: 'addMenu' })}>
+          <Icon name="plus" size={17} /> Añadir comida
+        </button>
+      </div>
+
+      {/* ── Entrenamiento ── */}
+      <div className="panel rise">
+        <div className="panel-head">
+          <span className="chip-ico sm c-protein"><Icon name="dumbbell" size={17} /></span>
+          <h3>Entrenamiento</h3>
+          <button className="panel-link" onClick={() => ui.setTab('workout')}>
+            Ver rutinas <Icon name="chevron" size={15} />
+          </button>
+        </div>
+        <button className="go-row" onClick={() => ui.setTab('workout')}>
+          <span className="go-play"><Icon name="play" size={18} /></span>
+          <span className="go-body">
+            <span className="go-title">
+              {day?.training ? describeSession(day.training) : 'Empezar un entreno'}
+            </span>
+            <span className="go-meta">
+              {day?.training
+                ? `${day.training.minutes} min · ~${g(sessionKcal(
+                  app.weights.at(-1)?.kg ?? profile?.startWeightKg ?? 70, day.training,
+                ))} kcal`
+                : 'Elige una rutina o empieza vacío'}
+            </span>
+          </span>
+          <Icon name="chevron" size={18} />
+        </button>
+      </div>
+
+      {/* ── ¿Cómo vas? ── */}
+      <div className="panel tint-cream rise cheer">
+        <div style={{ minWidth: 0 }}>
+          <div className="cheer-title">¿Cómo vas? 📊</div>
+          <p className="cheer-msg">
+            {done
+              ? 'Día cerrado. Mañana, otra vez 💪'
+              : plan.length
+                ? `Con lo que sueles comer, ${plan[0].count > 1 ? `${plan[0].count} × ` : ''}${plan[0].name} te acerca bastante.`
+                : streak > 1
+                  ? `${streak} días seguidos registrando. Mantén el ritmo 💪`
+                  : 'Registra lo que comas y verás el hueco cerrarse.'}
           </p>
-        )}
-        {day?.steps != null && (
-          <p className="note tight">Hoy llevas {g(day.steps)} pasos.</p>
-        )}
-      </Section>
+        </div>
+        <TrendArt />
+      </div>
 
       {/* ── Reparto de proteína, solo si hay algo que decir ── */}
       {distribution.message && (

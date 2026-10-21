@@ -12,7 +12,8 @@ export type IconName =
   | 'coffee' | 'bread' | 'bowl' | 'sandwich' | 'shake' | 'plate'
   | 'mic' | 'camera' | 'barcode' | 'tag' | 'star' | 'pen'
   | 'dumbbell' | 'timer' | 'check' | 'search' | 'trash' | 'chevron'
-  | 'weight' | 'steps' | 'book' | 'cart' | 'flame' | 'calendar';
+  | 'weight' | 'steps' | 'book' | 'cart' | 'flame' | 'calendar'
+  | 'target' | 'play' | 'wheat' | 'drop' | 'bell' | 'trophy' | 'bulb';
 
 interface IconProps {
   name: IconName;
@@ -216,6 +217,56 @@ export function Icon({ name, size = 24, active = false }: IconProps) {
           <rect x="14.4" y="6.5" width="3.6" height="11" rx="1.4" />
           <path d="M9.6 12h4.8" />
           <path d="M3.2 9.5v5M20.8 9.5v5" />
+        </svg>
+      );
+    case 'target':
+      return (
+        <svg {...p}>
+          <circle cx="12" cy="12" r="8.4" />
+          <circle cx="12" cy="12" r="4" />
+          <circle cx="12" cy="12" r="1.2" strokeWidth={2.4} />
+        </svg>
+      );
+    case 'play':
+      return (
+        <svg {...p} strokeWidth={0} fill="currentColor">
+          <path d="M8.6 5.6a1.2 1.2 0 0 1 1.84-1.02l8.2 5.4a1.2 1.2 0 0 1 0 2.04l-8.2 5.4A1.2 1.2 0 0 1 8.6 16.4z" />
+        </svg>
+      );
+    case 'wheat':
+      return (
+        <svg {...p}>
+          <path d="M12 21V9" />
+          <path d="M12 9c0-2.6 1.6-4.4 4-5 .4 2.8-1.2 4.6-4 5zM12 9C12 6.4 10.4 4.6 8 4c-.4 2.8 1.2 4.6 4 5z" />
+          <path d="M12 15c0-2.4 1.6-4 4-4.6.4 2.6-1.2 4.2-4 4.6zM12 15c0-2.4-1.6-4-4-4.6-.4 2.6 1.2 4.2 4 4.6z" />
+        </svg>
+      );
+    case 'drop':
+      return (
+        <svg {...p}>
+          <path d="M12 3.4c3.4 4 5.6 6.8 5.6 9.6a5.6 5.6 0 0 1-11.2 0c0-2.8 2.2-5.6 5.6-9.6z" />
+        </svg>
+      );
+    case 'bell':
+      return (
+        <svg {...p}>
+          <path d="M6.4 10a5.6 5.6 0 0 1 11.2 0c0 4 1.4 5.6 1.4 5.6H5s1.4-1.6 1.4-5.6z" />
+          <path d="M10.2 19a2 2 0 0 0 3.6 0" />
+        </svg>
+      );
+    case 'trophy':
+      return (
+        <svg {...p}>
+          <path d="M8 4h8v5a4 4 0 0 1-8 0z" />
+          <path d="M8 5.4H5.4V7a3 3 0 0 0 3 3M16 5.4h2.6V7a3 3 0 0 1-3 3" />
+          <path d="M12 13v3.6M9 20h6M10 16.6h4l.6 3.4H9.4z" />
+        </svg>
+      );
+    case 'bulb':
+      return (
+        <svg {...p}>
+          <path d="M9.2 16.6a6 6 0 1 1 5.6 0v2.2H9.2z" />
+          <path d="M10 21h4" />
         </svg>
       );
     case 'calendar':

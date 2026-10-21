@@ -10,6 +10,9 @@ import {
 } from '../../domain/trends';
 import { MACRO_KEYS, type IsoDate, type MacroKey } from '../../domain/types';
 import { Section, MACRO_META, WhyButton, g } from '../components';
+import { Ring } from '../Ring';
+import { TipArt } from '../FoodArt';
+import { Icon } from '../icons';
 import { useUI } from '../shell';
 
 type Span = 7 | 30 | 90;
@@ -33,6 +36,7 @@ export function ProgressScreen() {
     ),
     [trend, app.weights, app.profile?.startWeightKg],
   );
+
 
   /** Serie diaria de macros y peso, con la media móvil del peso de 7 días. */
   const series = useMemo(() => {
@@ -88,17 +92,88 @@ export function ProgressScreen() {
   );
 
   const current = weeks[0];
+
+  /**
+   * El consejo.
+   *
+   * Sale de lo que de verdad le está faltando, no de una frase motivacional
+   * fija: si no registra, lo primero es registrar; si registra poco, pesarse;
+   * y si va corto de comida, comer más.
+   */
+  const tip = useMemo(() => {
+    if (current.daysLogged < 3) {
+      return 'Registra unos días seguidos. Con 4 o 5 las medias empiezan a servir para decidir.';
+    }
+    if (trend.weighInDays < 3) {
+      return 'Pésate 3 o 4 veces por semana: una sola pesada no dice nada, la media sí.';
+    }
+    if (verdict.state === 'slow' || verdict.state === 'losing') {
+      return 'Te está faltando comida. Sube unas 150 kcal al día y vuelve a mirar en dos semanas.';
+    }
+    if (verdict.state === 'fast') {
+      return 'Baja unas 150 kcal al día: a este ritmo una buena parte de lo que subes es grasa.';
+    }
+    return 'Vas bien. Mantén la proteína y el registro, que es lo que sostiene el resto.';
+  }, [current.daysLogged, trend.weighInDays, verdict.state]);
+
   const weightPoints = series.filter((s) => s.weight != null || s.weightMa != null);
 
   return (
     <div className="screen">
-      <header className="screen-header">
-        <div>
-          <h1>Progreso</h1>
-          <div className="screen-sub">Tendencias, no días sueltos</div>
+      <header className="top rise">
+        <div style={{ minWidth: 0 }}>
+          <div className="brand">Fit<em>Me</em></div>
+          <h1 className="screen-title" style={{ marginTop: 10 }}>Progreso</h1>
+          <p className="screen-sub">Tu constancia te acerca a tus objetivos 💪</p>
         </div>
-        <button className="btn sm auto ghost" onClick={() => ui.open({ k: 'weight' })}>+ Peso</button>
+        <button className="top-round" aria-label="Registrar peso" onClick={() => ui.open({ k: 'weight' })}>
+          <Icon name="weight" size={19} />
+        </button>
       </header>
+
+      <div className="pills rise">
+        {([[7, 'Esta semana'], [30, 'Este mes'], [90, 'Todo el tiempo']] as const).map(([v, label]) => (
+          <button key={v} aria-pressed={span === v} onClick={() => setSpan(v)}>{label}</button>
+        ))}
+      </div>
+
+      {/* ── Anillo y macros, como en la referencia ──
+          El anillo a la izquierda con la cifra dentro y, separada por una
+          línea, la columna de macros con su chip de color. */}
+      <div className="panel rise ringbox">
+        <Ring
+          size={168}
+          target={app.baseTargets.kcal.target}
+          /* Un solo tramo verde, como en la referencia: aquí lo que se mira es
+             cuánto del objetivo se está cubriendo, no de qué se compone. */
+          segments={[{ key: 'kcal', kcal: current.avgKcal }]}
+        >
+          <span className="ring-emoji">🔥</span>
+          <span className="ring-figure">{g(app.baseTargets.kcal.target)}</span>
+          <span className="ring-unit">kcal por comer</span>
+          <span className="ring-second">y <b>{g(app.baseTargets.protein.target)} g</b> de proteína</span>
+        </Ring>
+
+        <ul className="macrolist">
+          {([
+            ['kcal', 'plate', 'Kcal / día', current.avgKcal, app.baseTargets.kcal.target, ''],
+            ['protein', 'dumbbell', 'Prot / día', current.avgProtein, app.baseTargets.protein.target, 'g'],
+            ['carbs', 'wheat', 'Carb / día', current.avgCarbs, app.baseTargets.carbs.target, 'g'],
+            ['fat', 'drop', 'Grasas / día', current.avgFat, app.baseTargets.fat.target, 'g'],
+          ] as const).map(([key, icon, label, value, target, unit]) => (
+            <li key={key}>
+              <span className={`chip-ico sm c-${key}`}><Icon name={icon} size={17} /></span>
+              <span>
+                <span className="macrolist-name">{label}</span>
+                <span className="macrolist-value">
+                  {current.daysLogged ? g(value) : '—'}{unit && ` ${unit}`}
+                </span>
+                <span className="macrolist-sub">objetivo {g(target)}{unit && ` ${unit}`}</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
 
       {/* ── La pregunta de esta pantalla ──
           Igual que HOY abre con lo que falta por comer, PROGRESO abre con lo
@@ -137,6 +212,47 @@ export function ProgressScreen() {
             {' · '}{trend.weighInDays} pesadas en 14 días
           </span>
         </div>
+      </div>
+
+      {/* ── Tira de tres cifras ── */}
+      <div className="strip rise">
+        <div>
+          <span className="strip-top"><Icon name="dumbbell" size={15} />Entrenos</span>
+          <span className="strip-value">{current.trainings}</span>
+          <span className="strip-sub">previstos {app.profile?.trainingDaysPerWeek ?? 4}</span>
+        </div>
+        <div>
+          <span className="strip-top"><Icon name="steps" size={15} />Pasos / día</span>
+          <span className="strip-value">{current.avgSteps ? g(current.avgSteps) : '—'}</span>
+        </div>
+        <div>
+          <span className="strip-top"><Icon name="calendar" size={15} />Con registro</span>
+          <span className="strip-value">{current.daysLogged} / 7</span>
+        </div>
+      </div>
+
+      {/* ── Constancia, en su propia tarjeta ── */}
+      <button className="panel tight rise consist" onClick={() => ui.open({ k: 'history' })}>
+        <span className="chip-ico c-kcal"><Icon name="trophy" size={20} /></span>
+        <span className="consist-body">
+          <span className="consist-title">Constancia</span>
+          <span className="consist-read">{current.consistency.value} / 100 · {current.consistency.label}</span>
+          <span className="meter on-card" style={{ marginTop: 8 }}>
+            <span style={{ width: `${current.consistency.value}%` }} />
+          </span>
+        </span>
+        <Icon name="chevron" size={18} />
+      </button>
+
+      {/* ── Consejo ── */}
+      <div className="panel tint-mint rise tip">
+        <div style={{ minWidth: 0 }}>
+          <div className="tip-title">
+            <Icon name="bulb" size={16} /> Un consejo para ti
+          </div>
+          <p className="tip-msg">{tip}</p>
+        </div>
+        <TipArt />
       </div>
 
       {/* ── La semana, en dos cifras y una línea ── */}

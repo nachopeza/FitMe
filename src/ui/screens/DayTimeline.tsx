@@ -1,6 +1,7 @@
 import { MiniRing } from '../Ring';
 import { Icon } from '../icons';
 import { g } from '../components';
+import type { ReactNode } from 'react';
 import { MEAL_SLOT_LABEL, type MealEntry, type MealSlot } from '../../domain/types';
 import type { MealTarget } from '../../domain/meals';
 
@@ -44,27 +45,30 @@ export interface EventNode {
 export type DayNode = MealNode | EventNode;
 
 export function DayTimeline({
-  nodes, onAdd, onOpenEntry,
+  nodes, onAdd, onOpenEntry, artOf,
 }: {
   nodes: DayNode[];
   onAdd: (slot: MealSlot) => void;
   onOpenEntry: (id: string) => void;
+  /** El dibujo de cada comida, que lo decide quien conoce los alimentos. */
+  artOf?: (entry: MealEntry) => ReactNode;
 }) {
   return (
     <ol className="tl">
       {nodes.map((node) => (node.type === 'meal'
-        ? <MealRow key={node.slot} node={node} onAdd={onAdd} onOpenEntry={onOpenEntry} />
+        ? <MealRow key={node.slot} node={node} onAdd={onAdd} onOpenEntry={onOpenEntry} artOf={artOf} />
         : <EventRow key={node.key} node={node} />))}
     </ol>
   );
 }
 
 function MealRow({
-  node, onAdd, onOpenEntry,
+  node, onAdd, onOpenEntry, artOf,
 }: {
   node: MealNode;
   onAdd: (slot: MealSlot) => void;
   onOpenEntry: (id: string) => void;
+  artOf?: (entry: MealEntry) => ReactNode;
 }) {
   const tone = node.state === 'done' ? 'done' : node.state === 'behind' ? 'behind' : 'accent';
   const short = node.state === 'behind' ? Math.round(node.target.kcal - node.kcal) : 0;
@@ -95,6 +99,7 @@ function MealRow({
           <div className="tl-items">
             {node.entries.map((e) => (
               <button className="tl-item" key={e.id} onClick={() => onOpenEntry(e.id)}>
+                {artOf?.(e)}
                 <span className="tl-item-name">
                   {e.name || e.items.map((i) => i.foodName.replace(/\([^)]*\)/g, '').trim()).join(' + ')}
                 </span>

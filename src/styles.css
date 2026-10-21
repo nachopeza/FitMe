@@ -42,156 +42,175 @@
 }
 
 /* ───────────────────────────── Tokens ───────────────────────────── */
+/* ───────────────────────────── Tokens ─────────────────────────────
+   Los colores salen MEDIDOS de la referencia que mandó, no aproximados a ojo:
+   el verde del logotipo, el del botón de añadir, los cuatro chips de macro y
+   los tintes de las tarjetas destacadas. */
 :root {
   color-scheme: light;
 
-  /* Papel frío, como tiza sobre acero. Nada de crema. */
-  --paper: #f5f7f8;
-  --paper-2: #eceff2;
-  --paper-3: #e1e6ea;
+  --paper: #f7f8fb;
+  --paper-2: #eef0f6;
+  --paper-3: #e4e7ef;
   --card: #ffffff;
 
-  --ink: #14181d;
-  --ink-2: #51585f;
-  --ink-3: #828b94;
-  --rule: #e2e7eb;
-  --rule-strong: #cdd4da;
+  --ink: #0b1220;
+  --ink-2: #4d5868;
+  --ink-3: #8b94a5;
+  --rule: #e9ecf3;
+  --rule-strong: #d7dce7;
 
-  /* ── Los discos ──────────────────────────────────────────────────
-     Rojo 25 · azul 20 · amarillo 15 · verde 10 · blanco 5. */
-  --plate-red: #c8102e;
-  --plate-blue: #0b4da2;
-  --plate-yellow: #d99000;
-  --plate-green: #00843d;
-  --plate-white: #9aa3ab;
-
-  /* Cada macro, su disco. */
-  --m-kcal: var(--plate-red);
-  --m-protein: var(--plate-blue);
-  --m-carbs: var(--plate-yellow);
-  --m-fat: var(--plate-green);
-  --m-fiber: var(--plate-white);
-
-  /* Fondos tenues de cada disco, para tintar casillas sin gritar. */
-  --m-kcal-soft: #fdeced;
-  --m-protein-soft: #e8eff9;
-  --m-carbs-soft: #fdf2dc;
-  --m-fat-soft: #e4f2e9;
-  --m-fiber-soft: #edf0f2;
-
-  /* El acento de la interfaz —botones, enlaces, lo que se toca— es el azul
-     de la proteína: en hipertrofia es el macro que manda, y así el color de
-     "adelante" y el del objetivo son el mismo. */
-  --accent: #0b4da2;
+  /* ── Verde: la identidad ── */
+  --accent: #06a16b;
   --accent-ink: #ffffff;
-  --accent-soft: #e8eff9;
-  --accent-line: #b4caea;
+  --accent-bright: #1fbe86;
+  --accent-deep: #038256;
+  --accent-soft: #d1f4e5;
+  --accent-line: #a7e4cd;
+
+  /* Tintes de tarjeta destacada. */
+  --mint: #e4f4ef;
+  --cream: #fcf1de;
+  --cream-ink: #96661a;
+
+  /* ── Chips de macro, uno por color ── */
+  --c-kcal: #0aa972;
+  --c-kcal-bg: #d1f4e5;
+  --c-protein: #2b7fd4;
+  --c-protein-bg: #cae2fd;
+  --c-carbs: #e8883a;
+  --c-carbs-bg: #feecdb;
+  --c-fat: #7c5cd6;
+  --c-fat-bg: #e6defd;
+  --c-fiber: #58a05f;
+  --c-fiber-bg: #dff2e0;
+
+  /* Los macros heredan de los chips: un solo sitio donde cambiarlos. */
+  --m-kcal: var(--c-kcal);
+  --m-protein: var(--c-protein);
+  --m-carbs: var(--c-carbs);
+  --m-fat: var(--c-fat);
+  --m-fiber: var(--c-fiber);
+  --m-kcal-soft: var(--c-kcal-bg);
+  --m-protein-soft: var(--c-protein-bg);
+  --m-carbs-soft: var(--c-carbs-bg);
+  --m-fat-soft: var(--c-fat-bg);
+  --m-fiber-soft: var(--c-fiber-bg);
 
   /* ── Hierro: la mitad de entreno ── */
-  --iron: #1d2227;
-  --iron-2: #2a3138;
-  --iron-ink: #f2f5f7;
-  --iron-ink-2: #9aa5af;
-  --iron-line: #39424b;
+  --iron: #19202b;
+  --iron-2: #242d3a;
+  --iron-ink: #f3f6fa;
+  --iron-ink-2: #97a2b3;
+  --iron-line: #323c4b;
 
-  /* Semánticos, deliberadamente apagados: informan, no asustan. Nunca usan el
-     rojo de la energía, para que ese rojo no signifique nunca "mal". */
-  --over: #8a5a1e;
-  --over-soft: #f8f0e3;
-  --warn: #7f6113;
+  /* Semánticos, apagados: informan, no asustan. */
+  --over: #a66a1f;
+  --over-soft: #fcf1de;
+  --warn: #8a6a12;
 
-  --r-sm: 10px;
-  --r: 16px;
-  --r-lg: 22px;
-  --r-iron: 8px;
+  --r-sm: 12px;
+  --r: 18px;
+  --r-lg: 24px;
+  --r-iron: 10px;
   --r-pill: 999px;
 
   --pad: 20px;
-  --nav-h: 58px;
+  --nav-h: 62px;
 
   --display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
   --ui: 'Instrument Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
-  --shadow-tap: 0 1px 2px rgba(20, 24, 29, 0.05), 0 2px 8px rgba(20, 24, 29, 0.04);
-  --shadow-card: 0 1px 2px rgba(20, 24, 29, 0.04), 0 6px 20px rgba(20, 24, 29, 0.06);
+  --shadow-tap: 0 1px 2px rgba(11, 18, 32, 0.04), 0 2px 8px rgba(11, 18, 32, 0.04);
+  --shadow-card: 0 1px 2px rgba(11, 18, 32, 0.03), 0 8px 24px -10px rgba(11, 18, 32, 0.12);
 }
 
-/* Modo oscuro. El claro es el predeterminado porque es lo que se pidió, pero
-   el oscuro se mantiene completo: los discos suben de luminosidad para
-   sostener el contraste sobre fondo oscuro, sin dejar de ser reconocibles. */
+/* Modo oscuro completo. El claro es el predeterminado porque es lo que se
+   pidió; aquí los verdes y los chips suben de luminosidad para sostener el
+   contraste sobre fondo oscuro sin dejar de ser los mismos colores. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-    --paper: #111417;
-    --paper-2: #181c20;
-    --paper-3: #222730;
-    --card: #181c20;
-    --ink: #eef1f3;
-    --ink-2: #a3acb4;
-    --ink-3: #747d85;
-    --rule: #272c32;
-    --rule-strong: #394047;
-    --plate-red: #ff5c6e;
-    --plate-blue: #5f9bf0;
-    --plate-yellow: #f0b43c;
-    --plate-green: #44b877;
-    --plate-white: #8d969e;
-    --m-kcal-soft: #2a1a1d;
-    --m-protein-soft: #16202e;
-    --m-carbs-soft: #2a2317;
-    --m-fat-soft: #16261d;
-    --m-fiber-soft: #202528;
-    --accent: #5f9bf0;
-    --accent-ink: #0a1726;
-    --accent-soft: #16202e;
-    --accent-line: #2b4467;
-    --iron: #0c0f12;
-    --iron-2: #171c21;
-    --iron-ink: #eef1f3;
-    --iron-ink-2: #8d969e;
-    --iron-line: #262c33;
-    --over: #d4a05e;
-    --over-soft: #241c12;
+    --paper: #0f141c;
+    --paper-2: #161d27;
+    --paper-3: #202833;
+    --card: #161d27;
+    --ink: #eef2f7;
+    --ink-2: #a3aebd;
+    --ink-3: #74808f;
+    --rule: #232b36;
+    --rule-strong: #333d4a;
+    --accent: #2ecb91;
+    --accent-ink: #04231a;
+    --accent-bright: #3ddb9e;
+    --accent-deep: #1fa877;
+    --accent-soft: #102b22;
+    --accent-line: #1d4537;
+    --mint: #10241f;
+    --cream: #2a2318;
+    --cream-ink: #e0b472;
+    --c-kcal: #2ecb91;
+    --c-kcal-bg: #102b22;
+    --c-protein: #5fa5f0;
+    --c-protein-bg: #152338;
+    --c-carbs: #f0a35e;
+    --c-carbs-bg: #2e2316;
+    --c-fat: #a68cf0;
+    --c-fat-bg: #231d38;
+    --c-fiber: #7cbc82;
+    --c-fiber-bg: #19271a;
+    --iron: #080c12;
+    --iron-2: #131a23;
+    --iron-ink: #eef2f7;
+    --iron-ink-2: #8d97a6;
+    --iron-line: #222a35;
+    --over: #d8a85f;
+    --over-soft: #2a2318;
     --warn: #c9a227;
-    --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+    --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
   }
 }
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --paper: #111417;
-  --paper-2: #181c20;
-  --paper-3: #222730;
-  --card: #181c20;
-  --ink: #eef1f3;
-  --ink-2: #a3acb4;
-  --ink-3: #747d85;
-  --rule: #272c32;
-  --rule-strong: #394047;
-  --plate-red: #ff5c6e;
-  --plate-blue: #5f9bf0;
-  --plate-yellow: #f0b43c;
-  --plate-green: #44b877;
-  --plate-white: #8d969e;
-  --m-kcal-soft: #2a1a1d;
-  --m-protein-soft: #16202e;
-  --m-carbs-soft: #2a2317;
-  --m-fat-soft: #16261d;
-  --m-fiber-soft: #202528;
-  --accent: #5f9bf0;
-  --accent-ink: #0a1726;
-  --accent-soft: #16202e;
-  --accent-line: #2b4467;
-  --iron: #0c0f12;
-  --iron-2: #171c21;
-  --iron-ink: #eef1f3;
-  --iron-ink-2: #8d969e;
-  --iron-line: #262c33;
-  --over: #d4a05e;
-  --over-soft: #241c12;
+  --paper: #0f141c;
+  --paper-2: #161d27;
+  --paper-3: #202833;
+  --card: #161d27;
+  --ink: #eef2f7;
+  --ink-2: #a3aebd;
+  --ink-3: #74808f;
+  --rule: #232b36;
+  --rule-strong: #333d4a;
+  --accent: #2ecb91;
+  --accent-ink: #04231a;
+  --accent-bright: #3ddb9e;
+  --accent-deep: #1fa877;
+  --accent-soft: #102b22;
+  --accent-line: #1d4537;
+  --mint: #10241f;
+  --cream: #2a2318;
+  --cream-ink: #e0b472;
+  --c-kcal: #2ecb91;
+  --c-kcal-bg: #102b22;
+  --c-protein: #5fa5f0;
+  --c-protein-bg: #152338;
+  --c-carbs: #f0a35e;
+  --c-carbs-bg: #2e2316;
+  --c-fat: #a68cf0;
+  --c-fat-bg: #231d38;
+  --c-fiber: #7cbc82;
+  --c-fiber-bg: #19271a;
+  --iron: #080c12;
+  --iron-2: #131a23;
+  --iron-ink: #eef2f7;
+  --iron-ink-2: #8d97a6;
+  --iron-line: #222a35;
+  --over: #d8a85f;
+  --over-soft: #2a2318;
   --warn: #c9a227;
-  --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.25);
+  --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
 }
 
 *, *::before, *::after { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -257,23 +276,28 @@ input, select, textarea { font: inherit; color: inherit; }
 /* Separador de sección: una línea y un rótulo en minúscula. Nada de
    mayúsculas espaciadas, que es el tic más reconocible de una interfaz
    generada. */
+/* Toda sección es una tarjeta, como en la referencia: blanca sobre papel gris,
+   con su sombra suave. Así la app entera queda en el mismo lenguaje sin tener
+   que reescribir cada pantalla. */
 .section {
-  margin-top: 34px;
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+  margin: 0 0 14px;
 }
 .section-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--rule);
   margin-bottom: 14px;
 }
 .section-title {
   font-family: var(--display);
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
 }
 .section-aside { font-size: 0.8rem; color: var(--ink-3); }
 
@@ -1000,7 +1024,7 @@ button.figure.pick[aria-pressed='true'] { border-color: var(--accent); }
 .rest-bar span {
   display: block;
   height: 100%;
-  background: var(--plate-yellow);
+  background: var(--accent-bright);
   border-radius: var(--r-pill);
   transition: width 0.25s linear;
 }
@@ -1416,7 +1440,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   color: var(--iron-ink);
 }
 .live.iron .live-title { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
-.live.iron .live-time { color: var(--plate-yellow); font-size: 0.85rem; font-weight: 600; margin-top: 2px; }
+.live.iron .live-time { color: var(--accent-bright); font-size: 0.85rem; font-weight: 600; margin-top: 2px; }
 .live.iron:active { background: var(--iron-2); }
 
 /* Una ración: su nombre, sus gramos y el botón de quitarla. */
@@ -1444,6 +1468,10 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .ring-protein { stroke: var(--m-protein); }
 .ring-carbs { stroke: var(--m-carbs); }
 .ring-fat { stroke: var(--m-fat); }
+/* Un solo tramo, en el verde de la marca: es como se ve en la referencia. Y
+   con el extremo redondeado, que ahí sí se puede: el remate redondo solo
+   estorba cuando hay varios tramos seguidos. */
+.ring-kcal { stroke: var(--accent-bright); stroke-linecap: round; }
 
 .ring-center {
   position: absolute;
@@ -1478,7 +1506,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 }
 .ring-unit { display: block; font-size: 0.82rem; color: var(--ink-2); font-weight: 600; }
 .ring-second { display: block; font-size: 0.82rem; color: var(--ink-3); margin-top: 7px; }
-.ring-second b { color: var(--m-protein); font-weight: 700; }
+.ring-second b { color: var(--accent); font-weight: 700; }
 
 /* ═══════════════════ Acabado iOS: materiales y profundidad ═══════════════════
    Lo que diferencia una app que parece web de una que parece del sistema no es
@@ -1648,7 +1676,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   letter-spacing: -0.04em;
   font-variant-numeric: tabular-nums;
   line-height: 1;
-  color: var(--plate-yellow);
+  color: var(--accent-bright);
 }
 .clock-label {
   font-size: 0.72rem;
@@ -1711,7 +1739,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 .mini-ring { position: relative; display: inline-grid; place-items: center; flex: 0 0 auto; }
 .mini-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); display: block; }
 .mini-ring circle { fill: none; stroke-width: 5; stroke-linecap: round; }
-.mini-track { stroke: var(--paper-3); }
+.mini-track { stroke: var(--paper-2); }
 .mini-arc {
   stroke: var(--accent);
   transition: stroke-dasharray 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -1893,6 +1921,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   flex-direction: column;
   gap: 2px;
   min-height: 84px;
+  min-width: 0;
   box-shadow: var(--shadow-tap);
   cursor: pointer;
   font: inherit;
@@ -1901,7 +1930,7 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 }
 .tool:active { transform: scale(0.97); }
 .tool-ico { color: var(--accent); display: grid; margin-bottom: 4px; }
-.tool-name { font-weight: 650; letter-spacing: -0.01em; }
+.tool-name { font-weight: 650; letter-spacing: -0.01em; overflow-wrap: anywhere; }
 .tool-sub { font-size: 0.78rem; color: var(--ink-3); }
 @media (prefers-reduced-motion: reduce) { .tool { transition: none; } .tool:active { transform: none; } }
 
@@ -2008,7 +2037,9 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   position: absolute;
   inset: 4px;
   border-radius: 50%;
-  background: var(--paper);
+  /* Del color de la TARJETA, no del papel: la espina vive dentro de una
+     tarjeta blanca y con el gris del fondo el halo se veía como una mancha. */
+  background: var(--card);
 }
 .tl-mark > * { position: relative; }
 
@@ -2252,3 +2283,437 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
 }
 .rate-msg { font-size: 0.9rem; color: var(--ink-2); line-height: 1.45; margin: 12px 0 0; }
 @media (prefers-reduced-motion: reduce) { .rate-pin { transition: none; } }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   IDENTIDAD — calcada de la referencia
+
+   Lo que la define: verde de marca, todo en tarjetas blancas sobre papel gris,
+   chips redondos de color para cada macro, tarjetas tintadas para lo que
+   destaca, y entradas animadas. Aquí viven esas piezas.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Logotipo ── */
+.brand {
+  font-family: var(--display);
+  font-size: 1.45rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--ink);
+}
+.brand em { font-style: normal; color: var(--accent); }
+
+/* ── Cabecera de pantalla ── */
+.top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.top-round {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  border: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-2);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.top-round:active { background: var(--paper-3); }
+.screen-title {
+  font-family: var(--display);
+  font-size: 2.1rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin: 0;
+}
+.screen-sub { font-size: 0.92rem; color: var(--ink-2); margin: 5px 0 0; }
+
+/* ── Tarjetas ──
+   Todo vive en una tarjeta sobre papel gris: es lo que da el aire de la
+   referencia y lo que separa los bloques sin necesidad de rótulos. */
+.panel {
+  background: var(--card);
+  border-radius: var(--r-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+  margin-bottom: 14px;
+}
+.panel.tint-mint { background: var(--mint); box-shadow: none; }
+.panel.tint-cream { background: var(--cream); box-shadow: none; }
+.panel.tight { padding: 15px 16px; }
+
+/* Cabecera dentro de una tarjeta: icono, título y acción a la derecha. */
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.panel-head h3 {
+  font-family: var(--display);
+  font-size: 1.12rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  /* A 320 px, "Entrenamiento" junto a su chip y su enlace no cabe en una
+     línea: sin esto la palabra se salía de la tarjeta. */
+  overflow-wrap: anywhere;
+}
+.panel-link {
+  background: none;
+  border: 0;
+  padding: 4px 0;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+/* ── Chip redondo de color ──
+   El elemento más reconocible de la referencia: un círculo tintado con el
+   icono dentro, uno por macro. */
+.chip-ico {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+.chip-ico.sm { width: 34px; height: 34px; }
+.chip-ico.c-kcal { background: var(--c-kcal-bg); color: var(--c-kcal); }
+.chip-ico.c-protein { background: var(--c-protein-bg); color: var(--c-protein); }
+.chip-ico.c-carbs { background: var(--c-carbs-bg); color: var(--c-carbs); }
+.chip-ico.c-fat { background: var(--c-fat-bg); color: var(--c-fat); }
+.chip-ico.c-fiber { background: var(--c-fiber-bg); color: var(--c-fiber); }
+.chip-ico.c-ink { background: var(--paper-2); color: var(--ink-2); }
+
+/* ── Píldoras de periodo ── */
+.pills {
+  display: flex;
+  gap: 6px;
+  background: var(--paper-2);
+  padding: 4px;
+  border-radius: var(--r-pill);
+  margin-bottom: 16px;
+}
+.pills button {
+  flex: 1;
+  border: 0;
+  background: none;
+  border-radius: var(--r-pill);
+  padding: 10px 6px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+  min-height: 40px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.pills button[aria-pressed='true'] { background: var(--ink); color: var(--card); }
+
+/* ── Tira de tres cifras con separadores ── */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: var(--paper-2);
+  border-radius: var(--r);
+  padding: 14px 4px;
+  margin-bottom: 14px;
+}
+.strip > div { padding: 0 12px; min-width: 0; text-align: center; }
+.strip > div + div { border-left: 1px solid var(--rule-strong); }
+.strip-top {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 0.78rem;
+  margin-bottom: 4px;
+}
+.strip-value {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.strip-sub { font-size: 0.72rem; color: var(--ink-3); margin-top: 3px; }
+
+/* ── Entradas animadas ──
+   Las tarjetas aparecen escalonadas al abrir la pantalla. Es un gesto, no una
+   fiesta: 0,4 s y se acabó, y nada se mueve si se pide menos movimiento. */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.rise:nth-child(2) { animation-delay: 0.05s; }
+.rise:nth-child(3) { animation-delay: 0.1s; }
+.rise:nth-child(4) { animation-delay: 0.15s; }
+.rise:nth-child(5) { animation-delay: 0.2s; }
+.rise:nth-child(6) { animation-delay: 0.25s; }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
+
+/* ── Barra de progreso gruesa, como la de la referencia ── */
+.meter {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--card);
+  overflow: hidden;
+}
+.meter.on-card { background: var(--paper-2); }
+.meter > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) { .meter > span { transition: none; } }
+
+/* ── Dibujos de comida ── */
+.food-art {
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  overflow: hidden;
+}
+.food-art svg { width: 100%; height: 100%; display: block; }
+.tip-art { width: 92px; height: 64px; flex: 0 0 auto; }
+.trend-art { width: 64px; height: 36px; flex: 0 0 auto; }
+
+/* Navegación de día: una tira discreta, no una cabecera. */
+.daynav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.daynav > span {
+  font-size: 0.88rem;
+  font-weight: 650;
+  color: var(--ink-2);
+  text-transform: capitalize;
+}
+.top-round.sm { width: 34px; height: 34px; }
+.top-round:disabled { opacity: 0.35; cursor: default; }
+
+/* ── Objetivo del día: la tarjeta tintada de la referencia ── */
+.objective {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.objective-label { font-size: 0.84rem; color: var(--ink-2); }
+.objective-figure {
+  font-family: var(--display);
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.objective-figure span { font-size: 0.95rem; font-weight: 650; color: var(--ink-2); }
+.objective-left { text-align: right; }
+.objective-left span { display: block; font-size: 0.76rem; color: var(--ink-2); }
+.objective-left b {
+  font-family: var(--display);
+  font-size: 1.02rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Macros en chips ── */
+.macro-chips { display: grid; gap: 10px; }
+.macro-chip {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  width: 100%;
+}
+.macro-chip-body { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex: 1 1 auto; min-width: 0; }
+.macro-chip-name { font-size: 0.9rem; color: var(--ink-2); }
+.macro-chip-value {
+  font-family: var(--display);
+  font-weight: 750;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  flex: 0 0 auto;
+}
+.macro-chip-value small { font-weight: 500; color: var(--ink-3); font-size: 0.8rem; }
+
+/* ── Botón contorneado verde, como "+ Añadir comida" ── */
+.btn-outline {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 48px;
+  border-radius: var(--r-pill);
+  border: 1.5px solid var(--accent);
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.95rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: background-color 0.16s ease, transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-outline:active { background: var(--accent-soft); transform: scale(0.985); }
+
+/* ── Fila de ir a algo, con botón de reproducción ── */
+.go-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: var(--mint);
+  border: 0;
+  border-radius: var(--r);
+  padding: 13px 14px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  min-height: 70px;
+  transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.go-row:active { transform: scale(0.985); }
+.go-play {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-ink);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  padding-left: 2px;
+}
+.go-body { flex: 1 1 auto; min-width: 0; }
+.go-title { display: block; font-weight: 700; letter-spacing: -0.015em; }
+.go-meta { display: block; font-size: 0.82rem; color: var(--ink-2); margin-top: 2px; }
+
+/* ── Tarjeta de ánimo ── */
+.cheer { display: flex; align-items: center; gap: 12px; }
+.cheer-title { font-weight: 750; letter-spacing: -0.015em; color: var(--cream-ink); }
+.cheer-msg { margin: 4px 0 0; font-size: 0.86rem; color: var(--ink-2); line-height: 1.4; }
+
+/* Las fichas de comida de la espina llevan su dibujo delante. */
+.tl-item { gap: 11px; padding: 8px 11px 8px 8px; }
+.tl-item .food-art { border-radius: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-outline, .go-row { transition: none; }
+  .btn-outline:active, .go-row:active { transform: none; }
+}
+
+/* ── Anillo con la lista de macros al lado ── */
+.ringbox {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px;
+  align-items: center;
+  padding: 20px 16px;
+}
+.ring-emoji { display: block; font-size: 1.4rem; line-height: 1; margin-bottom: 2px; }
+.macrolist {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 16px;
+  border-left: 1px solid var(--rule);
+  display: grid;
+  gap: 13px;
+}
+.macrolist li { display: flex; align-items: center; gap: 10px; }
+.macrolist-name { display: block; font-size: 0.78rem; color: var(--ink-2); }
+.macrolist-value {
+  display: block;
+  font-family: var(--display);
+  font-size: 1.12rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+.macrolist-sub { display: block; font-size: 0.7rem; color: var(--ink-3); }
+
+/* En pantallas estrechas el anillo manda y la lista pasa debajo. */
+@media (max-width: 359px) {
+  .ringbox { grid-template-columns: 1fr; }
+  .macrolist { border-left: 0; padding-left: 0; padding-top: 14px; border-top: 1px solid var(--rule); }
+}
+
+/* ── Constancia como tarjeta tocable ── */
+.consist {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.consist-body { flex: 1 1 auto; min-width: 0; }
+.consist-title { display: block; font-weight: 700; letter-spacing: -0.015em; }
+.consist-read { display: block; font-size: 0.82rem; color: var(--ink-2); margin-top: 1px; }
+
+/* ── Tarjeta de consejo ── */
+.tip { display: flex; align-items: center; gap: 10px; }
+.tip-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 750;
+  font-size: 0.92rem;
+  letter-spacing: -0.015em;
+  color: var(--accent);
+}
+.tip-msg { margin: 5px 0 0; font-size: 0.85rem; color: var(--ink-2); line-height: 1.45; }
+
+/* ═══════════ La barra, con el verde de la referencia ═══════════
+   La cápsula pasa a ser un acento verde claro y el icono activo se rellena en
+   verde, con su rótulo debajo. El botón de añadir es el círculo verde grande. */
+.nav-pill { background: var(--accent-soft); }
+.nav-btn[aria-current='page'] { color: var(--accent); }
+.nav-add {
+  background: var(--accent);
+  color: var(--accent-ink);
+  width: 52px;
+  height: 52px;
+  box-shadow: 0 6px 16px -4px color-mix(in srgb, var(--accent) 55%, transparent);
+  box-shadow: 0 6px 16px -4px rgba(6, 161, 107, 0.45);
+}
+.nav-add:active { background: var(--accent-deep); }

@@ -13,7 +13,7 @@ const R = 52;
 const C = 2 * Math.PI * R;
 
 export interface RingSegment {
-  key: 'protein' | 'carbs' | 'fat';
+  key: 'kcal' | 'protein' | 'carbs' | 'fat';
   /** Energía aportada por ese macro, en kcal. */
   kcal: number;
 }
