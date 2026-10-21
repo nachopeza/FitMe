@@ -2687,3 +2687,57 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   box-shadow: 0 6px 16px -4px rgba(6, 161, 107, 0.45);
 }
 .nav-add:active { background: var(--accent-deep); }
+
+/* ════════════════════ Las cuentas atrás, apiladas ════════════════════
+   Pueden correr dos a la vez: el descanso entre series, que arranca solo, y el
+   temporizador que lanza él para una plancha o un isométrico. Van en una pila
+   para que la segunda no caiga encima de la primera, y la pila se mide sola
+   (--rest-h) para que lo que hay debajo reserve ese hueco: con el descanso en
+   marcha no se llegaba a ver ni la última serie ni los botones del pie. */
+.timers {
+  position: fixed;
+  left: 10px;
+  right: 10px;
+  bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 20px);
+  max-width: 540px;
+  margin: 0 auto;
+  z-index: 55;
+  display: grid;
+  gap: 8px;
+  /* Los hijos se posicionan solos dentro de la pila. */
+  pointer-events: none;
+}
+.timers > * { pointer-events: auto; }
+.timers .rest {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  max-width: none;
+  margin: 0;
+}
+/* Con las dos cuentas a la vez, cada tarjeta se aprieta: la cifra grande es
+   para mirarla a un metro con el móvil en el suelo, y dos a ese tamaño no
+   caben sin tapar la tabla de series. */
+.rest.compact { padding: 10px 14px 12px; }
+.rest.compact .rest-time { font-size: 2.1rem; margin-bottom: 8px; }
+.rest.compact .rest-actions button { min-height: 38px; padding: 8px 6px; font-size: 0.9rem; }
+.rest.compact .rest-label { margin-top: 1px; }
+
+.rest-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--iron-ink-2);
+  margin-top: 2px;
+}
+
+/* El hueco que reservan: lo escribe TimerStack al montarse y lo borra al
+   desmontarse, así que fuera de un descanso vale 0 y no sobra espacio. */
+.sheet-body { padding-bottom: calc(20px + var(--rest-h, 0px)); }
+/* Y lo mismo en las pantallas: puede cerrar la hoja con el descanso corriendo y
+   seguir viéndolo flotar sobre HOY. */
+.screen {
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom, 0px) + 52px + var(--rest-h, 0px));
+}

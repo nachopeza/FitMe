@@ -3,7 +3,7 @@ import type { Workout, WorkoutExercise, WorkoutSet } from './types';
 import {
   bestSet, describeSet, estimated1RM, exerciseVolume, formatSeconds, musclesWorked,
   nextSetTemplate, personalBest, previousPerformance, toTrainingSession, totalReps,
-  muscleSets, totalSets, workingSets, workoutMinutes, workoutVolume,
+  muscleSets, prefillNext, totalSets, workingSets, workoutMinutes, workoutVolume,
 } from './workout';
 
 const set = (s: Partial<WorkoutSet>): WorkoutSet => ({ done: true, ...s });
@@ -242,5 +242,38 @@ describe('mapa de músculos', () => {
   it('el calentamiento no cuenta', () => {
     const w = workout({ exercises: [ex('press-banca', [set({ kg: 20, reps: 12, warmup: true })])] });
     expect(muscleSets([w]).has('chest')).toBe(false);
+  });
+});
+
+// ── Arrastrar las cantidades a la siguiente serie ──
+// Las series de una rutina nacen vacías y había que teclear los mismos kilos
+// una y otra vez.
+describe('prefillNext', () => {
+  it('copia a la siguiente cuando está vacía', () => {
+    const sets = [{ kg: 20, reps: 8, done: true }, { done: false }];
+    expect(prefillNext(sets, 0)[1]).toMatchObject({ kg: 20, reps: 8 });
+  });
+
+  it('no pisa lo que ya está escrito', () => {
+    const sets = [{ kg: 20, reps: 8, done: true }, { kg: 25, done: false }];
+    expect(prefillNext(sets, 0)[1]).toMatchObject({ kg: 25 });
+    expect(prefillNext(sets, 0)[1].reps).toBeUndefined();
+  });
+
+  it('no arrastra en cascada: solo la de al lado', () => {
+    const sets = [{ kg: 20, reps: 8, done: true }, { done: false }, { done: false }];
+    const out = prefillNext(sets, 0);
+    expect(out[1]).toMatchObject({ kg: 20 });
+    expect(out[2].kg).toBeUndefined();
+  });
+
+  it('una serie vacía no tiene nada que copiar', () => {
+    const sets = [{ done: true }, { done: false }];
+    expect(prefillNext(sets, 0)).toBe(sets);
+  });
+
+  it('la última serie no tiene siguiente', () => {
+    const sets = [{ kg: 20, done: true }];
+    expect(prefillNext(sets, 0)).toBe(sets);
   });
 });

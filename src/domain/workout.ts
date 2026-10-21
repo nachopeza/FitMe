@@ -228,6 +228,31 @@ export function averageRest(w: Workout): number | null {
   return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
 }
 
+/** Una serie sin ningún número puesto: ni peso, ni reps, ni tiempo, ni km. */
+export function setIsEmpty(s: WorkoutSet): boolean {
+  return s.kg == null && s.reps == null && s.seconds == null && s.km == null;
+}
+
+/**
+ * Al marcar una serie, pasar sus cantidades a la siguiente que esté vacía.
+ *
+ * «+ Serie» ya copiaba la anterior, pero las series que vienen de una rutina
+ * nacen creadas y vacías, así que había que teclear los mismos 20 kg cuatro
+ * veces. Solo se rellena la siguiente, y solo si está del todo vacía: lo ya
+ * escrito no se toca nunca, y el arrastre no se propaga en cascada hasta el
+ * final de la tabla.
+ */
+export function prefillNext(sets: WorkoutSet[], index: number): WorkoutSet[] {
+  const from = sets[index];
+  const next = sets[index + 1];
+  if (!from || !next || setIsEmpty(from) || !setIsEmpty(next)) return sets;
+  return sets.map((s, i) => (
+    i === index + 1
+      ? { ...s, kg: from.kg, reps: from.reps, seconds: from.seconds, km: from.km }
+      : s
+  ));
+}
+
 /** Siguiente serie sugerida, copiando la anterior: es lo que se repite. */
 export function nextSetTemplate(ex: WorkoutExercise): WorkoutSet {
   const last = [...ex.sets].reverse().find((s) => s.kg != null || s.reps != null || s.seconds != null);

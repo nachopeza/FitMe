@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { EXERCISES_BY_ID, MUSCLE_LABEL } from '../../data/exercises';
 import type { Exercise, Workout, WorkoutExercise, WorkoutSet } from '../../domain/types';
 import {
-  averageRest, describeSet, estimated1RM, formatSeconds, nextSetTemplate, previousPerformance,
+  averageRest, describeSet, estimated1RM, formatSeconds, nextSetTemplate, prefillNext, previousPerformance,
   totalSets, workingSets, workoutMinutes, workoutVolume,
 } from '../../domain/workout';
 import { Sheet, g } from '../../ui/components';
@@ -11,7 +11,7 @@ import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
 import { photoUrl } from './ExerciseGuide';
 import { ExercisePicker } from './ExercisePicker';
-import { RestTimer } from './RestTimer';
+import { RestTimer, TimerStack } from './RestTimer';
 
 /**
  * Sesión de entrenamiento en marcha.
@@ -28,6 +28,10 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
   const ui = useUI();
   const [picking, setPicking] = useState(false);
   const [rest, setRest] = useState<{ endsAt: number; total: number } | null>(null);
+  /** Cuenta atrás que lanza él a mano: planchas, isométricos, lo que sea. Vive
+   *  aparte del descanso y los dos pueden correr a la vez. */
+  const [timer, setTimer] = useState<{ endsAt: number; total: number } | null>(null);
+  const [pickingTimer, setPickingTimer] = useState(false);
   const [confirmFinish, setConfirmFinish] = useState(false);
   const [elapsed, setElapsed] = useState(() => Date.now());
 
@@ -69,13 +73,16 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
   const toggleSet = (ex: WorkoutExercise, index: number) => {
     const set = ex.sets[index];
     const nowDone = !set.done;
-    patchExercise(ex.uid, (e) => ({
-      ...e,
+    patchExercise(ex.uid, (e) => {
       // Se guarda la hora de marcado: de ahí sale el descanso real de la sesión.
-      sets: e.sets.map((s, i) => (
+      const marcadas = e.sets.map((s, i) => (
         i === index ? { ...s, done: nowDone, completedAt: nowDone ? Date.now() : undefined } : s
-      )),
-    }));
+      ));
+      // Y al darla por buena, sus cantidades pasan a la siguiente si está
+      // vacía: las series de una rutina nacen así y no hay por qué teclear los
+      // mismos kilos cuatro veces.
+      return { ...e, sets: nowDone ? prefillNext(marcadas, index) : marcadas };
+    });
     // Marcar una serie es la señal de que ha terminado: empieza el descanso.
     if (nowDone && ex.restSeconds > 0) {
       setRest({ endsAt: Date.now() + ex.restSeconds * 1000, total: ex.restSeconds });
@@ -178,6 +185,27 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
           </div>
         </div>
 
+        {/* Temporizador aparte del descanso: para una plancha, un isométrico o
+            cualquier cosa que haya que cronometrar sin estar descansando. */}
+        <div className="btns" style={{ marginBottom: 12 }}>
+          <button className="btn quiet sm" onClick={() => setPickingTimer((v) => !v)}
+            aria-expanded={pickingTimer}>
+            <Icon name="timer" size={16} /> Temporizador
+          </button>
+        </div>
+        {pickingTimer && (
+          <div className="rest-picker" role="group" aria-label="Duración del temporizador">
+            {[20, 30, 45, 60, 90, 120, 180, 300].map((sec) => (
+              <button key={sec} className="chip sm" onClick={() => {
+                setTimer({ endsAt: Date.now() + sec * 1000, total: sec });
+                setPickingTimer(false);
+              }}>
+                {formatSeconds(sec)}
+              </button>
+            ))}
+          </div>
+        )}
+
         {workout.exercises.length === 0 ? (
           <div className="empty">
             <strong>Sesión vacía</strong>
@@ -197,22 +225,42 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
         )}
       </Sheet>
 
-      {rest && (
-        <RestTimer
-          endsAt={rest.endsAt}
-          total={rest.total}
-          onDismiss={() => setRest(null)}
-          onAdd={(s) => setRest((r) => {
-            if (!r) return r;
-            // Restar no puede dejar el descanso en negativo ni la barra sin
-            // referencia: el suelo es ahora mismo y un total de 15 s.
-            const endsAt = Math.max(Date.now(), r.endsAt + s * 1000);
-            return { endsAt, total: Math.max(15, r.total + s) };
-          })}
-        />
+      {(rest || timer) && (
+        <TimerStack>
+          {timer && (
+            <RestTimer
+              endsAt={timer.endsAt}
+              total={timer.total}
+              label="Temporizador"
+              done="¡Tiempo!"
+              dismiss="Parar"
+              compact={!!rest}
+              onDismiss={() => setTimer(null)}
+              onAdd={(s) => setTimer((t) => (t ? estirar(t, s) : t))}
+            />
+          )}
+          {rest && (
+            <RestTimer
+              endsAt={rest.endsAt}
+              total={rest.total}
+              label={timer ? 'Descanso' : undefined}
+              compact={!!timer}
+              onDismiss={() => setRest(null)}
+              onAdd={(s) => setRest((r) => (r ? estirar(r, s) : r))}
+            />
+          )}
+        </TimerStack>
       )}
     </>
   );
+}
+
+/**
+ * Mover una cuenta atrás ±15 s. Restar no puede dejarla en negativo ni la barra
+ * sin referencia: el suelo es ahora mismo y un total de 15 s.
+ */
+function estirar(t: { endsAt: number; total: number }, s: number) {
+  return { endsAt: Math.max(Date.now(), t.endsAt + s * 1000), total: Math.max(15, t.total + s) };
 }
 
 /** Un ejercicio dentro de la sesión, con su tabla de series. */
