@@ -20,24 +20,25 @@ import { FoodEditSheet } from '../features/sheets/FoodEditSheet';
 import { MyBasics } from '../features/sheets/MyBasics';
 import { Icon, type IconName } from './icons';
 import { useUI, type Tab } from './shell';
+import { chunk } from './recovery';
 
 /**
  * Carga diferida de lo que pesa y no se abre en cada sesión: las gráficas
  * (recharts), la cámara con el lector de códigos y las herramientas. La pantalla
  * de hoy, que es la que se abre siempre, no espera por nada de esto.
  */
-const ProgressScreen = lazy(() => import('./screens/Progress').then((m) => ({ default: m.ProgressScreen })));
-const MacrosSheet = lazy(() => import('./screens/Macros').then((m) => ({ default: m.MacrosSheet })));
-const PhotoAnalyze = lazy(() => import('../features/capture/PhotoAnalyze').then((m) => ({ default: m.PhotoAnalyze })));
-const BarcodeScan = lazy(() => import('../features/capture/BarcodeScan').then((m) => ({ default: m.BarcodeScan })));
-const LabelScan = lazy(() => import('../features/capture/LabelScan').then((m) => ({ default: m.LabelScan })));
-const RecipeSheet = lazy(() => import('../features/recipes/RecipeSheet').then((m) => ({ default: m.RecipeSheet })));
-const CalculatorSheet = lazy(() => import('../features/tools/Tools').then((m) => ({ default: m.CalculatorSheet })));
-const CompareSheet = lazy(() => import('../features/tools/Tools').then((m) => ({ default: m.CompareSheet })));
-const ShoppingSheet = lazy(() => import('../features/tools/Tools').then((m) => ({ default: m.ShoppingSheet })));
-const RoutineSheet = lazy(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.RoutineSheet })));
+const ProgressScreen = lazy(() => chunk(() => import('./screens/Progress').then((m) => ({ default: m.ProgressScreen }))));
+const MacrosSheet = lazy(() => chunk(() => import('./screens/Macros').then((m) => ({ default: m.MacrosSheet }))));
+const PhotoAnalyze = lazy(() => chunk(() => import('../features/capture/PhotoAnalyze').then((m) => ({ default: m.PhotoAnalyze }))));
+const BarcodeScan = lazy(() => chunk(() => import('../features/capture/BarcodeScan').then((m) => ({ default: m.BarcodeScan }))));
+const LabelScan = lazy(() => chunk(() => import('../features/capture/LabelScan').then((m) => ({ default: m.LabelScan }))));
+const RecipeSheet = lazy(() => chunk(() => import('../features/recipes/RecipeSheet').then((m) => ({ default: m.RecipeSheet }))));
+const CalculatorSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.CalculatorSheet }))));
+const CompareSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.CompareSheet }))));
+const ShoppingSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.ShoppingSheet }))));
+const RoutineSheet = lazy(() => chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.RoutineSheet }))));
 const ExerciseHistorySheet = lazy(() =>
-  import('../features/workout/RoutineSheet').then((m) => ({ default: m.ExerciseHistorySheet })),
+  chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.ExerciseHistorySheet }))),
 );
 
 function Loading({ children }: { children: ReactNode }) {

@@ -139,9 +139,27 @@ export function Sheet({
 }) {
   const ref = useRef<HTMLDivElement>(null);
 
+  // onClose casi siempre llega como función en línea (`onClose={() => …}`), así
+  // que cambia de identidad en CADA render del padre. Guardarla en una ref es
+  // lo que permite que el efecto de abajo no lleve dependencias.
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
+
+  // Enfocar la hoja y bloquear el scroll SOLO al abrirla.
+  //
+  // Esto tenía [onClose] como dependencia, y ahí estaba el fallo que hacía
+  // desaparecer el teclado en el móvil: al escribir un dígito en una serie se
+  // guardaba el entreno, el padre volvía a renderizar, onClose era una función
+  // nueva, el efecto se repetía y ref.current.focus() le robaba el foco al
+  // campo. Un dígito y fuera. Pasaba en todas las hojas con campos, no solo en
+  // el entreno.
+  //
+  // El mismo [onClose] rompía el scroll: en la segunda vuelta, `prev` ya valía
+  // 'hidden', así que al cerrar la hoja se «restauraba» el bloqueo y la página
+  // de debajo se quedaba sin poder desplazarse.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') closeRef.current();
     };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
@@ -151,7 +169,7 @@ export function Sheet({
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, []);
 
   return (
     <>

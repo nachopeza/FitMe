@@ -216,6 +216,51 @@ export function ActiveWorkout({ workout, onClose }: { workout: Workout; onClose:
 }
 
 /** Un ejercicio dentro de la sesión, con su tabla de series. */
+/**
+ * Un número de una serie: kg, repeticiones, segundos o km.
+ *
+ * Guarda en cada pulsación —si cierra la app a mitad de serie no se pierde lo
+ * anotado— pero pinta lo que se está escribiendo, no lo guardado. Con el valor
+ * leído de la base de datos en `value`, teclear «32,5» acababa en 325: al
+ * escribir la coma, `Number('32,')` ya daba un 32 válido que se guardaba y se
+ * repintaba encima de la coma, y el siguiente dígito se pegaba detrás. Un
+ * error de un factor de diez en el peso, y callado.
+ *
+ * El filtro de la expresión regular descarta lo que no es un número, como
+ * hacía el `return` de antes, pero sin dejar en el campo un texto que la base
+ * de datos no tiene: lo que no cuela, no entra.
+ */
+function SetInput({ value, decimal, label, placeholder, onCommit }: {
+  value: number | undefined;
+  decimal?: boolean;
+  label: string;
+  placeholder: string;
+  onCommit: (n: number | undefined) => void;
+}) {
+  // null = no se está escribiendo en el campo; manda la base de datos.
+  const [text, setText] = useState<string | null>(null);
+  const forma = decimal ? /^\d*(?:[.,]\d*)?$/ : /^\d*$/;
+
+  return (
+    <input
+      className="set-input"
+      inputMode={decimal ? 'decimal' : 'numeric'}
+      value={text ?? (value == null ? '' : String(value))}
+      placeholder={placeholder}
+      aria-label={label}
+      onFocus={() => setText(value == null ? '' : String(value))}
+      onBlur={() => setText(null)}
+      onChange={(e) => {
+        const raw = e.target.value;
+        if (!forma.test(raw)) return;
+        setText(raw);
+        const n = Number(raw.replace(',', '.'));
+        onCommit(raw === '' || !Number.isFinite(n) ? undefined : n);
+      }}
+    />
+  );
+}
+
 function ExerciseBlock({
   ex, workoutId, onToggleSet, onPatch, onRemove,
 }: {
@@ -237,9 +282,7 @@ function ExerciseBlock({
     [ex.exerciseId, app.workouts, workoutId],
   );
 
-  const setField = (index: number, field: keyof WorkoutSet, raw: string) => {
-    const value = raw.trim() === '' ? undefined : Number(raw.replace(',', '.'));
-    if (raw.trim() !== '' && !Number.isFinite(value)) return;
+  const setField = (index: number, field: keyof WorkoutSet, value: number | undefined) => {
     onPatch((e) => ({ ...e, sets: e.sets.map((s, i) => (i === index ? { ...s, [field]: value } : s)) }));
   };
 
@@ -345,32 +388,32 @@ function ExerciseBlock({
                 {previous && <td className="set-prev">{prevSet ? describeSet(prevSet, kind) : '—'}</td>}
                 {showsWeight && (
                   <td>
-                    <input className="set-input" inputMode="decimal" value={set.kg ?? ''}
+                    <SetInput value={set.kg} decimal
                       placeholder={prevSet?.kg != null ? String(prevSet.kg) : '0'}
-                      aria-label={`Peso de la serie ${i + 1}`}
-                      onChange={(e) => setField(i, 'kg', e.target.value)} />
+                      label={`Peso de la serie ${i + 1}`}
+                      onCommit={(n) => setField(i, 'kg', n)} />
                   </td>
                 )}
                 {showsReps && (
                   <td>
-                    <input className="set-input" inputMode="numeric" value={set.reps ?? ''}
+                    <SetInput value={set.reps}
                       placeholder={prevSet?.reps != null ? String(prevSet.reps) : '0'}
-                      aria-label={`Repeticiones de la serie ${i + 1}`}
-                      onChange={(e) => setField(i, 'reps', e.target.value)} />
+                      label={`Repeticiones de la serie ${i + 1}`}
+                      onCommit={(n) => setField(i, 'reps', n)} />
                   </td>
                 )}
                 {showsTime && (
                   <td>
-                    <input className="set-input" inputMode="numeric" value={set.seconds ?? ''} placeholder="0"
-                      aria-label={`Segundos de la serie ${i + 1}`}
-                      onChange={(e) => setField(i, 'seconds', e.target.value)} />
+                    <SetInput value={set.seconds} placeholder="0"
+                      label={`Segundos de la serie ${i + 1}`}
+                      onCommit={(n) => setField(i, 'seconds', n)} />
                   </td>
                 )}
                 {showsDistance && (
                   <td>
-                    <input className="set-input" inputMode="decimal" value={set.km ?? ''} placeholder="0"
-                      aria-label={`Kilómetros de la serie ${i + 1}`}
-                      onChange={(e) => setField(i, 'km', e.target.value)} />
+                    <SetInput value={set.km} decimal placeholder="0"
+                      label={`Kilómetros de la serie ${i + 1}`}
+                      onCommit={(n) => setField(i, 'km', n)} />
                   </td>
                 )}
                 <td>
