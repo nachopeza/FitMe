@@ -22,8 +22,10 @@ export default defineConfig({
         name: 'FitMe — Asistente nutricional',
         short_name: 'FitMe',
         description: 'Contador de macros y asistente nutricional para ganancia muscular controlada',
-        theme_color: '#f5f7f8',
-        background_color: '#f5f7f8',
+        // El mismo --paper del tema claro: la pantalla de arranque y el cromo
+        // de la app instalada no deben cambiar con el modo del móvil.
+        theme_color: '#f7f8fb',
+        background_color: '#f7f8fb',
         display: 'standalone',
         orientation: 'portrait',
         // Relativos, para que la app se pueda instalar igual servida desde la

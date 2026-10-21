@@ -7,6 +7,7 @@ import { Section, Field, MACRO_META, NumberInput, Segmented, WhyButton, g } from
 import { MacroAnalysis } from '../../features/sheets/MacroAnalysis';
 import { Icon } from '../icons';
 import { useUI } from '../shell';
+import { applyTheme } from '../theme';
 
 const ACTIVITY_LABEL: Record<ActivityLevel, string> = {
   sedentary: 'Sedentaria (trabajo sentado, poco movimiento)',
@@ -211,15 +212,21 @@ export function ProfileScreen() {
 
       <Section title="Apariencia">
         <Segmented value={app.settings.theme} onChange={(v) => { void app.actions.setSettings({ theme: v }); applyTheme(v); }}
-          options={[{ value: 'dark' as const, label: 'Oscuro' }, { value: 'light' as const, label: 'Claro' }, { value: 'system' as const, label: 'Sistema' }]} />
+          options={[{ value: 'light' as const, label: 'Claro' }, { value: 'dark' as const, label: 'Oscuro' }, { value: 'system' as const, label: 'Según el móvil' }]} />
+        <p className="note" style={{ marginTop: 8 }}>
+          Claro y Oscuro mandan siempre, estés donde estés. «Según el móvil» es la única opción que
+          hace que la app cambie cuando tu iPhone cambia de modo.
+        </p>
       </Section>
 
       {/* ── Privacidad ── */}
       <Section title="Tus datos y privacidad">
         <p className="note">
-          Todo se guarda solo en este dispositivo. No hay cuenta, no hay servidor y nada se usa para
-          publicidad. Las únicas conexiones externas son la consulta de códigos de barras y, si la activas tú,
-          el análisis de fotos con IA.
+          Tus datos se guardan en este dispositivo. Nada se usa para publicidad, ni se vende, ni se
+          comparte. Solo salen de aquí si activas tú mismo la cuenta: entonces se copian a tu propio
+          servidor de Supabase, el que creas tú con tus claves, y nadie más que tú puede leerlos. Las
+          otras conexiones externas son la consulta de códigos de barras y, si la activas tú, el
+          análisis de fotos con IA.
         </p>
         <div className="btns">
           <button className="btn sm" disabled={busy} onClick={async () => {
@@ -267,8 +274,3 @@ export function ProfileScreen() {
   );
 }
 
-export function applyTheme(theme: 'dark' | 'light' | 'system') {
-  const root = document.documentElement;
-  if (theme === 'system') root.removeAttribute('data-theme');
-  else root.setAttribute('data-theme', theme);
-}

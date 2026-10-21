@@ -7,10 +7,10 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
     <!-- El color de tema pinta la barra de estado del iPhone: tiene que ser el
-         del papel de la app, no un azul oscuro, o se ve una franja ajena
-         encima del contenido. Se declara en los dos modos. -->
-    <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f5f7f8" />
-    <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#111417" />
+         del papel de la app o se ve una franja ajena encima del contenido. Uno
+         solo, sin media query: sigue a la app, no al modo del móvil. El script
+         de abajo lo corrige si el tema elegido es el oscuro. -->
+    <meta name="theme-color" content="#f7f8fb" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <!-- Translúcida: el contenido sube hasta arriba y las áreas seguras del CSS
@@ -21,6 +21,29 @@
     <!-- iOS no lee los iconos del manifiesto para la pantalla de inicio. -->
     <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
     <title>FitMe</title>
+    <!-- El tema, antes de pintar. Si esto se hiciera en React (en un efecto,
+         después del primer pintado) la app arrancaría con el modo del móvil y
+         saltaría al suyo un instante después. localStorage es lo único que se
+         puede leer aquí de forma síncrona; IndexedDB manda, y el efecto de
+         React vuelve a aplicar lo que haya guardado. Claro es el valor por
+         defecto: es el diseño de la app. -->
+    <script>
+      (function () {
+        try {
+          var c = localStorage.getItem('fitme.theme') || 'light';
+          var dark =
+            c === 'dark' ||
+            (c === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+          if (dark) {
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.content = '#0f141c';
+          }
+        } catch (e) {
+          document.documentElement.setAttribute('data-theme', 'light');
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -10,7 +10,8 @@ import { SavedMealsSheet } from '../features/recipes/RecipeSheet';
 import { COMPOSITIONS } from '../data/compositions';
 import { Sheet } from './components';
 import { Onboarding } from './screens/Onboarding';
-import { ProfileScreen, applyTheme } from './screens/ProfileScreen';
+import { ProfileScreen } from './screens/ProfileScreen';
+import { applyTheme, watchSystemTheme } from './theme';
 import { TodayScreen } from './screens/Today';
 import { WorkoutScreen } from './screens/Workout';
 import { AccountSheet } from '../features/account/AccountSheet';
@@ -60,7 +61,11 @@ export function App() {
   const ui = useUI();
 
   useEffect(() => {
+    // El script de index.html ya pintó el tema guardado antes del primer
+    // pintado; esto lo reconcilia con IndexedDB, que es la fuente de verdad, y
+    // con «Sistema» se queda escuchando el modo del móvil mientras esté abierta.
     applyTheme(app.settings.theme);
+    return watchSystemTheme(app.settings.theme);
   }, [app.settings.theme]);
 
   if (app.phase === 'loading') {

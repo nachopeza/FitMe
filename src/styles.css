@@ -127,50 +127,12 @@
 
 /* Modo oscuro completo. El claro es el predeterminado porque es lo que se
    pidió; aquí los verdes y los chips suben de luminosidad para sostener el
-   contraste sobre fondo oscuro sin dejar de ser los mismos colores. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    color-scheme: dark;
-    --paper: #0f141c;
-    --paper-2: #161d27;
-    --paper-3: #202833;
-    --card: #161d27;
-    --ink: #eef2f7;
-    --ink-2: #a3aebd;
-    --ink-3: #74808f;
-    --rule: #232b36;
-    --rule-strong: #333d4a;
-    --accent: #2ecb91;
-    --accent-ink: #04231a;
-    --accent-bright: #3ddb9e;
-    --accent-deep: #1fa877;
-    --accent-soft: #102b22;
-    --accent-line: #1d4537;
-    --mint: #10241f;
-    --cream: #2a2318;
-    --cream-ink: #e0b472;
-    --c-kcal: #2ecb91;
-    --c-kcal-bg: #102b22;
-    --c-protein: #5fa5f0;
-    --c-protein-bg: #152338;
-    --c-carbs: #f0a35e;
-    --c-carbs-bg: #2e2316;
-    --c-fat: #a68cf0;
-    --c-fat-bg: #231d38;
-    --c-fiber: #7cbc82;
-    --c-fiber-bg: #19271a;
-    --iron: #080c12;
-    --iron-2: #131a23;
-    --iron-ink: #eef2f7;
-    --iron-ink-2: #8d97a6;
-    --iron-line: #222a35;
-    --over: #d8a85f;
-    --over-soft: #2a2318;
-    --warn: #c9a227;
-    --shadow-tap: 0 1px 2px rgba(0, 0, 0, 0.35);
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
-  }
-}
+   contraste sobre fondo oscuro sin dejar de ser los mismos colores.
+
+   No hay media query de prefers-color-scheme a propósito: el script de
+   index.html deja data-theme siempre puesto, así que la app tiene un solo
+   bloque oscuro en vez de dos copias que se desincronizan, y no cambia con
+   el modo del móvil salvo que elijas «Sistema» en el perfil. */
 :root[data-theme='dark'] {
   color-scheme: dark;
   --paper: #0f141c;
