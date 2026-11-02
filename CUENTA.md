@@ -65,7 +65,7 @@ Se guardan tu perfil, las pesadas, las comidas, los días, los entrenos, las
 rutinas, las comidas habituales, las recetas y los alimentos y ejercicios que
 **tú** hayas creado o corregido.
 
-No se sube el catálogo que trae la app —190 alimentos y 96 ejercicios—, porque
+No se sube el catálogo que trae la app —193 alimentos y 96 ejercicios—, porque
 es idéntico en todos los dispositivos y serían cientos de filas para nada.
 Tampoco se sube la clave del análisis de fotos con IA: esa se queda en cada
 móvil.
@@ -80,6 +80,8 @@ resucitado.
 
 ## Si prefieres no tener cuenta
 
-Entonces haz copias de seguridad de vez en cuando: **Perfil → Datos y
-privacidad → Exportar**. Baja un archivo con todo, y se puede volver a importar.
-Es menos cómodo que la cuenta, pero igual de válido.
+Entonces haz copias de seguridad de vez en cuando: **Perfil → Tus datos y copia
+de seguridad → Guardar copia**. Baja un archivo con todo, y desde ahí mismo se
+puede restaurar. Es menos cómodo que la cuenta, pero igual de válido. Esa misma
+pantalla te dice si el navegador ha concedido almacenamiento permanente, que es
+lo que evita que Safari te borre los datos por inactividad.
