@@ -42,6 +42,10 @@ const ROWS: Row[] = [
   { id: 'carne-picada-mixta-cocinada', name: 'Carne picada mixta (cocinada)', al: ['carne picada', 'picada', 'carne'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [254, 25, 0, 17, 0, 6.8, 0, 90], pair: 'carne-picada-mixta-cruda', p: [P('ración', 120, true)] },
   { id: 'ternera-picada-5-cruda', name: 'Carne picada de ternera 5% (cruda)', al: ['picada magra'], cat: 'protein', src: 'redMeat', st: 'raw', n: [137, 21, 0, 5, 0, 2.2, 0, 70], yield: 0.75 },
   { id: 'entrecot-cocinado', name: 'Entrecot (cocinado)', al: ['entrecot', 'chuletón', 'filete de ternera'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [271, 27, 0, 18, 0, 7.5, 0, 75], p: [P('pieza', 220, true)] },
+  // El plan pesa la carne y el pescado EN CRUDO, así que hacen falta las dos
+  // caras: sin la fila cruda habría que convertir a ojo, que es justo lo que
+  // esta base evita. El rendimiento es la merma al cocinar (agua, sobre todo).
+  { id: 'ternera-filete-crudo', name: 'Filete de ternera magro (crudo)', al: ['ternera cruda', 'filete crudo', 'ternera magra'], cat: 'protein', src: 'redMeat', st: 'raw', n: [141, 22, 0, 5.4, 0, 2.1, 0, 55], yield: 0.72, pair: 'ternera-filete-cocinado', vol: 'medium', p: [P('filete', 150, true)] },
   { id: 'ternera-filete-cocinado', name: 'Filete de ternera magro (cocinado)', al: ['ternera', 'filete'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [197, 31, 0, 7.5, 0, 2.9, 0, 70], p: [P('filete', 130, true)] },
   { id: 'cerdo-lomo-cocinado', name: 'Lomo de cerdo (cocinado)', al: ['lomo', 'cerdo'], cat: 'protein', src: 'redMeat', st: 'cooked', n: [206, 30, 0, 9, 0, 3.2, 0, 70], p: [P('filete', 120, true)] },
   { id: 'jamon-serrano', name: 'Jamón serrano', al: ['jamón', 'jamon iberico', 'jamón ibérico'], cat: 'protein', src: 'redMeat', st: 'product', n: [241, 31, 0.3, 12.5, 0, 4.5, 0.3, 2300], p: [P('loncha', 15, true), P('ración', 60)] },
@@ -53,6 +57,7 @@ const ROWS: Row[] = [
   { id: 'anchoas', name: 'Anchoas en aceite', al: ['anchoa', 'boquerones en aceite'], cat: 'protein', src: 'fish', st: 'product', n: [210, 25, 0, 12, 0, 2.8, 0, 3600], p: [P('filete', 5, true), P('lata', 50)] },
   { id: 'langostinos-cocidos', name: 'Langostinos cocidos', al: ['langostino', 'gambas', 'camarones'], cat: 'protein', src: 'fish', st: 'cooked', n: [99, 21, 0.2, 1.2, 0, 0.3, 0, 700], p: [P('unidad', 12, true), P('ración', 120)] },
   { id: 'salmon-cocinado', name: 'Salmón (cocinado)', al: ['salmón'], cat: 'protein', src: 'fish', st: 'cooked', n: [208, 25, 0, 12, 0, 2.5, 0, 70], p: [P('lomo', 140, true)] },
+  { id: 'merluza-cruda', name: 'Merluza (cruda)', al: ['merluza cruda', 'pescado blanco crudo'], cat: 'protein', src: 'fish', st: 'raw', n: [82, 18, 0, 0.8, 0, 0.2, 0, 90], yield: 0.8, pair: 'merluza-cocinada', p: [P('lomo', 200, true)] },
   { id: 'merluza-cocinada', name: 'Merluza (cocinada)', al: ['merluza', 'pescado blanco'], cat: 'protein', src: 'fish', st: 'cooked', n: [104, 23, 0, 1, 0, 0.2, 0, 110], p: [P('lomo', 150, true)] },
   { id: 'bacalao-cocinado', name: 'Bacalao (cocinado)', al: ['bacalao'], cat: 'protein', src: 'fish', st: 'cooked', n: [105, 23, 0, 0.9, 0, 0.2, 0, 90] },
   { id: 'sardinas-lata', name: 'Sardinillas en aceite (escurridas)', al: ['sardinas'], cat: 'protein', src: 'fish', st: 'product', n: [208, 24, 0, 12, 0, 2.6, 0, 500], p: [P('lata', 60, true)] },
@@ -257,6 +262,9 @@ const ROWS: Row[] = [
   { id: 'crema-cacao', name: 'Crema de cacao con avellanas', al: ['nocilla', 'nutella', 'crema de cacao'], cat: 'other', st: 'product', n: [539, 6.3, 56, 31, 3.4, 10.6, 55, 40], vol: 'low', p: [P('cucharada', 15, true)] },
 
   // Platos preparados y salsas
+  // La masa preparada varía mucho entre marcas; por eso el plan dice «revisa
+  // etiqueta» y por eso la app repite ese aviso donde se usa.
+  { id: 'masa-pizza', name: 'Masa de pizza preparada', al: ['masa pizza', 'base de pizza'], cat: 'carb', n: [271, 8.2, 50, 3.4, 2.2, 0.8, 2.5, 480], p: [P('base', 250, true)] },
   { id: 'pizza-margarita', name: 'Pizza margarita (horneada)', al: ['pizza', 'pizza margarita'], cat: 'carb', src: 'cereal', st: 'product', n: [250, 10, 30, 9, 2, 4, 3, 550], p: [P('pizza entera', 350, true), P('porción', 90)] },
   { id: 'mostaza', name: 'Mostaza', al: ['mostaza'], cat: 'other', st: 'product', n: [66, 4, 5, 3, 3, 0.2, 1, 1100], p: [P('cucharadita', 5, true)] },
   { id: 'vinagre-balsamico', name: 'Vinagre balsámico', al: ['vinagre balsámico', 'vinagre de módena', 'vinagre'], cat: 'other', st: 'product', unit: 'ml', n: [88, 0.5, 17, 0, 0, 0, 15, 23], p: [P('cucharada', 15, true)] },
@@ -312,4 +320,4 @@ function expand(row: Row): Food {
 export const SEED_FOODS: Food[] = ROWS.map(expand);
 
 /** Versión del seed: al subirla, la base se re-siembra sin tocar datos del usuario. */
-export const SEED_VERSION = 3;
+export const SEED_VERSION = 4;

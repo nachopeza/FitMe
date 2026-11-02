@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { parsePhrase, type ParseResult } from '../../domain/parser';
+import { parsePhrase, preferRawWeights, type ParseResult } from '../../domain/parser';
 import { EstimateNotice, Sheet } from '../../ui/components';
 import { useApp } from '../store';
 import { itemsFromParsed } from '../logging';
@@ -59,7 +59,11 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
 
   const analyse = () => {
     const result = parsePhrase(text, app.foodIndex);
-    setParsed(result);
+    // Los gramos que dice van en crudo/seco, como manda su plan. El buscador
+    // tiende al cocinado porque es como se nombra la comida, y eso convertía
+    // cada pesada en otro número. En la pantalla siguiente puede volver al
+    // cocinado de un toque si lo pesó ya hecho.
+    setParsed({ ...result, items: preferRawWeights(result.items, app.foodsById) });
   };
 
   if (parsed) {
@@ -76,7 +80,7 @@ export function VoiceLog({ onClose }: { onClose: () => void }) {
         notice={
           <EstimateNotice>
             Lo que no has dicho en gramos va estimado a partir de raciones habituales. Un «plato de arroz» no
-            es un dato exacto: puedes corregirlo debajo.
+            es un dato exacto: puedes corregirlo debajo. Los gramos van en crudo o en seco, como pesa tu plan.
           </EstimateNotice>
         }
       />

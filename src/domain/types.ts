@@ -457,6 +457,9 @@ export interface AppSettings {
   /** Mostrar u ocultar micronutrientes secundarios. */
   showSecondaryNutrients: boolean;
   theme: 'dark' | 'light' | 'system';
+  /** Los objetivos salen de su plan nutricional, no del cálculo de la app.
+   *  Por defecto sí: cuando hay una hoja escrita, manda la hoja. */
+  usePlanTargets?: boolean;
   lastBackupAt?: number;
   /**
    * Cuenta en la nube. Vacío = la app funciona entera en local, que es como

@@ -11,6 +11,7 @@ import {
 import { bootPhase, type BootPhase } from './bootState';
 import { makeItem } from './logging';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
+import { planTargets, type ResolvedMeal } from '../domain/plan';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
 } from '../domain/nutrition';
@@ -109,6 +110,8 @@ interface AppContextValue {
     logSavedMeal: (mealId: string) => Promise<string | null>;
     /** Registra una ración por defecto de un alimento suelto, de un toque. */
     logBasicFood: (foodId: string) => Promise<string | null>;
+    /** Registra una comida del plan con las cantidades de la hoja. */
+    logPlanMeal: (meal: ResolvedMeal) => Promise<string | null>;
     /** Marca o desmarca un alimento como básico suyo. */
     toggleBasicFood: (foodId: string) => Promise<void>;
 
@@ -254,10 +257,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const foodsById = useMemo(() => new Map(foods.map((f) => [f.id, f] as const)), [foods]);
   const foodIndex = useMemo<FoodIndex>(() => buildIndex(foods), [foods]);
 
+  /**
+   * De dónde salen los objetivos.
+   *
+   * Manda su plan nutricional. La app sabe calcular los suyos, pero cuando hay
+   * una hoja escrita por alguien, esa gana: los números de la app serían una
+   * segunda opinión compitiendo con la que él sigue, y dos objetivos distintos
+   * en la misma pantalla no ayudan a nadie. En el perfil puede volver a los
+   * calculados si algún día deja el plan.
+   */
   const baseTargets = useMemo<MacroTargets>(() => {
+    if (settings.usePlanTargets !== false) return planTargets();
     if (profile) return profile.targets;
     return makeDefaultProfile().targets;
-  }, [profile]);
+  }, [profile, settings.usePlanTargets]);
 
   const dayType = useMemo<DayType>(
     () =>
@@ -280,9 +293,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return sessionExtraKcal(kg, day.training);
   }, [day, weights, profile]);
 
+  /**
+   * El objetivo del día.
+   *
+   * La app sube y baja la energía según el tipo de día, y está bien cuando los
+   * objetivos los calcula ella. Con un plan escrito, no: la hoja dice
+   * 2.300–2.500 y dice además «mantén las comidas normales los demás días», así
+   * que modularlo le enseñaba 2.080–2.390 en un día de descanso, un número que
+   * no está en su plan y que le haría comer todavía menos. Con el plan puesto,
+   * el objetivo es el del plan y punto.
+   */
+  const usandoPlan = settings.usePlanTargets !== false;
   const targets = useMemo(
-    () => targetsForDay(baseTargets, dayType, sessionExtra),
-    [baseTargets, dayType, sessionExtra],
+    () => (usandoPlan ? baseTargets : targetsForDay(baseTargets, dayType, sessionExtra)),
+    [usandoPlan, baseTargets, dayType, sessionExtra],
   );
   const consumed = useMemo(() => nutrientsForEntries(entries), [entries]);
   const remaining = useMemo(() => remainingFor(consumed, targets), [consumed, targets]);
@@ -451,6 +475,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
           createdAt: Date.now(),
         });
         await markSavedMealUsed(mealId);
+        return entryId;
+      },
+
+      /**
+       * Registrar una comida del plan tal cual está escrita.
+       *
+       * Es el atajo que de verdad quita pereza: su plan ya dice 120 g de arroz
+       * y 180 g de pollo, así que no hay nada que decidir ni que buscar. Las
+       * cantidades son las de la hoja y se marcan como pesadas, porque lo son:
+       * el plan se pesa.
+       */
+      logPlanMeal: async (meal) => {
+        const rows = await db.foods.bulkGet(meal.parts.map((p) => p.food.id));
+        const found = rows.filter((f): f is Food => !!f);
+        if (!found.length) return null;
+        const byId = new Map(found.map((f) => [f.id, f]));
+        const time = nowTime();
+        const entryId = newId('e-');
+        await addEntry({
+          id: entryId,
+          date,
+          slot: meal.slot,
+          time,
+          name: meal.name,
+          items: meal.parts.flatMap((part, idx) => {
+            const food = byId.get(part.food.id);
+            if (!food) return [];
+            return [{
+              ...makeItem(food, part.grams, 'g', { confidence: 'exact' }),
+              id: `i-${entryId}-${idx}`,
+            }];
+          }),
+          method: 'saved',
+          createdAt: Date.now(),
+        });
         return entryId;
       },
 

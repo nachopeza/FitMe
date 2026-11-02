@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { SEED_FOODS } from '../data/foods';
-import { buildIndex, digitizeNumbers, normalize, parsePhrase, searchFoods, segment } from './parser';
+import {
+  buildIndex, digitizeNumbers, normalize, parsePhrase, preferRawWeights, searchFoods, segment,
+} from './parser';
 
 const index = buildIndex(SEED_FOODS);
 const parse = (s: string) => parsePhrase(s, index);
@@ -183,5 +185,70 @@ describe('tamaños en lenguaje humano', () => {
 
   it('la ración lleva el tamaño en la etiqueta', () => {
     expect(parse('un plátano pequeño').items[0].portionLabel).toContain('pequeño');
+  });
+});
+
+// ── Lo que salió de una frase real suya ──
+// «70gr de arroz 100gr de carne de pollo 2 huevos y ensalada de tomate».
+// Así es como se escribe con el móvil en una mano: sin comas y con la unidad
+// pegada al número. Dos fallos salieron de ahí, y los dos falseaban el registro.
+describe('cómo escribe de verdad', () => {
+  it('la unidad pegada al número son gramos, no raciones', () => {
+    // «70gr» daba 70 RACIONES de pollo: unos siete kilos. Cien veces de más.
+    const r = parsePhrase('70gr de arroz', index);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].unit).toBe('g');
+    expect(r.items[0].grams).toBe(70);
+  });
+
+  it('sin comas, cada cantidad abre un alimento nuevo', () => {
+    const r = parsePhrase('70 gr de arroz 100 gr de pollo', index);
+    expect(r.items).toHaveLength(2);
+    expect(r.items.map((i) => i.grams)).toEqual([70, 100]);
+  });
+
+  it('los gramos de un alimento no se le pegan al siguiente', () => {
+    // Lo peor del fallo anterior: el arroz se perdía y sus 70 g acababan en el
+    // pollo, así que el registro decía 70 g de pollo en vez de 100.
+    const r = parsePhrase('70 gr de arroz 100 gr de carne de pollo', index);
+    const pollo = r.items.find((i) => /pollo/i.test(i.foodName));
+    expect(pollo?.grams).toBe(100);
+  });
+
+  it('una cantidad al principio no parte su propio trozo', () => {
+    const r = parsePhrase('2 huevos', index);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0].quantity).toBe(2);
+  });
+
+  it('lo que no reconoce lo dice en vez de tragárselo', () => {
+    const r = parsePhrase('platrano y otro cafe', index);
+    expect(r.unmatched).toContain('platrano');
+  });
+});
+
+// ── Los pesos de su plan son en crudo ──
+describe('preferRawWeights', () => {
+  const foods = new Map(SEED_FOODS.map((f) => [f.id, f]));
+
+  it('los gramos de arroz son de arroz en seco', () => {
+    const items = preferRawWeights(parsePhrase('70 g de arroz', index).items, foods);
+    expect(items[0].foodId).toBe('arroz-crudo');
+    expect(items[0].grams).toBe(70);
+  });
+
+  it('los gramos de pollo son en crudo', () => {
+    const items = preferRawWeights(parsePhrase('100 g de pollo', index).items, foods);
+    expect(items[0].foodName).toMatch(/crud/i);
+  });
+
+  it('una ración no se toca: ahí no hay pesada que respetar', () => {
+    const items = preferRawWeights(parsePhrase('un filete de ternera', index).items, foods);
+    expect(items[0].foodName).toMatch(/cocinad/i);
+  });
+
+  it('un alimento sin pareja se queda igual', () => {
+    const items = preferRawWeights(parsePhrase('200 g de tomate', index).items, foods);
+    expect(items[0].foodId).toBe('tomate');
   });
 });

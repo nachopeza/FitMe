@@ -21,6 +21,13 @@ export function normalize(s: string): string {
     .replace(/[^a-z0-9ñ.,\s]/g, ' ')
     // La coma entre dígitos es un decimal ("0,2 kg"), no un separador de lista.
     .replace(/(\d),(\d)/g, '$1.$2')
+    // Separa el número de la unidad pegada: "70gr" → "70 gr", "400ml" → "400 ml".
+    //
+    // Sin esto, las unidades no casaban —se buscan con \b y entre «0» y «g» no
+    // hay frontera de palabra— y «70gr de arroz» acababa siendo 70 RACIONES en
+    // vez de 70 gramos: un error de cien veces en lo que se registra. Y así es
+    // como se escribe de verdad con el móvil en una mano.
+    .replace(/(\d)\s*(kg|kilos?|kilogramos?|gramos?|grs?|gr|g|litros?|l|mililitros?|ml|cl)\b/g, '$1 $2')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -225,8 +232,51 @@ export function buildIndex(foods: Food[]): FoodIndex {
 export function segment(text: string): string[] {
   return text
     .split(/,| y | e | mas | ademas | tambien | con | junto a | acompanado de /)
+    .flatMap(splitOnNewAmount)
     .map((s) => s.trim())
     .filter((s) => s.length > 1);
+}
+
+/**
+ * Parte un trozo cada vez que aparece una cantidad nueva.
+ *
+ * La gente no pone comas: escribe «70 gr de arroz 100 gr de pollo 2 huevos».
+ * Como eso llegaba entero al buscador, se quedaba con UN alimento —el que mejor
+ * casaba— y los demás se perdían; peor aún, los gramos del primero se le
+ * pegaban al que sobrevivía, así que 70 g de arroz acababan siendo 70 g de
+ * pollo. Un número de otro alimento es la peor forma de equivocarse.
+ *
+ * El corte se hace antes de la cantidad, y solo si ya hay algo escrito delante:
+ * así «2 huevos» no se parte por su propio número.
+ */
+// El (?<![\d.]) es lo que impide partir un decimal: sin él, «0.2 kg» se cortaba
+// entre el «0.» y el «2 kg», y 200 g se convertían en 2 kg. Diez veces de más,
+// que en una pesada es peor que no registrar.
+const CANTIDAD = /(?=(?<![\d.])\b\d+(?:\.\d+)?\s*(?:kg|kilos?|kilogramos?|gramos?|grs?|gr|g|litros?|l|mililitros?|ml|cl|unidades?|uds?|piezas?|lonchas?|rodajas?|filetes?|vasos?|tazas?|platos?|cucharadas?|cucharaditas?)?\b)/;
+
+/** Muletillas que van con el número que viene DETRÁS, no con lo de delante. */
+const ARRASTRA = /\b(unos|unas|como|aproximadamente|mas o menos|masomenos|casi|sobre|creo)\s*$/;
+
+function splitOnNewAmount(seg: string): string[] {
+  const partes = seg.split(CANTIDAD).filter((x) => x.trim().length > 0);
+  if (partes.length < 2) return [seg];
+  // Se vuelven a pegar los trozos que no empiezan por un número: un corte que
+  // deja «de arroz» suelto no sirve de nada.
+  const out: string[] = [];
+  for (const parte of partes) {
+    if (/^\s*\d/.test(parte) || out.length === 0) out.push(parte);
+    else out[out.length - 1] += parte;
+  }
+  // «unos 100 gramos de carne» se parte dejando el «unos» en el trozo anterior,
+  // y con él se iba la señal de que la cantidad es aproximada: el registro
+  // pasaba a decir «exacto» sobre algo que él dijo a ojo.
+  for (let i = 0; i < out.length - 1; i++) {
+    const m = ARRASTRA.exec(out[i]);
+    if (!m) continue;
+    out[i] = out[i].slice(0, m.index);
+    out[i + 1] = `${m[1]} ${out[i + 1].trimStart()}`;
+  }
+  return out.filter((x) => x.trim().length > 0);
 }
 
 // ───────────────────────────── Resultado ─────────────────────────────
@@ -517,4 +567,30 @@ export function searchFoods(query: string, foods: Food[], limit = 30): Food[] {
     if (score > 0) scored.push({ food, score });
   }
   return scored.sort((a, b) => b.score - a.score).slice(0, limit).map((s) => s.food);
+}
+
+/**
+ * Pasa a crudo/seco lo que se dijo en gramos, cuando el alimento tiene pareja.
+ *
+ * Su plan lo dice en una línea: «arroz y pasta pesados en seco; carne y pescado
+ * en crudo». El buscador, en cambio, tiende al cocinado, que es como se nombra
+ * normalmente («pollo» = pechuga cocinada). Al escribir «100 g de pollo» se
+ * registraban 165 kcal donde él había pesado 120, y «70 g de arroz» daba 91 kcal
+ * en vez de 248. Con esa diferencia en cada comida, el registro del día no vale.
+ *
+ * Solo toca los gramos explícitos. Una ración —«un filete», «un plato»— se deja
+ * como está: ahí no hay pesada que respetar, y las raciones del catálogo están
+ * pensadas en lo que se sirve. Y solo cambia de estado, nunca de alimento ni de
+ * cantidad: el usuario sigue viendo los gramos que dijo, y en la pantalla de
+ * confirmación puede volver al cocinado de un toque.
+ */
+export function preferRawWeights(items: ParsedItem[], foods: Map<string, Food>): ParsedItem[] {
+  return items.map((item) => {
+    if (item.unit === 'portion') return item;
+    const food = foods.get(item.foodId);
+    if (!food || food.state !== 'cooked' || !food.counterpartId) return item;
+    const raw = foods.get(food.counterpartId);
+    if (!raw || raw.state !== 'raw') return item;
+    return { ...item, foodId: raw.id, foodName: raw.name };
+  });
 }

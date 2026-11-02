@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useApp } from '../features/store';
 import { ManualLog } from '../features/capture/ManualLog';
 import { VoiceLog } from '../features/capture/VoiceLog';
@@ -8,7 +8,11 @@ import { DayStateSheet, TrainingSheet, WeightSheet } from '../features/sheets/Da
 import { AiSheet, EntrySheet, FoodSheet, HistorySheet, PrivacySheet, TargetsSheet } from '../features/sheets/MiscSheets';
 import { SavedMealsSheet } from '../features/recipes/RecipeSheet';
 import { COMPOSITIONS } from '../data/compositions';
-import { Sheet } from './components';
+import { nowTime } from '../domain/dates';
+import { scaleNutrients } from '../domain/nutrition';
+import { itemsNutrients } from '../features/logging';
+import { iconForText, quickAddItems, slotFromHour } from '../features/quickAdd';
+import { Sheet, g } from './components';
 import { Onboarding } from './screens/Onboarding';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { applyTheme, watchSystemTheme } from './theme';
@@ -37,6 +41,7 @@ const CalculatorSheet = lazy(() => chunk(() => import('../features/tools/Tools')
 const CompareSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.CompareSheet }))));
 const ShoppingSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.ShoppingSheet }))));
 const RoutineSheet = lazy(() => chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.RoutineSheet }))));
+const PlanSheet = lazy(() => chunk(() => import('../features/plan/PlanSheet').then((m) => ({ default: m.PlanSheet }))));
 const ExerciseHistorySheet = lazy(() =>
   chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.ExerciseHistorySheet }))),
 );
@@ -184,6 +189,7 @@ function SheetRouter() {
     case 'ai': return <AiSheet onClose={close} />;
     case 'routine': return <RoutineSheet id={s.id} onClose={close} />;
     case 'exercise': return <ExerciseHistorySheet id={s.id} onClose={close} />;
+    case 'plan': return <PlanSheet onClose={close} />;
     case 'workout': return <WorkoutRedirect />;
     default: return null;
   }
@@ -241,6 +247,45 @@ function AddMenu() {
   // Se dice aquí, antes de hacer la foto, en vez de dejar que parezca averiado.
   const aiReady = app.settings.aiProvider === 'anthropic' && !!app.settings.aiApiKey;
 
+  /** Sus básicos, resueltos a la ración por defecto de cada alimento. */
+  const basicFoods = useMemo(
+    () => (app.profile?.basicFoodIds ?? []).flatMap((id) => {
+      const food = app.foodsById.get(id);
+      if (!food) return [];
+      const portion = food.portions.find((p) => p.isDefault) ?? food.portions[0];
+      return [{
+        id: food.id,
+        name: food.name,
+        icon: iconForText(food.name),
+        portionLabel: portion?.label ?? '100 g',
+        nutrients: scaleNutrients(food.per100g, portion?.grams ?? 100),
+        useCount: 0,
+      }];
+    }),
+    [app.profile?.basicFoodIds, app.foodsById],
+  );
+
+  const habituales = useMemo(
+    () => quickAddItems({
+      savedMeals: app.savedMeals,
+      macrosOf: (meal) => itemsNutrients(meal.items),
+      slot: slotFromHour(nowTime()),
+      limit: 6,
+      basics: basicFoods,
+    }).filter((item) => item.kind !== 'composition'),
+    [app.savedMeals, basicFoods],
+  );
+
+  const addHabitual = async (item: (typeof habituales)[number]) => {
+    const id = item.kind === 'basic'
+      ? await app.actions.logBasicFood(item.id)
+      : await app.actions.logSavedMeal(item.id);
+    if (id) {
+      ui.close();
+      ui.notify(`${item.name} · ${g(item.kcal)} kcal`, () => app.actions.deleteEntry(id));
+    }
+  };
+
   const tiles: { sheet: Parameters<typeof ui.replace>[0]; icon: IconName; label: string; sub: string }[] = [
     { sheet: { k: 'voice' }, icon: 'mic', label: 'Voz', sub: 'Dilo y ya' },
     { sheet: { k: 'saved' }, icon: 'star', label: 'Guardado', sub: 'Tus habituales' },
@@ -254,7 +299,28 @@ function AddMenu() {
 
   return (
     <Sheet title="Añadir" onClose={ui.close}>
-      {/* Lo componible va primero: es lo que más veces se registra. */}
+      {/* Sus habituales, de un toque.
+          Esto estaba en un carrusel en HOY, y HOY ahora lo ocupa el plan. Pero
+          lo que se registra a diario no puede costar más que antes, así que lo
+          que él más usa abre este menú en vez de cerrarlo. */}
+      {habituales.length > 0 && (
+        <div className="field">
+          <span className="field-label">Lo que más repites</span>
+          <div className="quick">
+            {habituales.map((item) => (
+              <button className="quick-tile" key={item.key} onClick={() => void addHabitual(item)}>
+                <span style={{ color: 'var(--accent)', display: 'grid' }}><Icon name={item.icon} size={19} /></span>
+                <span className="quick-name">{item.name}</span>
+                <span className="quick-macros">
+                  {item.instant ? `${g(item.kcal)} kcal` : item.note ?? 'Elegir'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lo componible va después: es lo que más veces se registra. */}
       <div className="field">
         <span className="field-label">Montar al momento</span>
         <div className="quick">
@@ -295,12 +361,6 @@ function AddMenu() {
         </div>
       </div>
 
-      {app.savedMeals.length > 0 && (
-        <p className="note tight">
-          Tienes {app.savedMeals.length} {app.savedMeals.length === 1 ? 'comida habitual' : 'comidas habituales'}.
-          Las más usadas salen directamente en Hoy.
-        </p>
-      )}
     </Sheet>
   );
 }
