@@ -44,7 +44,8 @@ export type SheetSpec =
   | { k: 'exercise'; id: string }
   | { k: 'plan' }
   | { k: 'copyDay' }
-  | { k: 'data' };
+  | { k: 'data' }
+  | { k: 'planMeal'; id: string };
 
 interface UIContextValue {
   tab: Tab;

@@ -28,6 +28,8 @@ export interface ResolvedMeal {
   /** El rango de kcal que da la hoja, para poder contrastar. */
   kcalFrom?: number;
   kcalTo?: number;
+  /** true si las cantidades son suyas y no las de la hoja. */
+  edited?: boolean;
 }
 
 function resolveParts(parts: PlanPart[], foods: Map<string, Food>) {
@@ -49,8 +51,28 @@ function resolveParts(parts: PlanPart[], foods: Map<string, Food>) {
   return { parts: out, missing };
 }
 
-export function resolveMeal(meal: PlanMeal, foods: Map<string, Food>): ResolvedMeal {
-  const { parts, missing } = resolveParts(meal.parts, foods);
+/** Cantidades propias que sustituyen a las de la hoja, por id de comida. */
+export type PlanOverrides = Record<string, { foodId: string; grams: number }[]>;
+
+/**
+ * Las partes que valen: las suyas si las ha ajustado, y si no, las de la hoja.
+ *
+ * Un plan es un punto de partida, no una condena. Si come 100 g de arroz y no
+ * 120, enseñarle 120 cada día es enseñarle algo que no se come, y eso convierte
+ * el registro en un trámite. Se guarda lo que él pone y la hoja queda debajo,
+ * recuperable.
+ */
+function partsToUse(id: string, parts: PlanPart[], overrides?: PlanOverrides): PlanPart[] {
+  const mio = overrides?.[id];
+  return mio && mio.length ? mio : parts;
+}
+
+export function resolveMeal(
+  meal: PlanMeal,
+  foods: Map<string, Food>,
+  overrides?: PlanOverrides,
+): ResolvedMeal {
+  const { parts, missing } = resolveParts(partsToUse(meal.id, meal.parts, overrides), foods);
   return {
     id: meal.id,
     name: meal.name,
@@ -62,19 +84,26 @@ export function resolveMeal(meal: PlanMeal, foods: Map<string, Food>): ResolvedM
     optional: meal.optional,
     kcalFrom: meal.kcalFrom,
     kcalTo: meal.kcalTo,
+    edited: !!overrides?.[meal.id]?.length,
   };
 }
 
-export function resolveDinner(dinner: PlanDinner, foods: Map<string, Food>): ResolvedMeal {
-  const { parts, missing } = resolveParts(dinner.parts, foods);
+export function resolveDinner(
+  dinner: PlanDinner,
+  foods: Map<string, Food>,
+  overrides?: PlanOverrides,
+): ResolvedMeal {
+  const id = `plan-cena-${dinner.weekday}`;
+  const { parts, missing } = resolveParts(partsToUse(id, dinner.parts, overrides), foods);
   return {
-    id: `plan-cena-${dinner.weekday}`,
+    id,
     name: dinner.name,
     slot: 'dinner',
     parts,
     missing,
     nutrients: sumNutrients(parts.map((p) => p.nutrients)),
     note: dinner.note ?? 'Cena de la rotación. Puedes cambiarla por la de otro día.',
+    edited: !!overrides?.[id]?.length,
   };
 }
 
@@ -84,10 +113,14 @@ export function resolveDinner(dinner: PlanDinner, foods: Map<string, Food>): Res
  * El día de la semana entra como parámetro en vez de leerse del reloj para que
  * se pueda probar cualquier día sin tocar la hora del sistema.
  */
-export function planForDay(weekday: number, foods: Map<string, Food>): ResolvedMeal[] {
+export function planForDay(
+  weekday: number,
+  foods: Map<string, Food>,
+  overrides?: PlanOverrides,
+): ResolvedMeal[] {
   return [
-    ...PLAN_MEALS.map((m) => resolveMeal(m, foods)),
-    resolveDinner(dinnerFor(weekday), foods),
+    ...PLAN_MEALS.map((m) => resolveMeal(m, foods, overrides)),
+    resolveDinner(dinnerFor(weekday), foods, overrides),
   ];
 }
 

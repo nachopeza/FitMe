@@ -104,3 +104,64 @@ describe('los objetivos del plan', () => {
     expect(kcalMax).toBeLessThan(t.kcal.max * 1.1);
   });
 });
+
+// ── Sus cantidades mandan sobre las de la hoja ──
+describe('cantidades propias', () => {
+  const taper = PLAN_MEALS.find((m) => m.id === 'plan-taper')!;
+
+  it('sin ajustes, manda la hoja', () => {
+    const r = resolveMeal(taper, foods);
+    expect(r.parts[0].grams).toBe(120);
+    expect(r.edited).toBe(false);
+  });
+
+  it('con ajuste, mandan las suyas', () => {
+    const r = resolveMeal(taper, foods, {
+      'plan-taper': [{ foodId: 'arroz-crudo', grams: 100 }, { foodId: 'huevo', grams: 165 }],
+    });
+    expect(r.parts.map((p) => p.grams)).toEqual([100, 165]);
+    expect(r.edited).toBe(true);
+    // Y los macros se recalculan con lo suyo, no con lo de la hoja.
+    expect(r.nutrients.kcal).toBeLessThan(resolveMeal(taper, foods).nutrients.kcal);
+  });
+
+  it('un ajuste de otra comida no toca esta', () => {
+    const r = resolveMeal(taper, foods, { 'plan-merienda': [{ foodId: 'platano', grams: 200 }] });
+    expect(r.parts[0].grams).toBe(120);
+    expect(r.edited).toBe(false);
+  });
+
+  it('una lista vacía no cuenta como ajuste: se vuelve a la hoja', () => {
+    const r = resolveMeal(taper, foods, { 'plan-taper': [] });
+    expect(r.parts[0].grams).toBe(120);
+    expect(r.edited).toBe(false);
+  });
+
+  it('las cenas también se pueden ajustar', () => {
+    const lunes = PLAN_DINNERS.find((d) => d.weekday === 1)!;
+    const r = resolveDinner(lunes, foods, { 'plan-cena-1': [{ foodId: 'pasta-cruda', grams: 140 }] });
+    expect(r.parts).toHaveLength(1);
+    expect(r.parts[0].grams).toBe(140);
+  });
+
+  it('el ajuste SUSTITUYE la lista, no la completa', () => {
+    // Es a propósito, y es lo que permite quitar un alimento: si solo añadiera
+    // o cambiara gramos, no habría forma de decir «hoy sin huevo».
+    const soloArroz = resolveMeal(taper, foods, {
+      'plan-taper': [{ foodId: 'arroz-crudo', grams: 200 }],
+    });
+    expect(soloArroz.parts).toHaveLength(1);
+    expect(soloArroz.nutrients.kcal).toBeLessThan(resolveMeal(taper, foods).nutrients.kcal);
+  });
+
+  it('el día entero cuenta con sus cantidades', () => {
+    const mas = planForDay(1, foods, {
+      'plan-taper': taper.parts.map((p) => ({
+        foodId: p.foodId,
+        grams: p.foodId === 'arroz-crudo' ? 200 : p.grams,
+      })),
+    });
+    const sin = planForDay(1, foods);
+    expect(mas[1].nutrients.kcal).toBeGreaterThan(sin[1].nutrients.kcal);
+  });
+});

@@ -44,6 +44,7 @@ const CompareSheet = lazy(() => chunk(() => import('../features/tools/Tools').th
 const ShoppingSheet = lazy(() => chunk(() => import('../features/tools/Tools').then((m) => ({ default: m.ShoppingSheet }))));
 const RoutineSheet = lazy(() => chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.RoutineSheet }))));
 const PlanSheet = lazy(() => chunk(() => import('../features/plan/PlanSheet').then((m) => ({ default: m.PlanSheet }))));
+const PlanMealSheet = lazy(() => chunk(() => import('../features/plan/PlanMealSheet').then((m) => ({ default: m.PlanMealSheet }))));
 const ExerciseHistorySheet = lazy(() =>
   chunk(() => import('../features/workout/RoutineSheet').then((m) => ({ default: m.ExerciseHistorySheet }))),
 );
@@ -192,6 +193,7 @@ function SheetRouter() {
     case 'routine': return <RoutineSheet id={s.id} onClose={close} />;
     case 'exercise': return <ExerciseHistorySheet id={s.id} onClose={close} />;
     case 'plan': return <PlanSheet onClose={close} />;
+    case 'planMeal': return <PlanMealSheet id={s.id} onClose={close} />;
     case 'copyDay': return <CopyDaySheet onClose={close} />;
     case 'data': return <DataSheet onClose={close} />;
     case 'workout': return <WorkoutRedirect />;

@@ -3052,3 +3052,84 @@ img.preview { width: 100%; border-radius: var(--r); display: block; }
   color: var(--over);
 }
 .check-list li[data-ok] .check-mark { background: var(--accent-soft); color: var(--accent-deep); }
+
+/* ══════════════ Cantidades editables ══════════════
+   El gramaje de cada alimento, con sus pasos de 10 y su papelera. Los botones
+   son grandes porque esto se usa con una mano y a veces con guantes. */
+.qty-list { display: grid; gap: 10px; }
+.qty-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--rule);
+}
+.qty-row:last-child { border-bottom: 0; padding-bottom: 0; }
+.qty-body { min-width: 0; grid-column: 1 / -1; }
+.qty-name { font-weight: 600; font-size: 0.92rem; overflow-wrap: anywhere; }
+.qty-meta { font-size: 0.78rem; color: var(--ink-3); margin-top: 1px; }
+.qty-input {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  grid-column: 1 / 3;
+}
+.qty-input .input {
+  width: 72px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  padding: 10px 6px;
+}
+.qty-unit { font-size: 0.82rem; color: var(--ink-3); }
+.qty-step {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--rule-strong);
+  background: var(--paper-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+.qty-step:active { background: var(--paper-3); }
+
+/* Lo ya registrado, bajo su momento del plan: pulsable para corregirlo. */
+.plan-done {
+  grid-column: 2 / -1;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.plan-done:active { background: var(--accent-line); }
+.plan-done-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plan-done-kcal { flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+.plan-tag.mine { color: var(--accent-deep); background: var(--accent-soft); }
+
+/* La fila del plan se pulsa para ajustarla, así que su cuerpo es un botón. */
+button.plan-body {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+button.plan-body:active { opacity: 0.6; }

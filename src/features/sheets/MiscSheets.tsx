@@ -1,14 +1,18 @@
 import { useMemo, useState } from 'react';
 import { deleteAllData } from '../../data/db';
 import { formatDayLabel, lastNDays } from '../../domain/dates';
-import { computeTargets, profileAge } from '../../domain/nutrition';
+import { computeTargets, profileAge, scaleNutrients, sumNutrients } from '../../domain/nutrition';
 import { nutrientsForEntries, groupEntriesByDate } from '../../domain/trends';
 import { describeSession } from '../../domain/training';
-import { MACRO_KEYS, MEAL_SLOT_LABEL, type MacroKey, type MacroTargets } from '../../domain/types';
+import {
+  MACRO_KEYS, MEAL_SLOT_LABEL, type MacroKey, type MacroTargets, type MealEntry,
+} from '../../domain/types';
 import { Section, EstimateNotice, Field, MACRO_META, MacroPills, NumberInput, Sheet, g } from '../../ui/components';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
-import { CONFIDENCE_LABEL, entryNutrients, shareOfDay } from '../logging';
+import { entryNutrients, shareOfDay } from '../logging';
+import { Icon } from '../../ui/icons';
+import { FoodPicker } from '../plan/FoodPicker';
 import { DEFAULT_AI_MODEL, describeAiError, testApiKey } from '../capture/aiClient';
 
 // ───────────────────────────── Detalle de una comida ─────────────────────────────
@@ -60,26 +64,106 @@ export function EntrySheet({ id, onClose }: { id: string; onClose: () => void })
         </div>
       )}
 
-      <div className="card">
-        <div className="card-title"><span>Alimentos</span></div>
-        <div className="rows">
-          {entry.items.map((i) => (
-            <button className="row" key={i.id} onClick={() => { onClose(); ui.open({ k: 'food', id: i.foodId }); }}>
-              <div className="row-body">
-                <div className="row-name">{i.foodName}</div>
-                <div className="row-meta">
-                  {Math.round(i.grams)} g
-                  {i.confidence !== 'exact' && <span className="tag" style={{ marginLeft: 6 }}>≈ {CONFIDENCE_LABEL[i.confidence]}</span>}
-                </div>
-              </div>
-              <div className="row-num">{g(i.nutrients.kcal)} kcal<br />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-faint)' }}>{g(i.nutrients.protein)} g prot</span>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
+      <EntryItems entry={entry} onClose={onClose} />
     </Sheet>
+  );
+}
+
+/**
+ * Los alimentos de una comida, con los gramos a mano.
+ *
+ * Antes esto era una lista de solo lectura: se veía «120 g» y no había forma de
+ * cambiarlo. Una pesada mal puesta solo se arreglaba borrando la comida entera y
+ * volviéndola a montar, que es justo la fricción que hace que se deje de
+ * registrar. Los macros se recalculan desde el alimento: un gramaje nuevo con
+ * las calorías viejas sería peor que no poder editar.
+ */
+function EntryItems({ entry, onClose }: { entry: MealEntry; onClose: () => void }) {
+  const app = useApp();
+  const ui = useUI();
+  const [lineas, setLineas] = useState(
+    () => entry.items.map((i) => ({ foodId: i.foodId, grams: Math.round(i.grams) })),
+  );
+  const [picking, setPicking] = useState(false);
+  const [guardando, setGuardando] = useState(false);
+
+  const original = entry.items.map((i) => `${i.foodId}:${Math.round(i.grams)}`).join('|');
+  const ahora = lineas.map((l) => `${l.foodId}:${l.grams}`).join('|');
+  const cambiado = original !== ahora;
+
+  const total = sumNutrients(lineas.flatMap((l) => {
+    const food = app.foodsById.get(l.foodId);
+    return food ? [scaleNutrients(food.per100g, l.grams)] : [];
+  }));
+
+  if (picking) {
+    return (
+      <FoodPicker
+        title="Añadir a la comida"
+        onClose={() => setPicking(false)}
+        onPick={(food) => {
+          const porcion = food.portions.find((p) => p.isDefault) ?? food.portions[0];
+          setLineas((prev) => [...prev, { foodId: food.id, grams: Math.round(porcion?.grams ?? 100) }]);
+          setPicking(false);
+        }}
+      />
+    );
+  }
+
+  const guardar = async () => {
+    setGuardando(true);
+    try {
+      await app.actions.updateEntryItems(entry.id, lineas);
+      ui.notify('Cantidades actualizadas.');
+      onClose();
+    } finally { setGuardando(false); }
+  };
+
+  return (
+    <div className="field">
+      <span className="field-label">Alimentos y cantidades</span>
+      <div className="qty-list">
+        {lineas.map((l, i) => {
+          const food = app.foodsById.get(l.foodId);
+          const n = food ? scaleNutrients(food.per100g, l.grams) : null;
+          return (
+            <div className="qty-row" key={`${l.foodId}-${i}`}>
+              <div className="qty-body">
+                <div className="qty-name">{food?.name ?? l.foodId}</div>
+                <div className="qty-meta">{n ? `${g(n.kcal)} kcal · ${g(n.protein)} g prot` : '—'}</div>
+              </div>
+              <div className="qty-input">
+                <button className="qty-step" aria-label={`Bajar 10 gramos de ${food?.name ?? ''}`}
+                  onClick={() => setLineas((p) => p.map((x, j) => (j === i ? { ...x, grams: Math.max(0, x.grams - 10) } : x)))}>−</button>
+                <input className="input" inputMode="numeric" value={String(l.grams)}
+                  aria-label={`Gramos de ${food?.name ?? l.foodId}`}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^\d]/g, '');
+                    setLineas((p) => p.map((x, j) => (j === i ? { ...x, grams: raw === '' ? 0 : Math.min(3000, Number(raw)) } : x)));
+                  }} />
+                <span className="qty-unit">{food?.unit ?? 'g'}</span>
+                <button className="qty-step" aria-label={`Subir 10 gramos de ${food?.name ?? ''}`}
+                  onClick={() => setLineas((p) => p.map((x, j) => (j === i ? { ...x, grams: Math.min(3000, x.grams + 10) } : x)))}>+</button>
+              </div>
+              <button className="icon-btn" aria-label={`Quitar ${food?.name ?? 'el alimento'}`}
+                onClick={() => setLineas((p) => p.filter((_, j) => j !== i))}>
+                <Icon name="trash" size={16} />
+              </button>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="btns" style={{ marginTop: 10 }}>
+        <button className="btn sm" onClick={() => setPicking(true)}>
+          <Icon name="plus" size={15} /> Añadir alimento
+        </button>
+        <button className="btn primary sm" disabled={!cambiado || guardando || !lineas.length}
+          onClick={() => void guardar()}>
+          {cambiado ? `Guardar · ${g(total.kcal)} kcal` : 'Sin cambios'}
+        </button>
+      </div>
+    </div>
   );
 }
 

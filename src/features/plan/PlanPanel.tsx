@@ -25,7 +25,10 @@ export function PlanPanel() {
   const ui = useUI();
 
   const weekday = useMemo(() => new Date(`${app.date}T12:00:00`).getDay(), [app.date]);
-  const meals = useMemo(() => planForDay(weekday, app.foodsById), [weekday, app.foodsById]);
+  const meals = useMemo(
+    () => planForDay(weekday, app.foodsById, app.settings.planOverrides),
+    [weekday, app.foodsById, app.settings.planOverrides],
+  );
 
   /** Lo comido en cada franja, para contrastarlo con lo que el plan pone ahí. */
   const eaten = useMemo(() => {
@@ -34,6 +37,19 @@ export function PlanPanel() {
       const n = entryNutrients(e);
       const prev = map.get(e.slot);
       map.set(e.slot, prev ? { ...prev, kcal: prev.kcal + n.kcal, protein: prev.protein + n.protein } : n);
+    }
+    return map;
+  }, [app.entries]);
+
+  /** Lo registrado en cada franja, para poder tocarlo y corregirlo.
+   *  Esto faltaba: con el plan delante no quedaba nada que pulsar, y lo que se
+   *  registra mal hay que poder arreglarlo desde donde se ve. */
+  const registradas = useMemo(() => {
+    const map = new Map<MealSlot, typeof app.entries>();
+    for (const e of app.entries) {
+      const list = map.get(e.slot);
+      if (list) list.push(e);
+      else map.set(e.slot, [e]);
     }
     return map;
   }, [app.entries]);
@@ -70,13 +86,14 @@ export function PlanPanel() {
           return (
             <li className="plan-row" key={meal.id} data-state={estado}>
               <span className="plan-dot" aria-hidden="true" />
-              <div className="plan-body">
+              <button className="plan-body" onClick={() => ui.open({ k: 'planMeal', id: meal.id })}>
                 <div className="plan-name">
                   {meal.name}
                   {meal.optional && <span className="plan-tag">opcional</span>}
+                  {meal.edited && <span className="plan-tag mine">a tu medida</span>}
                 </div>
                 <div className="plan-what">{resumen(meal)}</div>
-              </div>
+              </button>
               <div className="plan-kcal">
                 {comido > 0 ? (
                   <>
@@ -97,6 +114,16 @@ export function PlanPanel() {
               >
                 <Icon name={cubierta ? 'check' : 'plus'} size={17} />
               </button>
+
+              {/* Lo que ya ha registrado en esta franja, para poder tocarlo. */}
+              {(registradas.get(meal.slot) ?? []).map((e) => (
+                <button className="plan-done" key={e.id} onClick={() => ui.open({ k: 'entry', id: e.id })}>
+                  <Icon name="check" size={13} />
+                  <span className="plan-done-name">{e.name || 'Comida'}</span>
+                  <span className="plan-done-kcal">{g(entryNutrients(e).kcal)} kcal</span>
+                  <Icon name="chevron" size={14} />
+                </button>
+              ))}
             </li>
           );
         })}

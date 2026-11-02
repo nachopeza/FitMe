@@ -117,6 +117,16 @@ interface AppContextValue {
     logPlanMeal: (meal: ResolvedMeal) => Promise<string | null>;
     /** Copia las comidas de un día a otra fecha. Devuelve los ids creados. */
     copyDay: (from: IsoDate, to: IsoDate) => Promise<string[]>;
+    /** Cambia los alimentos y gramos de una comida ya registrada. */
+    updateEntryItems: (
+      entryId: string,
+      items: { foodId: string; grams: number }[],
+    ) => Promise<void>;
+    /** Sus cantidades para una comida del plan; null las borra. */
+    setPlanOverride: (
+      mealId: string,
+      parts: { foodId: string; grams: number }[] | null,
+    ) => Promise<void>;
     /** Marca o desmarca un alimento como básico suyo. */
     toggleBasicFood: (foodId: string) => Promise<void>;
 
@@ -498,6 +508,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
        * son cuatro o cinco comidas de golpe, y sin deshacer habría que borrarlas
        * una a una.
        */
+      /** Guarda (o borra, con null) sus cantidades para una comida del plan. */
+      /**
+       * Cambia las cantidades de una comida ya registrada.
+       *
+       * Faltaba: la hoja de una comida era de solo lectura, así que una pesada
+       * mal puesta solo se podía borrar y volver a montar entera. Se recalculan
+       * los macros desde el alimento, no se tocan a mano: un gramaje nuevo con
+       * las calorías viejas sería peor que no poder editar.
+       */
+      updateEntryItems: async (entryId, items) => {
+        const entry = await db.entries.get(entryId);
+        if (!entry) return;
+        const foods = await db.foods.bulkGet(items.map((i) => i.foodId));
+        const byId = new Map(foods.filter((f): f is Food => !!f).map((f) => [f.id, f]));
+        const nuevos = items.flatMap((item, idx) => {
+          const food = byId.get(item.foodId);
+          if (!food) return [];
+          return [{
+            ...makeItem(food, item.grams, 'g', { confidence: 'exact' }),
+            id: `i-${entryId}-${idx}`,
+          }];
+        });
+        await db.entries.put({ ...entry, items: nuevos });
+      },
+
+      setPlanOverride: async (mealId, parts) => {
+        const actuales = { ...((await getSettings()).planOverrides ?? {}) };
+        if (parts && parts.length) actuales[mealId] = parts;
+        else delete actuales[mealId];
+        await saveSettings({ planOverrides: actuales });
+      },
+
       copyDay: async (from, to) => {
         const origen = await db.entries.where('date').equals(from).toArray();
         if (!origen.length) return [];

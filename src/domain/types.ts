@@ -460,6 +460,15 @@ export interface AppSettings {
   /** Los objetivos salen de su plan nutricional, no del cálculo de la app.
    *  Por defecto sí: cuando hay una hoja escrita, manda la hoja. */
   usePlanTargets?: boolean;
+  /**
+   * Sus cantidades, cuando no son las de la hoja.
+   *
+   * La hoja es el punto de partida, no una condena: si come 100 g de arroz y no
+   * 120, lo suyo es que la app lo dé por bueno y lo recuerde, en vez de
+   * enseñarle cada día una cantidad que no es la que se come. La clave es el id
+   * de la comida del plan y el valor sustituye por completo a sus alimentos.
+   */
+  planOverrides?: Record<string, { foodId: string; grams: number }[]>;
   lastBackupAt?: number;
   /**
    * Cuenta en la nube. Vacío = la app funciona entera en local, que es como
