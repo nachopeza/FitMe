@@ -1,4 +1,4 @@
-import type { MealSlot, Nutrients } from './types';
+import type { IsoDate, MealEntry, MealSlot, Nutrients } from './types';
 
 /**
  * Reparto del día entre comidas.
@@ -101,4 +101,38 @@ export function mealBehind(
     if (!worst || ratio < worst.ratio) worst = { slot: t.slot, ratio };
   }
   return worst?.slot ?? null;
+}
+
+/**
+ * Copia las comidas de un día a otra fecha.
+ *
+ * Come casi lo mismo todos los días, así que volver a teclearlo cada mañana es
+ * la friccción que hace que deje de registrar. Traer un día entero y luego
+ * cambiar lo que varíe es muchísimo menos trabajo que montarlo de cero.
+ *
+ * Se conservan la franja, la hora y las cantidades; cambian la fecha y los
+ * identificadores, porque son comidas nuevas y no las mismas en dos sitios:
+ * compartir el id haría que borrar una borrase la otra.
+ *
+ * `newId` entra como parámetro para que la función siga siendo pura y se pueda
+ * probar sin depender de un reloj ni de un generador aleatorio.
+ */
+export function copyEntriesToDate(
+  entries: MealEntry[],
+  date: IsoDate,
+  newId: (seed: number) => string,
+): MealEntry[] {
+  return entries.map((entry, i) => {
+    const id = newId(i);
+    return {
+      ...entry,
+      id,
+      date,
+      items: entry.items.map((item, j) => ({ ...item, id: `i-${id}-${j}` })),
+      createdAt: Date.now(),
+      // La copia no hereda de dónde salió el original: lo que importa de un
+      // registro es que lo confirmó él, y esta la confirma al copiar.
+      method: 'saved',
+    };
+  });
 }

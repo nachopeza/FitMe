@@ -20,6 +20,8 @@ import { TodayScreen } from './screens/Today';
 import { WorkoutScreen } from './screens/Workout';
 import { AccountSheet } from '../features/account/AccountSheet';
 import { CalendarSheet } from '../features/sheets/CalendarSheet';
+import { CopyDaySheet } from '../features/sheets/CopyDaySheet';
+import { DataSheet } from '../features/sheets/DataSheet';
 import { FoodEditSheet } from '../features/sheets/FoodEditSheet';
 import { MyBasics } from '../features/sheets/MyBasics';
 import { Icon, type IconName } from './icons';
@@ -190,6 +192,8 @@ function SheetRouter() {
     case 'routine': return <RoutineSheet id={s.id} onClose={close} />;
     case 'exercise': return <ExerciseHistorySheet id={s.id} onClose={close} />;
     case 'plan': return <PlanSheet onClose={close} />;
+    case 'copyDay': return <CopyDaySheet onClose={close} />;
+    case 'data': return <DataSheet onClose={close} />;
     case 'workout': return <WorkoutRedirect />;
     default: return null;
   }

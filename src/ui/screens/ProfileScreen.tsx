@@ -184,6 +184,17 @@ export function ProfileScreen() {
           </div>
           <Icon name="chevron" size={18} />
         </button>
+
+        {/* La copia de seguridad, junto a la cuenta y no enterrada abajo: es lo
+            que de verdad evita perder el histórico mientras no haya servidor. */}
+        <button className="row" style={{ width: '100%', marginTop: 8 }} onClick={() => ui.open({ k: 'data' })}>
+          <span className="meal-add" style={{ marginRight: 2 }}><Icon name="weight" size={16} /></span>
+          <div className="row-body">
+            <div className="row-name">Tus datos y copia de seguridad</div>
+            <div className="row-meta">Guardar una copia, restaurarla y por qué pueden no aparecer</div>
+          </div>
+          <Icon name="chevron" size={18} />
+        </button>
       </Section>
 
       {/* Cuadrícula de herramientas: antes eran tres botones en una rejilla de

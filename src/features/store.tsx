@@ -11,6 +11,7 @@ import {
 import { bootPhase, type BootPhase } from './bootState';
 import { makeItem } from './logging';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
+import { copyEntriesToDate } from '../domain/meals';
 import { planTargets, type ResolvedMeal } from '../domain/plan';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
@@ -76,6 +77,8 @@ interface AppContextValue {
   history: { entries: MealEntry[]; days: Map<IsoDate, DayLog> };
   /** Días con alguna comida registrada, para contar la racha. */
   daysWithFood: Set<IsoDate>;
+  /** Comidas por fecha, del histórico en memoria. Lo usa copiar un día. */
+  entriesByDate: Map<IsoDate, MealEntry[]>;
 
   /** Objetivos medios del perfil, sin modular por tipo de día. */
   baseTargets: MacroTargets;
@@ -112,6 +115,8 @@ interface AppContextValue {
     logBasicFood: (foodId: string) => Promise<string | null>;
     /** Registra una comida del plan con las cantidades de la hoja. */
     logPlanMeal: (meal: ResolvedMeal) => Promise<string | null>;
+    /** Copia las comidas de un día a otra fecha. Devuelve los ids creados. */
+    copyDay: (from: IsoDate, to: IsoDate) => Promise<string[]>;
     /** Marca o desmarca un alimento como básico suyo. */
     toggleBasicFood: (foodId: string) => Promise<void>;
 
@@ -486,6 +491,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
        * cantidades son las de la hoja y se marcan como pesadas, porque lo son:
        * el plan se pesa.
        */
+      /**
+       * Trae las comidas de otro día a una fecha.
+       *
+       * Devuelve los ids creados para poder deshacerlo entero: copiar un día
+       * son cuatro o cinco comidas de golpe, y sin deshacer habría que borrarlas
+       * una a una.
+       */
+      copyDay: async (from, to) => {
+        const origen = await db.entries.where('date').equals(from).toArray();
+        if (!origen.length) return [];
+        const copias = copyEntriesToDate(origen, to, (i) => newId(`e-${Date.now().toString(36)}-${i}-`));
+        await db.entries.bulkPut(copias);
+        return copias.map((c) => c.id);
+      },
+
       logPlanMeal: async (meal) => {
         const rows = await db.foods.bulkGet(meal.parts.map((p) => p.food.id));
         const found = rows.filter((f): f is Food => !!f);
@@ -572,6 +592,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     weights,
     history: { entries: historyEntries, days: daysByDate },
     daysWithFood,
+    entriesByDate,
     baseTargets,
     targets,
     dayType,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { eatenBySlot, mealBehind, mealTargets } from './meals';
-import type { MealSlot, Nutrients } from './types';
+import { copyEntriesToDate, eatenBySlot, mealBehind, mealTargets } from './meals';
+import type { MealEntry, MealSlot, Nutrients } from './types';
 
 const n = (kcal: number, protein = 0): Nutrients => ({
   kcal, protein, carbs: 0, fat: 0, fiber: 0,
@@ -81,5 +81,53 @@ describe('en qué comida se está quedando corto', () => {
 
   it('con el día entero por delante y nada comido, señala el desayuno', () => {
     expect(mealBehind(targets, new Map(), times, '22:00')).toBe('breakfast');
+  });
+});
+
+// ── Copiar un día a otro ──
+describe('copyEntriesToDate', () => {
+  const entry = (id: string): MealEntry => ({
+    id,
+    date: '2026-11-01',
+    slot: 'lunch',
+    time: '14:30',
+    name: 'Táper',
+    items: [{
+      id: `i-${id}-0`,
+      foodId: 'arroz-crudo',
+      foodName: 'Arroz blanco (crudo)',
+      quantity: 120,
+      unit: 'g',
+      grams: 120,
+      confidence: 'exact',
+      nutrients: { kcal: 426, protein: 8, carbs: 93, fat: 1, fiber: 1 },
+    }],
+    method: 'manual',
+    createdAt: 1,
+  });
+
+  it('mueve la fecha y conserva comida, hora y cantidades', () => {
+    const [copia] = copyEntriesToDate([entry('e1')], '2026-11-02', (i) => `n${i}`);
+    expect(copia.date).toBe('2026-11-02');
+    expect(copia.slot).toBe('lunch');
+    expect(copia.time).toBe('14:30');
+    expect(copia.items[0].grams).toBe(120);
+    expect(copia.items[0].nutrients.kcal).toBe(426);
+  });
+
+  it('da identificadores nuevos: borrar la copia no borra el original', () => {
+    const [copia] = copyEntriesToDate([entry('e1')], '2026-11-02', (i) => `n${i}`);
+    expect(copia.id).not.toBe('e1');
+    expect(copia.items[0].id).not.toBe('i-e1-0');
+  });
+
+  it('copia todas las comidas del día, no solo la primera', () => {
+    const copias = copyEntriesToDate([entry('e1'), entry('e2')], '2026-11-02', (i) => `n${i}`);
+    expect(copias).toHaveLength(2);
+    expect(new Set(copias.map((c) => c.id)).size).toBe(2);
+  });
+
+  it('un día vacío no copia nada', () => {
+    expect(copyEntriesToDate([], '2026-11-02', (i) => `n${i}`)).toEqual([]);
   });
 });

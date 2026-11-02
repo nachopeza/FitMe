@@ -122,9 +122,16 @@ export function TodayScreen() {
           de antes sigue estando, a un toque, en «Añadir otra cosa». */}
       <PlanPanel />
 
-      <button className="btn-outline" style={{ marginBottom: 14 }} onClick={() => ui.open({ k: 'addMenu' })}>
-        <Icon name="plus" size={17} /> Añadir algo que no esté en el plan
-      </button>
+      <div className="btns" style={{ marginBottom: 14 }}>
+        <button className="btn" onClick={() => ui.open({ k: 'addMenu' })}>
+          <Icon name="plus" size={16} /> Añadir
+        </button>
+        {/* Come casi lo mismo a diario: traer un día entero y cambiar lo que
+            varíe es mucho menos trabajo que montarlo de cero cada mañana. */}
+        <button className="btn" onClick={() => ui.open({ k: 'copyDay' })}>
+          <Icon name="calendar" size={16} /> Traer otro día
+        </button>
+      </div>
 
       {/* ── Entrenamiento ── */}
       <div className="panel rise">
