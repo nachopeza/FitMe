@@ -214,3 +214,48 @@ export async function serverTime(creds: Credentials, token: string): Promise<num
   const parsed = date ? Date.parse(date) : Number.NaN;
   return Number.isFinite(parsed) ? parsed : Date.now();
 }
+
+/**
+ * Comprueba que la clave pegada es la PÚBLICA y no la secreta.
+ *
+ * Esto es una red de seguridad, no una manía. Supabase da dos claves, y la
+ * secreta (`service_role` en el formato antiguo, `sb_secret_…` en el nuevo) se
+ * salta por diseño las reglas por fila: con ella, cualquiera lee y escribe toda
+ * la base. Esta app es una página estática y pública, así que una clave secreta
+ * pegada aquí acabaría en el navegador de cualquiera que abra la web, y con ella
+ * todos sus datos.
+ *
+ * Las dos claves se parecen y están una al lado de la otra en el panel. Es un
+ * error de un segundo con consecuencias permanentes, así que la app no lo acepta
+ * y dice por qué, en vez de guardarlo y callarse.
+ */
+export function inspectKey(key: string): { ok: true } | { ok: false; reason: string } {
+  const k = key.trim();
+  if (!k) return { ok: false, reason: 'Falta la clave.' };
+  if (k.length < 20) return { ok: false, reason: 'Esa clave parece incompleta.' };
+
+  // Formato nuevo: el prefijo lo dice sin ambigüedad.
+  if (k.startsWith('sb_secret_')) {
+    return { ok: false, reason: 'Esa es la clave SECRETA. Pega la publicable (sb_publishable_…): la secreta se salta las reglas de seguridad y dejaría tus datos al alcance de cualquiera.' };
+  }
+  if (k.startsWith('sb_publishable_')) return { ok: true };
+
+  // Formato antiguo: un JWT con el papel dentro.
+  const partes = k.split('.');
+  if (partes.length === 3) {
+    try {
+      const payload = JSON.parse(atob(partes[1].replace(/-/g, '+').replace(/_/g, '/'))) as { role?: string };
+      if (payload.role === 'service_role') {
+        return { ok: false, reason: 'Esa es la clave service_role. Pega la «anon public»: la otra se salta las reglas de seguridad y dejaría tus datos al alcance de cualquiera.' };
+      }
+      if (payload.role && payload.role !== 'anon') {
+        return { ok: false, reason: `Esa clave es de tipo «${payload.role}». Pega la «anon public».` };
+      }
+    } catch {
+      // Si no se puede leer el contenido, no se bloquea: puede ser una clave
+      // válida de un formato que no conozco, y equivocarse por bloquear de más
+      // le dejaría sin cuenta.
+    }
+  }
+  return { ok: true };
+}

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Field, Sheet } from '../../ui/components';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
-import { AccountError, signIn, signOut, signUp, type Credentials, type Session } from './api';
+import { AccountError, inspectKey, signIn, signOut, signUp, type Credentials, type Session } from './api';
 import { markEverythingPending, pendingCount, syncNow } from './sync';
 
 /**
@@ -42,8 +42,9 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
       setError('La dirección tiene que empezar por https://');
       return;
     }
-    if (key.trim().length < 20) {
-      setError('Esa clave parece incompleta.');
+    const revision = inspectKey(key);
+    if (!revision.ok) {
+      setError(revision.reason);
       return;
     }
     await app.actions.setSettings({ syncUrl: clean, syncKey: key.trim() });
@@ -117,8 +118,9 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
             <li>Entra en <b>supabase.com</b> y crea un proyecto gratis (no pide tarjeta).</li>
             <li>En <b>SQL Editor</b>, pega el bloque de abajo y dale a ejecutar. Crea la tabla y la regla
               que hace que cada cuenta solo vea lo suyo.</li>
-            <li>En <b>Settings → API</b>, copia la <b>Project URL</b> y la clave <b>anon public</b>, y
-              pégalas aquí.</li>
+            <li>En los ajustes de la API del proyecto, copia la <b>Project URL</b> y la clave
+              <b>pública</b> —«anon public» o «publishable»—, y pégalas aquí. <b>La secreta no</b>: esa
+              se salta las reglas de seguridad y dejaría tus datos al alcance de cualquiera.</li>
           </ol>
           <pre className="sql">{SQL}</pre>
           <button className="btn sm" onClick={() => void navigator.clipboard?.writeText(SQL)
