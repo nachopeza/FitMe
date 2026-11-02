@@ -14,6 +14,7 @@ import { itemsNutrients } from '../features/logging';
 import { iconForText, quickAddItems, slotFromHour } from '../features/quickAdd';
 import { Sheet, g } from './components';
 import { Onboarding } from './screens/Onboarding';
+import { Welcome } from './screens/Welcome';
 import { ProfileScreen } from './screens/ProfileScreen';
 import { applyTheme, watchSystemTheme } from './theme';
 import { TodayScreen } from './screens/Today';
@@ -68,6 +69,8 @@ const NAV: { tab: Tab; label: string; icon: IconName }[] = [
 export function App() {
   const app = useApp();
   const ui = useUI();
+  /** true cuando ha elegido empezar de cero en vez de entrar con su cuenta. */
+  const [freshStart, setFreshStart] = useState(false);
 
   useEffect(() => {
     // El script de index.html ya pintó el tema guardado antes del primer
@@ -89,6 +92,11 @@ export function App() {
   }
 
   if (app.phase === 'onboarding') {
+    // Sin perfil hay dos situaciones muy distintas: viene de cero, o viene de
+    // otro móvil y lo que quiere es que vuelvan sus datos. Antes solo se
+    // contemplaba la primera, así que al reinstalar había que montar el perfil
+    // a mano y entrar después, con la sincronización pisándolo todo.
+    if (!freshStart) return <div className="app"><Welcome onFresh={() => setFreshStart(true)} /></div>;
     return <div className="app"><Onboarding /></div>;
   }
 

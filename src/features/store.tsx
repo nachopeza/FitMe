@@ -12,6 +12,7 @@ import { bootPhase, type BootPhase } from './bootState';
 import { makeItem } from './logging';
 import { addDays, lastNDays, nowTime, toIsoDate } from '../domain/dates';
 import { copyEntriesToDate } from '../domain/meals';
+import { SUPABASE, hasBuiltInProject } from '../config';
 import { planTargets, type ResolvedMeal } from '../domain/plan';
 import {
   classifyDay, computeTargets, profileAge, remainingFor, targetsForDay,
@@ -52,6 +53,8 @@ interface AppContextValue {
    * equivocado, y entonces el cargador se tragaba el onboarding.
    */
   phase: BootPhase;
+  /** El proyecto de sincronización, venga de donde venga. null si no hay. */
+  syncCreds: { url: string; anonKey: string } | null;
   profile: Profile | null;
   settings: AppSettings;
   foods: Food[];
@@ -194,10 +197,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
    * no haya cobertura en el gimnasio no es un error que haya que anunciar, y
    * los cambios quedan anotados para la próxima.
    */
+  /**
+   * El proyecto con el que hablar: el que él haya pegado en este móvil y, si no
+   * hay, el que trae la propia app. Lo segundo es lo que permite que en un
+   * teléfono recién instalado baste con el correo y la contraseña.
+   */
+  const syncCreds = useMemo(() => {
+    if (settings.syncUrl && settings.syncKey) {
+      return { url: settings.syncUrl, anonKey: settings.syncKey };
+    }
+    return hasBuiltInProject() ? { url: SUPABASE.url, anonKey: SUPABASE.anonKey } : null;
+  }, [settings.syncUrl, settings.syncKey]);
+
   useEffect(() => {
-    if (!settings.syncUrl || !settings.syncKey || !settings.syncSession) return;
+    if (!syncCreds || !settings.syncSession) return;
     let cancelled = false;
-    const creds = { url: settings.syncUrl, anonKey: settings.syncKey };
+    const creds = syncCreds;
     const session = settings.syncSession;
 
     const run = async () => {
@@ -218,7 +233,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     // Solo depende de la identidad de la cuenta: si dependiera del objeto entero
     // de ajustes, cada sincronización se volvería a disparar a sí misma.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [settings.syncUrl, settings.syncKey, settings.syncSession?.userId]);
+  }, [syncCreds, settings.syncSession?.userId]);
 
   const foods = useLiveQuery(() => allFoods(), [], [] as Food[]) ?? [];
   const recipes = useLiveQuery(() => db.recipes.toArray(), [], [] as Recipe[]) ?? [];
@@ -615,6 +630,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const value: AppContextValue = {
     phase,
+    syncCreds,
     profile: profile ?? null,
     settings,
     foods,

@@ -3133,3 +3133,8 @@ button.plan-body {
   cursor: pointer;
 }
 button.plan-body:active { opacity: 0.6; }
+
+/* La bienvenida: dos caminos y nada más. Sin barra abajo, que todavía no hay
+   dónde navegar. */
+.welcome { padding-top: calc(env(safe-area-inset-top, 0px) + 40px); }
+.welcome .panel { display: block; }
