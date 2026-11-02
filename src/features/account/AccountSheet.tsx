@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react';
 import { Field, Sheet } from '../../ui/components';
 import { useUI } from '../../ui/shell';
 import { useApp } from '../store';
-import { AccountError, inspectKey, signIn, signOut, signUp, type Credentials, type Session } from './api';
+import {
+  AccountError, checkAccount, inspectKey, signIn, signOut, signUp,
+  type CheckStep, type Credentials, type Session,
+} from './api';
 import { markEverythingPending, pendingCount, syncNow } from './sync';
 
 /**
@@ -32,6 +35,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(0);
+  const [check, setCheck] = useState<CheckStep[] | null>(null);
 
   useEffect(() => { void pendingCount().then(setPending); }, [s.lastSyncAt]);
 
@@ -172,6 +176,35 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
         <button className="btn primary" disabled={busy} onClick={() => void doSync()}>
           {busy ? <span className="spinner" /> : 'Sincronizar ahora'}
         </button>
+
+        {/* La comprobación hace el viaje entero —hablar, escribir y volver a
+            leer— porque «¿está todo bien?» no se puede contestar desde fuera:
+            los datos están en este móvil y el proyecto es suyo. */}
+        <button className="btn sm" style={{ marginTop: 10 }} disabled={busy} onClick={async () => {
+          setBusy(true);
+          setCheck(null);
+          try {
+            setCheck(await checkAccount(creds, session.accessToken, session.userId));
+          } catch (e) {
+            setError(e instanceof AccountError ? e.message : 'No se ha podido comprobar.');
+          } finally { setBusy(false); }
+        }}>
+          Comprobar que todo funciona
+        </button>
+
+        {check && (
+          <ul className="check-list">
+            {check.map((paso) => (
+              <li key={paso.label} data-ok={paso.ok ? '' : undefined}>
+                <span className="check-mark">{paso.ok ? '✓' : '✕'}</span>
+                <span>
+                  <b>{paso.label}</b>
+                  <small>{paso.detail}</small>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="note tight" style={{ marginTop: 10 }}>
           Se sincroniza sola al abrir la app y al volver a tener red. Esto es por si quieres asegurarte.
         </p>

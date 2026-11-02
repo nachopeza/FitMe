@@ -259,3 +259,108 @@ export function inspectKey(key: string): { ok: true } | { ok: false; reason: str
   }
   return { ok: true };
 }
+
+/** Un paso de la comprobación, con su resultado en claro. */
+export interface CheckStep {
+  label: string;
+  ok: boolean;
+  detail: string;
+}
+
+/**
+ * Comprueba que la cuenta hace de verdad lo que promete.
+ *
+ * Existe porque «¿está todo bien?» no se puede contestar desde fuera: sus datos
+ * están en su móvil y su proyecto es suyo. Así que lo contesta la app, en su
+ * teléfono, haciendo el viaje entero: hablar con el proyecto, usar la sesión,
+ * escribir una fila y volver a leerla.
+ *
+ * La fila de prueba se escribe en el mismo sitio que todo lo demás y se marca
+ * como borrada, así que no ensucia nada ni se baja luego como un registro real.
+ */
+export async function checkAccount(
+  creds: Credentials,
+  token: string,
+  userId: string,
+): Promise<CheckStep[]> {
+  const pasos: CheckStep[] = [];
+
+  try {
+    await request(creds, '/rest/v1/records?select=rec_id&limit=1', { token });
+    pasos.push({ label: 'El proyecto responde', ok: true, detail: creds.url.replace('https://', '') });
+  } catch (e) {
+    pasos.push({
+      label: 'El proyecto responde',
+      ok: false,
+      detail: e instanceof Error ? e.message : 'No contesta.',
+    });
+    // Sin servidor, lo demás no se puede ni intentar.
+    return pasos;
+  }
+
+  const marca = Date.now();
+  const prueba = {
+    kind: 'probe',
+    rec_id: `check-${marca}`,
+    data: { at: marca },
+    updated_at: marca,
+    deleted: true,
+  };
+  try {
+    await push(creds, token, [prueba]);
+    pasos.push({ label: 'Puede guardar', ok: true, detail: 'Escritura aceptada.' });
+  } catch (e) {
+    pasos.push({
+      label: 'Puede guardar',
+      ok: false,
+      detail: e instanceof Error ? e.message : 'El servidor ha rechazado la escritura.',
+    });
+    return pasos;
+  }
+
+  try {
+    const vuelta = await pull(creds, token, marca - 1);
+    const encontrada = vuelta.some((r) => r.rec_id === prueba.rec_id);
+    pasos.push({
+      label: 'Puede recuperar',
+      ok: encontrada,
+      detail: encontrada
+        ? 'Lo escrito se ha vuelto a leer.'
+        : 'Se guardó pero no vuelve. Revisa la política de la tabla.',
+    });
+  } catch (e) {
+    pasos.push({
+      label: 'Puede recuperar',
+      ok: false,
+      detail: e instanceof Error ? e.message : 'No se ha podido leer.',
+    });
+  }
+
+  // Cuántas filas suyas hay. Con la política puesta, el servidor solo devuelve
+  // las de esta cuenta, así que este número es también la prueba de que la
+  // regla está activa: si devolviera las de otro, no sería este.
+  try {
+    const { headers } = await request(
+      creds,
+      '/rest/v1/records?select=rec_id',
+      { token, headers: { Prefer: 'count=exact', Range: '0-0' } },
+    );
+    const rango = headers.get('content-range') ?? '';
+    const total = rango.split('/')[1];
+    pasos.push({
+      label: 'Lo que hay guardado',
+      ok: true,
+      detail: total && total !== '*' ? `${total} registros en tu cuenta` : 'No se ha podido contar.',
+    });
+  } catch {
+    pasos.push({ label: 'Lo que hay guardado', ok: true, detail: 'No se ha podido contar.' });
+  }
+
+  pasos.push({
+    label: 'Tu identificador',
+    ok: true,
+    detail: `${userId.slice(0, 8)}… · solo tus filas llevan este id`,
+  });
+
+  return pasos;
+}

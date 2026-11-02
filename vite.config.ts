@@ -17,7 +17,7 @@ export default defineConfig({
     react(),
     pwa && VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icon.svg', 'apple-touch-icon.png'],
+      includeAssets: ['icon.svg', 'icon-maskable.svg', 'apple-touch-icon.png'],
       manifest: {
         name: 'FitMe — Asistente nutricional',
         short_name: 'FitMe',
@@ -36,7 +36,10 @@ export default defineConfig({
         icons: [
           { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          // El recortable es OTRO archivo, con la marca encogida al 72 %:
+          // Android recorta con la forma que quiera y solo respeta el 80 %
+          // central, así que con el de a sangre la barra perdía las puntas.
+          { src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
         ],
       },
       workbox: {

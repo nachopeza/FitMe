@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="FitMe">
+  <!--
+    La misma marca, encogida al 72 % y centrada.
+
+    Android recorta el icono con la forma que quiera —círculo, gota, cuadrado— y
+    solo garantiza el 80 % central. Con la marca a sangre, la barra se quedaba
+    sin puntas en los móviles de máscara redonda. Este es el que declara
+    `purpose: maskable`; el otro va a sangre para la pestaña y para iOS, que
+    recorta en cuadrado redondeado y no se come nada.
+  -->
+  <defs>
+    <linearGradient id="fondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1fbe86"/>
+      <stop offset="1" stop-color="#06a16b"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" fill="url(#fondo)"/>
+  <g transform="translate(32 32) scale(0.72) translate(-32 -32)">
+    <circle cx="32" cy="32" r="15" fill="none" stroke="#fff" stroke-width="8"/>
+    <g stroke="#fff" stroke-width="7" stroke-linecap="round">
+      <path d="M4.5 32h10"/>
+      <path d="M49.5 32h10"/>
+      <path d="M27.5 32h9"/>
+    </g>
+  </g>
+</svg>
