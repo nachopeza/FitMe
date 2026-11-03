@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Field, Sheet } from '../../ui/components';
 import { useUI } from '../../ui/shell';
+import { SUPABASE } from '../../config';
 import { useApp } from '../store';
 import {
   AccountError, checkAccount, inspectKey, signIn, signOut, signUp,
@@ -26,7 +27,7 @@ export function AccountSheet({ onClose }: { onClose: () => void }) {
     : null;
   const session = s.syncSession ?? null;
 
-  const [url, setUrl] = useState(s.syncUrl ?? '');
+  const [url, setUrl] = useState<string>(s.syncUrl ?? SUPABASE.url);
   const [key, setKey] = useState(s.syncKey ?? '');
   const [email, setEmail] = useState(session?.email ?? '');
   const [password, setPassword] = useState('');

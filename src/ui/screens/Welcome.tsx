@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AccountError, inspectKey, signIn } from '../../features/account/api';
 import { markEverythingPending, syncNow } from '../../features/account/sync';
+import { SUPABASE } from '../../config';
 import { useApp } from '../../features/store';
 import { Field } from '../components';
 import { Icon } from '../icons';
@@ -22,7 +23,9 @@ export function Welcome({ onFresh }: { onFresh: () => void }) {
   const [mode, setMode] = useState<'choose' | 'in' | 'project'>('choose');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [url, setUrl] = useState('');
+  // La dirección viene puesta de fábrica: lo único que falta por pegar es la
+  // clave, y un campo menos es un sitio menos donde equivocarse.
+  const [url, setUrl] = useState<string>(SUPABASE.url);
   const [key, setKey] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

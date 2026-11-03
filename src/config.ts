@@ -22,9 +22,15 @@
  * en Perfil → Tu cuenta, como hasta ahora, y lo guarda en ese móvil.
  */
 export const SUPABASE = {
-  /** Project URL, tal cual: https://xxxxxxxx.supabase.co */
-  url: '',
-  /** La clave pública: «anon public» o «publishable» (sb_publishable_…). */
+  /** Project URL. Sale en el panel de Supabase, bajo el nombre del proyecto. */
+  url: 'https://dltagtdogcnogwxgwlzk.supabase.co',
+  /**
+   * La clave pública: «anon public» o «publishable» (sb_publishable_…).
+   *
+   * Vacía a propósito: es lo único que queda por rellenar. Mientras lo esté, la
+   * app pide la clave una vez en cada móvil y funciona igual; en cuanto se
+   * ponga, el arranque pasa a pedir solo el correo y la contraseña.
+   */
   anonKey: '',
 } as const;
 
