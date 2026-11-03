@@ -30,6 +30,8 @@ export function Welcome({ onFresh }: { onFresh: () => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<string | null>(null);
+  /** Resultado de una entrada correcta que no trajo perfil. */
+  const [done, setDone] = useState<{ pulled: number } | null>(null);
 
   const creds = app.syncCreds;
 
@@ -49,9 +51,14 @@ export function Welcome({ onFresh }: { onFresh: () => void }) {
       setStep('Trayendo tus datos…');
       const result = await syncNow(creds, out);
       await app.actions.setSettings({ syncSession: result.session, lastSyncAt: result.at });
-      // No se navega a ninguna parte: en cuanto el perfil aparezca en la base,
-      // la app entra sola. Si no venía ninguno, cae al onboarding.
-      setStep(`Listo · ${result.pulled} registros`);
+      // Si con los datos vino un perfil, la app entra sola en cuanto aparezca en
+      // la base y esta pantalla desaparece.
+      //
+      // Si NO vino ninguno, aquí había un callejón sin salida: se entraba bien,
+      // se leía «Listo · 0 registros» y no quedaba más botón que «Volver». Una
+      // cuenta recién creada está vacía, así que ese es el caso normal la
+      // primera vez, no el raro. Ahora se dice lo que ha pasado y se sigue.
+      setDone({ pulled: result.pulled });
     } catch (e) {
       setError(e instanceof AccountError ? e.message : 'No se ha podido entrar.');
     } finally {
@@ -98,6 +105,30 @@ export function Welcome({ onFresh }: { onFresh: () => void }) {
         <button className="btn quiet sm" style={{ marginTop: 10 }} onClick={() => { setMode('choose'); setError(null); }}>
           Volver
         </button>
+      </Shell>
+    );
+  }
+
+  // ── Entró bien, pero su cuenta no tenía un perfil dentro ──
+  if (done) {
+    return (
+      <Shell title="Cuenta lista" sub={email}>
+        <p className="note">
+          {done.pulled > 0
+            ? `Se han traído ${done.pulled} registros, pero no venía ningún perfil con ellos.`
+            : 'Has entrado bien. Tu cuenta todavía no tiene nada guardado, que es lo normal la primera vez.'}
+        </p>
+        <p className="note">
+          Lo que registres a partir de ahora se guarda solo en tu cuenta. Queda contestar cuatro cosas
+          —peso, altura, edad y tu objetivo— y ya entras.
+        </p>
+        <button className="btn primary" style={{ marginTop: 12 }} onClick={onFresh}>
+          Crear mi perfil
+        </button>
+        <p className="note tight" style={{ marginTop: 14 }}>
+          ¿Tus datos están en otro móvil? Entonces entra con la cuenta <b>en ese móvil</b> primero: al
+          hacerlo se suben, y aquí aparecerán al volver a entrar.
+        </p>
       </Shell>
     );
   }
